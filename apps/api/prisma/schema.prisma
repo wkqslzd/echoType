@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CourseMode {
+  SHORT
+  ARTICLE
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String?  @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  categories Category[]
+  courses    Course[]
+  sessions   TypingSession[]
+
+  @@map("users")
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  mode      CourseMode
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  courses Course[]
+
+  @@unique([userId, mode, name])
+  @@index([userId])
+  @@map("categories")
+}
+
+model Course {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  title      String
+  content    String
+  mode       CourseMode
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  annotations Annotation[]
+  sessions    TypingSession[]
+
+  @@index([userId, mode, createdAt])
+  @@map("courses")
+}
+
+model Annotation {
+  id           String   @id @default(cuid())
+  courseId     String
+  course       Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  startIndex   Int
+  endIndex     Int
+  noteText     String
+  anchoredText String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([courseId])
+  @@map("annotations")
+}
+
+model TypingSession {
+  id           String   @id @default(cuid())
+  courseId     String
+  course       Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  startedAt    DateTime
+  endedAt      DateTime
+  durationSec  Int
+  charCount    Int
+  errorCount   Int
+  wpm          Float
+  accuracy     Float
+  loopCount    Int      @default(0)
+  pasteRanges  Json     @default("[]")
+
+  createdAt    DateTime @default(now())
+
+  @@index([courseId, createdAt])
+  @@index([userId, createdAt])
+  @@map("typing_sessions")
+}
