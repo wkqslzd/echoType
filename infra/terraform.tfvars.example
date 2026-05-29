@@ -1,0 +1,13 @@
+# Copy to terraform.tfvars and fill in real values. terraform.tfvars is gitignored.
+
+# Your home public IP as a /32 CIDR. Find it with: curl -s https://checkip.amazonaws.com
+my_ip_cidr = "1.2.3.4/32"
+
+# RDS master password (>= 16 chars recommended, no '/', '@', '"', or spaces).
+db_password = "change-me-to-a-strong-password"
+
+# Optional overrides:
+# region            = "ap-southeast-2"
+# instance_type     = "t4g.micro"
+# db_instance_class = "db.t4g.micro"
+# public_key_path   = "~/.ssh/echotype_ec2.pub"

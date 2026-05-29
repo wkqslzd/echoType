@@ -1,0 +1,30 @@
+# Backend image for the cloud walking skeleton.
+# Build context MUST be the repo root (workspace deps live outside apps/api).
+FROM node:20-slim
+
+# Prisma needs openssl + ca-certificates at runtime.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN corepack enable
+WORKDIR /app
+
+# Install dependencies using only the manifests first (better layer caching).
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml .npmrc ./
+COPY packages/shared/package.json packages/shared/package.json
+COPY apps/api/package.json apps/api/package.json
+COPY apps/web/package.json apps/web/package.json
+RUN pnpm install --frozen-lockfile
+
+# App source.
+COPY packages/shared packages/shared
+COPY apps/api apps/api
+
+# Generate the Prisma client for this image's platform.
+RUN pnpm --filter @echotype/api exec prisma generate
+
+EXPOSE 3001
+
+# Default command is overridden by docker-compose (migrate + seed + start).
+CMD ["pnpm", "--filter", "@echotype/api", "exec", "tsx", "src/server.ts"]

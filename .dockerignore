@@ -1,0 +1,21 @@
+**/node_modules
+**/dist
+**/build
+**/.turbo
+**/.vite
+
+.git
+.github
+docs
+infra
+
+# never bake secrets/local env into the image
+**/.env
+**/.env.*
+!**/.env.example
+
+# terraform artifacts
+**/.terraform
+**/*.tfstate
+**/*.tfstate.*
+**/*.tfvars

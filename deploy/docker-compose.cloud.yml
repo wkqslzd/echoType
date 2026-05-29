@@ -1,0 +1,23 @@
+# Cloud compose: runs ONLY the API container, backed by RDS (no local Postgres).
+# Usage on EC2 (from repo root):
+#   docker compose -f deploy/docker-compose.cloud.yml --env-file deploy/.env up -d --build
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.api
+    image: echotype-api:local
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      API_PORT: "3001"
+    ports:
+      - "80:3001"
+    command:
+      - sh
+      - -c
+      - >
+        pnpm --filter @echotype/api exec prisma migrate deploy &&
+        pnpm --filter @echotype/api seed &&
+        pnpm --filter @echotype/api exec tsx src/server.ts

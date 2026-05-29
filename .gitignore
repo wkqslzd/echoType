@@ -144,11 +144,24 @@ vite.config.ts.timestamp-*
 
 # Terraform
 **/.terraform/*
+**/.terraform/
 *.tfstate
 *.tfstate.*
 *.tfvars
+*.tfvars.json
 !*.tfvars.example
+tfplan
+*.tfplan
+*.tfplan.*
 crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+# NOTE: .terraform.lock.hcl is intentionally NOT ignored (commit it to pin providers)
 
 # IDE
 .vscode/
@@ -158,3 +171,8 @@ crash.log
 # Build
 dist/
 build/
+
+# AWS credentials (just in case)
+.aws/
+**/.aws/
+aws-credentials.txt
