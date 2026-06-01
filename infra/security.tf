@@ -10,9 +10,9 @@ resource "aws_security_group" "ec2" {
 
 resource "aws_vpc_security_group_ingress_rule" "ec2_ssh" {
   security_group_id = aws_security_group.ec2.id
-  description       = "SSH (key-only auth)"
-  # TEMP: open to world for GitHub Actions SSH. To be replaced by AWS SSM Session Manager. See deploy/README.md "future upgrades".
-  cidr_ipv4   = "0.0.0.0/0"
+  description       = "SSH from home IP"
+  # Restricted to home IP. To be replaced by AWS SSM Session Manager for proper unattended access. See deploy/README.md.
+  cidr_ipv4   = var.my_ip_cidr
   ip_protocol = "tcp"
   from_port   = 22
   to_port     = 22
