@@ -1,5 +1,9 @@
 resource "aws_security_group" "ec2" {
-  name        = "${var.project}-ec2-sg"
+  name = "${var.project}-ec2-sg"
+  # NOTE: SG description is immutable in AWS -- changing it forces a full SG
+  # replacement (which cascades to attached instance + RDS rule). We keep the
+  # original string on purpose. Real state: no port 22 ingress; HTTP 80 only.
+  # Shell/deploy access is via SSM, not SSH.
   description = "EC2: SSH (22) and HTTP (80) from home IP only"
   vpc_id      = aws_vpc.main.id
 
@@ -8,15 +12,9 @@ resource "aws_security_group" "ec2" {
   }
 }
 
-resource "aws_vpc_security_group_ingress_rule" "ec2_ssh" {
-  security_group_id = aws_security_group.ec2.id
-  description       = "SSH from home IP"
-  # Restricted to home IP. To be replaced by AWS SSM Session Manager for proper unattended access. See deploy/README.md.
-  cidr_ipv4   = var.my_ip_cidr
-  ip_protocol = "tcp"
-  from_port   = 22
-  to_port     = 22
-}
+# No port 22 ingress rule by design. Shell / deploy access is via AWS Systems
+# Manager (Session Manager + Run Command), which is initiated outbound by the
+# SSM agent over 443 -- so port 22 is never exposed.
 
 resource "aws_vpc_security_group_ingress_rule" "ec2_http" {
   security_group_id = aws_security_group.ec2.id

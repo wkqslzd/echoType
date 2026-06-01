@@ -1,4 +1,4 @@
-name: Deploy backend to EC2
+name: Deploy backend to EC2 (via SSM)
 
 # Manual trigger only. Terraform is run locally by the maintainer, never here.
 on:
@@ -8,52 +8,101 @@ concurrency:
   group: deploy-ec2
   cancel-in-progress: false
 
+# OIDC: mint a short-lived token to assume the AWS deploy role. No stored creds.
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ap-southeast-2
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Configure SSH
-        env:
-          SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
-        run: |
-          mkdir -p ~/.ssh
-          echo "$SSH_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H "${{ vars.EC2_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null || true
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: Deploy over SSH (build on EC2)
+      - name: Resolve target instance
+        id: ec2
         run: |
-          ssh -o StrictHostKeyChecking=accept-new -i ~/.ssh/id_ed25519 ec2-user@${{ vars.EC2_HOST }} bash -s <<'EOF'
+          set -euo pipefail
+          INSTANCE_ID=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=echotype-app" "Name=instance-state-name,Values=running" \
+            --query 'Reservations[0].Instances[0].InstanceId' --output text)
+          if [ -z "$INSTANCE_ID" ] || [ "$INSTANCE_ID" = "None" ]; then
+            echo "No running instance tagged Name=echotype-app found"; exit 1
+          fi
+          PUBLIC_IP=$(aws ec2 describe-instances --instance-ids "$INSTANCE_ID" \
+            --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
+          echo "instance_id=$INSTANCE_ID" >> "$GITHUB_OUTPUT"
+          echo "public_ip=$PUBLIC_IP"   >> "$GITHUB_OUTPUT"
+          echo "Resolved instance $INSTANCE_ID at $PUBLIC_IP"
+
+      - name: Deploy via SSM Run Command
+        id: ssm
+        run: |
           set -euo pipefail
 
-          # 1) Ensure the repo exists on the instance and matches this commit.
-          if [ ! -d "$HOME/echoType/.git" ]; then
-            rm -rf "$HOME/echoType"
-            git clone https://github.com/wkqslzd/echoType.git "$HOME/echoType"
-          fi
-          cd "$HOME/echoType"
-          git fetch --all --prune
-          git checkout -f ${{ github.sha }}
+          # Build the Run Command payload. Quoted heredoc => the runner does not
+          # expand $REPO_DIR (it runs on the instance); GitHub still substitutes ${{ }}.
+          cat > /tmp/ssm-params.json <<'JSON'
+          {
+            "commands": [
+              "set -e",
+              "REPO_DIR=/opt/echotype",
+              "if [ ! -d \"$REPO_DIR/.git\" ]; then rm -rf \"$REPO_DIR\"; git clone https://github.com/wkqslzd/echoType.git \"$REPO_DIR\"; fi",
+              "git config --global --add safe.directory \"$REPO_DIR\"",
+              "cd \"$REPO_DIR\"",
+              "git fetch --all --prune",
+              "git checkout -f ${{ github.sha }}",
+              "bash deploy/remote-deploy.sh ${{ env.AWS_REGION }} ${{ steps.ec2.outputs.public_ip }}"
+            ]
+          }
+          JSON
 
-          # 2) Write the deploy env file from CI-provided secrets/vars.
-          cat > deploy/.env <<'ENV'
-          DATABASE_URL=${{ secrets.DATABASE_URL }}
-          DEMO_USER_ID=demo-user
-          API_PORT=3001
-          WEB_ORIGIN=http://${{ vars.EC2_HOST }}
-          ENV
+          CMD_ID=$(aws ssm send-command \
+            --instance-ids "${{ steps.ec2.outputs.instance_id }}" \
+            --document-name "AWS-RunShellScript" \
+            --comment "deploy ${{ github.sha }}" \
+            --parameters file:///tmp/ssm-params.json \
+            --query 'Command.CommandId' --output text)
+          echo "SSM command: $CMD_ID"
 
-          # 3) Build + run (entrypoint runs prisma migrate deploy + seed, then starts).
-          docker compose -f deploy/docker-compose.cloud.yml --env-file deploy/.env up -d --build
-          docker image prune -f
-          EOF
+          STATUS="Pending"
+          for i in $(seq 1 60); do
+            STATUS=$(aws ssm get-command-invocation \
+              --command-id "$CMD_ID" \
+              --instance-id "${{ steps.ec2.outputs.instance_id }}" \
+              --query 'Status' --output text 2>/dev/null || echo "Pending")
+            echo "attempt $i: $STATUS"
+            case "$STATUS" in
+              Success|Failed|Cancelled|TimedOut) break ;;
+            esac
+            sleep 10
+          done
+
+          echo "----- stdout (truncated by SSM to ~2500 chars) -----"
+          aws ssm get-command-invocation --command-id "$CMD_ID" \
+            --instance-id "${{ steps.ec2.outputs.instance_id }}" \
+            --query 'StandardOutputContent' --output text || true
+          echo "----- stderr -----"
+          aws ssm get-command-invocation --command-id "$CMD_ID" \
+            --instance-id "${{ steps.ec2.outputs.instance_id }}" \
+            --query 'StandardErrorContent' --output text || true
+
+          test "$STATUS" = "Success"
 
       - name: Health check (fail = fail, no rollback)
         run: |
+          IP="${{ steps.ec2.outputs.public_ip }}"
           for i in $(seq 1 20); do
-            if curl -fsS --max-time 5 "http://${{ vars.EC2_HOST }}/health" | grep -q '"ok":true'; then
+            if curl -fsS --max-time 5 "http://$IP/health" | grep -q '"ok":true'; then
               echo "Health OK"
-              curl -fsS "http://${{ vars.EC2_HOST }}/courses" || true
+              curl -fsS "http://$IP/courses" || true
               exit 0
             fi
             echo "waiting for backend... attempt $i"

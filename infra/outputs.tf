@@ -8,9 +8,19 @@ output "ec2_public_dns" {
   description = "Public DNS of the Elastic IP."
 }
 
-output "ssh_command" {
-  value       = "ssh -i ~/.ssh/echotype_ec2 ec2-user@${aws_eip.app.public_ip}"
-  description = "Ready-to-use SSH command."
+output "instance_id" {
+  value       = aws_instance.app.id
+  description = "EC2 instance ID (SSM Run Command / Session Manager target)."
+}
+
+output "github_actions_role_arn" {
+  value       = aws_iam_role.github_deploy.arn
+  description = "Set this as the GitHub repo variable AWS_ROLE_ARN."
+}
+
+output "ssm_session_command" {
+  value       = "aws ssm start-session --target ${aws_instance.app.id} --region ${var.region}"
+  description = "Break-glass shell access via SSM Session Manager (no SSH, no port 22)."
 }
 
 output "rds_endpoint" {

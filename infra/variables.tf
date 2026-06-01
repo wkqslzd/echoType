@@ -30,12 +30,14 @@ variable "private_subnet_cidrs" {
 
 variable "my_ip_cidr" {
   type        = string
-  description = "Your home public IP in CIDR form (e.g. 1.2.3.4/32). Allowed to reach EC2 on ports 22 and 80."
+  default     = ""
+  description = "Retained for reference only. Port 22 is now closed entirely; access is via SSM Session Manager. No longer used by any resource."
+}
 
-  validation {
-    condition     = can(cidrnetmask(var.my_ip_cidr))
-    error_message = "my_ip_cidr must be a valid CIDR, e.g. 1.2.3.4/32."
-  }
+variable "github_repo" {
+  type        = string
+  default     = "wkqslzd/echoType"
+  description = "GitHub repo (owner/name) allowed to assume the deploy role via OIDC."
 }
 
 variable "public_key_path" {
