@@ -48,7 +48,8 @@ jobs:
           set -euo pipefail
 
           # Build the Run Command payload. Quoted heredoc => the runner does not
-          # expand $REPO_DIR (it runs on the instance); GitHub still substitutes ${{ }}.
+          # expand $REPO_DIR (it runs on the instance); GitHub still injects its
+          # expression values before the shell runs.
           cat > /tmp/ssm-params.json <<'JSON'
           {
             "commands": [
