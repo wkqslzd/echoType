@@ -257,6 +257,8 @@ function hasOverlap(newStart, newEnd, existingAnnotations) {
 - 太长就省略；
 - 用户 hover 或 click 后弹出完整注释。
 
+> **修订自 Phase 2.0 实测，2026-06-03**：上面的「字号在 default 与 11px 之间动态收缩」是原始意图，保留作记录。实测简化为 **固定字号 12px**（满足 ≥ 11px 下限），装不下直接 CSS `ellipsis` 截断 + 整个注释区域 hover 显示完整 tooltip，**不做动态收缩**。理由：per-note 动态测量代价高——resize 时测量开销随注释条数线性放大（20 条注释 ≈ 80x 测量），而用户对字号微调差异的感知极低，收益与代价不成比例。其余不变：注释预览仍最多 2 行。
+
 10. 如果那一行没有任何注释，对应的“注释行”整行自动隐藏。”注释行“的特殊性质： 如果检测某一行“文本行”所对应的“注释行” 是空的。 这些空行”注释行”自动隐藏。 - 检测的动作只能发生在前端，是视觉为空的“注释行”删除。 技术实现上：
 
     **无注释的行 / 注释层布局**
@@ -267,6 +269,12 @@ function hasOverlap(newStart, newEnd, existingAnnotations) {
     - **Storage**: Annotations are stored only as global character-index ranges (`startIndex` / `endIndex`); no line or column position is ever persisted. Visual line breaks are recomputed on every render.
     - **Empty-line behavior**: When a visual line has no annotation rectangle above it, no vertical space is reserved for annotations on that line — the annotation slot for that line collapses to zero height.
     - **Note text placement (cross-line)**: For an annotation spanning multiple visual lines, the note text is rendered above the first rectangle (`rects[0]`); the remaining fragments render highlight only.
+
+    > **修订自 Phase 2.0 实测，2026-06-03**：跨行时注释文字落点细化为三级规则（其余被跨越的片段仍只画高亮、不画文字，避免视觉冗余）：
+    >
+    > 1. **默认**：注释文字浮在 `rects[0]`（第一个矩形片段）上方。
+    > 2. **Fallback**：如果 `rects[0]` 的宽度 < 该注释完整锚段宽度的 **50%**（即首片段被切得过窄），则改为浮在所有 `rects` 中**宽度最大**的那一个片段上方，让文字获得最大可用空间，而不是挤在小碎片上。
+    > 3. **最终兜底**：即使最宽片段也装不下完整注释（2 行 + 12px 仍溢出），使用 CSS `ellipsis` 截断 + 整个注释区域 hover 显示完整 tooltip（沿用第 9 条的 tooltip 机制）。
 
 #### 修订后的视觉模型(从 walking skeleton 实测获得)
 
