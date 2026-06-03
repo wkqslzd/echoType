@@ -40,7 +40,7 @@ EchoType — Repeat, type, and remember meaningful English texts（主slogan）/
 
 用户可以一开始输入自己要打什么的文本（接入语法纠正接口-比如AI语法修正-保证英文语法上是正确的-先不做！），然后可以输入注释（这就要求用户输入的文本每一行固定位置，让注释能准确对应用户想要的地方）。
 
-一些很适合的文本： 1， 飞鸟集；  2，名人名言 ； 3， 英文圣经的箴言 ； 3， 英文美散文美短文 eg： 《younth》- Samuel Ullman；《Gettysburg Address》-Abraham Lincoln ； 4， 英文习语；
+一些很适合的文本： 1， 飞鸟集；  2，名人名言 ； 4， 英文圣经的箴言 ； 5， 英文美散文美短文 eg： 《younth》- Samuel Ullman；《Gettysburg Address》-Abraham Lincoln ； 6， 英文习语；
 
 ---
 
@@ -89,7 +89,7 @@ EchoType — Repeat, type, and remember meaningful English texts（主slogan）/
 
 **展示解决一个有趣的工程问题**：锚点稳定性、文本编辑后的 reanchor、UI 渲染、跨行处理 —— 自定义注释功能是最核心功能！
 
-**Walking Skeleton**：最小的端到端：  登陆→ 新建或选择一个“练习文本（课程）“ → 进入打字界面打字 → 数据存进数据库。
+**Walking Skeleton**：最小的端到端：  （demo user）→ 新建或选择一个“练习文本（课程）“ → 进入打字界面打字 → 数据存进数据库。
 
 
 ---
@@ -98,7 +98,7 @@ EchoType — Repeat, type, and remember meaningful English texts（主slogan）/
 
 1. 进入网站
 2. 登陆账户 
-3. 选择模式—— 简短模式/ 文章模式 
+3. 网页首页选择模式—— 简短模式/ 文章模式 
 4. 进入模式界面
 5. “模式界面”有2种模式： 简短模式/ 文章模式 
 6. 2种模式分开打开单独的界面 -  简短“模式界面”/ 文章“模式界面” 
@@ -120,7 +120,7 @@ EchoType — Repeat, type, and remember meaningful English texts（主slogan）/
 22. 如果用户选了“定时”，用户设定“定时时间（分钟/小时 - 两种计量单位-最多2小时）”-打字界面的“session计算统计”倒计时
 23. 如果用户选了“不用”，-打字界面的“session计算统计”是开始累积算时间
 24. “session定时是否card” 选择完毕后，用户进度“打字界面”
-25. 打字界面： 3行- 文本行/ 注释行/ 打字输入行； 打字输入行和文本行要check，不对地方标红。以此来计算正确率。 关于注释行（注释层的技术实现见“注释定位的流程设计/ 技术解决方案 ”部分第 10 条：overlay，非固定行）
+25. 打字界面： 3行- 文本行/ 注释行/ 打字输入行； 打字输入行和文本行要check，不对地方标红。以此来计算正确率。 关于注释行（注释层的技术实现见“注释定位的流程设计/ 技术解决方案 ”部分第 10 条：overlay，非固定行） **两行平行（**注释层**(overlay,顶层)和**文本层**(用户阅读的目标文本)） + 一行独立（**输入框**(底部固定单行)）**:
 26. 打字允许使用“backspace”键去退格修正
 27. 打完当前“练习文本（课程）“自动循环，一直无限连, 让用户没有中断感"
 28. 停止的条件： 1， 用户自动关闭 ； 2， 如果用户在 “session定时是否card”选了“定时”， 打字界面的“session计算统计”倒计时结束后通过弹出一个“结束提示弹窗popup”来结束。
@@ -145,26 +145,35 @@ EchoType — Repeat, type, and remember meaningful English texts（主slogan）/
 2. 编辑窗口1:  “课程名称”（标题）和 “文本内容”两个输入框  - 必须填- 做必要输入检测
 3. 编辑窗口2: 根据用户在编辑窗口1输入的“文本内容”，tranfer为“打字界面”会显示的“文本行”。下面有一个2选一按钮（必选）：“是否需要输入注释”， 如果选择”NO“， 直接跳过编辑窗口3，进入编辑窗口4
 4. 如果选”是“，进入编辑窗口3
-5. 编辑窗口3: 在编辑窗口2展现的“文本行”上，每一行上都平行出一行“注释行”， 用户先通过，选择“文本行”上的“锚字符-起点” 和 “锚字符-终点”界定出“单位注释空间”； 然后在“单位注释空间”上输入“注释”文本； 过程是1：1对应的，先界定一个“单位注释空间”，再在这个“单位注释空间”输入，做输入检查，然后才能去界定下一个“单位注释空间”。
+5. 编辑窗口3: 在编辑窗口2展现的"文本行"上方,**显示注释 overlay 层**(overlay 由 getClientRects 实测渲染,详见 “### 注释定位的流程设计/ 技术解决方案 ”第 10 条)。用户先通过选择"文本行"上的"锚字符-起点"和"锚字符-终点"界定出"单位注释空间";然后在"单位注释空间"上输入"注释"文本;过程是 1:1对应的,先界定一个"单位注释空间",再在这个"单位注释空间"输入,做输入检查,然后才能去界定下一个"单位注释空间"。
 6. 编辑窗口3: “单位注释空间”可以单独删除和编辑，如果删除这个 “单位注释空间”里的“注释”文本也会全部连带删除。 “单位注释空间”编辑：通过用户自己去改变“锚字符-起点” 和 “锚字符-终点”控制长度。
-6. 编辑窗口3做整体必要输入检测，如果发现没有出现“注释”文本，不通过。 注意：是检测“注释”文本是否为空，而不是检测是否有“单位注释空间”，因为有“单位注释空间”但没输入任何“注释”文本是违法行为。
-7. 编辑窗口4： 为用户展示： “文本行”和“注释行”整体呈现。 让用户检查，自己输入的注释，是否出现在想要的位置；让用户自己判断，自己界定的“单位注释空间”长度是否足够。
-8.  用户操作完成后，点击，”练习文本（课程）编辑界面“最下面的“确认”按钮后， 系统再次检测输入完整性
-9.  检测不通过，让用户修正，还是用“确认”按钮retry， 直到检测通过， 这个“练习文本（课程）” 完整存储到数据库（新建或刷新）。
+7. 编辑窗口3做整体必要输入检测，如果发现没有出现“注释”文本，不通过。 注意：是检测“注释”文本是否为空，而不是检测是否有“单位注释空间”，因为有“单位注释空间”但没输入任何“注释”文本是违法行为。
+8. 编辑窗口4： 为用户展示： “文本行”和“注释行”整体呈现。 让用户检查，自己输入的注释，是否出现在想要的位置；让用户自己判断，自己界定的“单位注释空间”长度是否足够。
+9. 用户操作完成后，点击，”练习文本（课程）编辑界面“最下面的“确认”按钮后， 系统再次检测输入完整性
+10. 检测不通过，让用户修正，还是用“确认”按钮retry， 直到检测通过， 这个“练习文本（课程）” 完整存储到数据库（新建或刷新）。
 
 
 ---
 ### “简短模式“ 和  “文章模式”的界定
-如果你允许用户放进几万字文章，前端逐字符渲染、逐字符高亮、注释定位都会变重。
+容器=用户选（），长度=对该容器内容的 validate
+
+风险： 如果允许用户放进几万字文章，前端逐字符渲染、逐字符高亮、注释定位都会变重。
 
 MVP ：
 
 ```text
-Short mode: 20–500 characters
-Article mode: 501–5,000 characters
+Short mode: 20–200 characters
+Article mode: 201–5,000 characters
 ```
 
-超过 5,000 字时提示用户拆分。
+文章模式超过 5,000 字时提示用户拆分（文章模式下，包含字符最长也只能有5000 characters）
+
+
+**例子： 当用户在「简短模式」容器里输入了 800 字符，是报错，并提示用户应该去文章模式** 技术解决方式：  `mode` 字段就走「用户选择」，长度只做 server side 校验，违规返回 422。
+
+
+edge： 如果用户有个5050字的文章， 我们提示拆分，按照我的模式的validate，会变成一个4900字的文章模式的练习文本（课程）+150字的简短模式的练习文本（课程）。 一个文章被分到了2个模式，不利于后面我们做album功能的归类。 如何解决？ 还是说这本来不是一个技术问题，而是属于用户责任？
+Future use case: 一篇长文本被拆成多个'练习文本(课程)'后,user can manually create an album to group them together. This is the application-layer solution to the '5000-char split' problem; MVP makes no attempt to handle the split automatically.（clarify long-text split as user responsibility + future album slot）
 
 
 ---
@@ -172,10 +181,25 @@ Article mode: 501–5,000 characters
 ###  ”打字界面“ 的功能要求和UI描述
 
 #### 基本UI描述
-有3行，且3行完全平行， 从上到下按照如下123顺序：
-1.“注释行”（这里是和其他打字网站/软件不一样的地方）（注释层的技术实现见“注释定位的流程设计/ 技术解决方案 ”部分第 10 条：overlay，非固定行）
-2.“文本行”
-3.“打字行”
+
+打字界面从上到下三层,但只有上两层是"对齐"的:
+
+1. **注释层**(overlay,顶层)
+   - 由 getClientRects 绝对定位,覆盖在文本层之上的指定字符上方
+   - 空行收缩(没有注释的视觉行不预留注释空间)
+   - 注释文字 + 高亮背景,跨行时见第 10 条规则
+   
+2. **文本层**(用户阅读的目标文本)
+   - 每个字符独立 span,带 data-idx
+   - **红绿状态直接渲染在字符上**:打对绿色 / 打错红色 / 未打默认色
+   - 这是和其他打字软件不一样的地方:注释 overlay 让这个项目有差异化
+
+3. **输入框**(底部固定单行)
+   - 接收键盘事件
+   - 不显示任何状态(用户视线不应该在这里)
+   - 视觉上简单的输入框即可,允许 backspace 退格修正
+
+下方有"打字界面数据统计 bar"和"打字界面功能操作 bar"
 
 ”注释行“的特殊性质： 如果检测某一行“文本行”所对应的“注释行” 是空的。 这些空行”注释行”自动隐藏。
 
@@ -239,12 +263,24 @@ function hasOverlap(newStart, newEnd, existingAnnotations) {
 
     如果某视觉行上方没有任何注释，则该行不预留注释空间（行高动态收缩）。
 
-    - **Visual model**: Users perceive the typing area as three aligned layers — annotation layer (top), source text layer (middle), input layer (bottom).
     - **Technical model**: The annotation layer is an absolutely positioned overlay above the source text layer. It is **not** a fixed per-line row. Annotation rectangles are positioned at render time via `Range.getClientRects()`, which returns one rectangle per visual line fragment and handles line-wrapping automatically.
     - **Storage**: Annotations are stored only as global character-index ranges (`startIndex` / `endIndex`); no line or column position is ever persisted. Visual line breaks are recomputed on every render.
     - **Empty-line behavior**: When a visual line has no annotation rectangle above it, no vertical space is reserved for annotations on that line — the annotation slot for that line collapses to zero height.
     - **Note text placement (cross-line)**: For an annotation spanning multiple visual lines, the note text is rendered above the first rectangle (`rects[0]`); the remaining fragments render highlight only.
 
+#### 修订后的视觉模型(从 walking skeleton 实测获得)
+
+**两行平行 + 一行独立**:
+
+- **注释层(annotation layer)**:overlay,绝对定位在文本层之上， 由 `Range.getClientRects()` 实测渲染,跨行自动拆分。空行收缩。
+- **文本层(source text layer)**:用户的目标文本,**红绿状态直接渲染在原文字符上**(打对的字符变绿,打错变红,未打过的保持默认色)。
+- **输入框(input element)**:位于打字界面最下方,固定一行高度, 不显示任何字符状态,只承担键盘事件接收的作用。用户视线焦点在文本层,输入框只是"敲字的地方"。
+
+注释层和文本层必须**字符级像素对齐**(共用同一容器宽度 / 字体 / 字号)。
+输入框独立,不参与对齐。
+
+注:此设计在 walking skeleton 实测后确立。原设计为"三行平行"(注释行 / 文本行 / 输入行三层都对齐),实际体验发现输入行没必要和文本行对齐——用户视线本就不在输入行。改成现在的模型后,视觉
+更干净、实现更简单。
     
 
 11. 锚字符的本质是"位置"不是"字符"，文本里提到的"锚字符"技术上存的不是字符本身，是它在 source string 里的 index。也就是 {startIdx: 5, endIdx: 12, annotation: "悲哀"}。这没问题—— index 思维
@@ -278,7 +314,7 @@ type Annotation = {
 不要把数据库设计成“锚字符实体”。锚字符只是用户交互概念，不应该变成复杂数据结构。
 
 
-13. 关于注释的精确显示： 注释行、文本行、打字输入行三行完全平行。
+13. 关于注释的精确显示： 
     如果你用普通 proportional font，比如 Arial、Inter、Roboto，不同字符宽度不一样：
 
 ```text
@@ -444,12 +480,71 @@ type Annotation = {
 ---
 
 ### authentication
-这个web整体2种浏览模式 - ”不登陆的浏览模式“ / “登陆账号模式”
+1. 这个web整体2种浏览模式 - ”不登陆的浏览模式“ / “登陆账号模式”
 账户登陆账户方式 - google账户直接登陆 / 普通邮箱 2种方式直接登陆
 区别： 登陆后的模式可以看到自己账户下的存储的“练习文本（课程）”
 
 "不登录浏览模式"和“登陆模式”的区别在于，新建的“练习文本（课程）”是临时的，不会存储，因为存储是base账号的，没有账号登陆，当然无法存储。不登录用户能看到我们一开始写入的示例文本
 
+未登录浏览
+- 可看预置示例文本,可临时打字练习
+- 新建/编辑的"练习文本(课程)"刷新即丢,不入库
+- 所有持久化数据(课程、注释、统计)只属于登录用户
+
+2. Authentication identity model
+两种登录路径(MVP 都做)
+- Google 登录(Cognito federated IdP)
+- 邮箱 + 密码登录(Cognito built-in user pool,默认邮件验证)
+
+
+Identity Model(应用层身份模型)：
+Both login paths (Google federation, email+password) go through 
+Cognito, but Cognito assigns different internal `sub` IDs for 
+the two paths even for the same person.
+
+**Application-layer identity rule**:
+- The database `User` table uses `email` as the unique identifier.
+- The Cognito `sub` is treated as a per-session token, NOT persisted.
+- On each authenticated request, the backend extracts `email` from 
+  the verified JWT and does `upsert` by email.
+
+This means:
+- Same person using Google login + email password (same email)
+  → resolved to a single application user. ✅
+- Same person using two different emails 
+  → two separate application users (by design — they chose to).
+
+结果:
+用户用邮箱密码登录 → email = denny@example.com → 找到 user
+同一个人用 Google 登录(Google 邮箱也是 denny@example.com)→ email 相同 → 找到同一个 user ✅
+
+这就是用 email 把两条路径合并。
+
+
+MVP 必做:
+- Cognito User Pool + Google federated IdP 配置
+- 登录 / 登出 UI
+- 邮箱密码 sign up(走 Cognito 默认邮件验证 OTP)
+- 后端 JWT 验证 middleware + email-based user upsert
+
+MVP 留 slot(不做):
+- 忘记密码流程(MVP 阶段用户联系作者在 Cognito console 手动重置)
+- 修改密码 / 修改邮箱 UI
+- 账户删除
+- 邮件模板定制(用 Cognito 默认即可)
+- 多设备 session 管理 / 强制下线
+
+
+
+3.  Real-user readiness checklist 
+
+- Cognito 邮件验证必须开(防机器人注册堆垃圾账号)
+- 简单 rate limiting(防止有人恶意刷 API,Fastify 加 @fastify/rate-limit 几行代码)
+- Sentry 接上(出 bug 你能看到)
+- README / 网站底部加一行免责声明:
+  "This is a personal portfolio project. Data may be lost. 
+   Email <你的联系方式> to delete your account."
+- 一个 GDPR-lite 的承诺:用户写邮件来,你 24 小时内手动删账户
 
 
 ---
@@ -584,8 +679,8 @@ Cloud:       EC2 free tier + RDS free tier（= t4g.micro EC2 + db.t4g.micro RDS 
 ### 界面和componet的list （有哪些page和popup和可见的component）
 
 
-1. “网页首页”
-2. “模式界面” - 2种
+1. “网页首页” - 有2个button：简短模式/ 文章模式 - 点击进去分别进入不同的“模式界面”
+2. “模式界面” - 有2种：简短“模式界面”/ 文章“模式界面”
 3. “练习文本（课程）card” ： 上面有“课程名称”（标题）；“正文文本”漏头节选；总循环次数（来自“练习文本（课程）累积总数据“）；总session时长（来自“练习文本（课程）累积总数据“） ；最新练习时间（来自“练习文本（课程）累积总数据“） 
 4. “session定时是否card” - 一个popuo弹窗
 5. popup弹窗操作界面 ”练习文本（课程）编辑界面“
@@ -625,6 +720,7 @@ Cloud:       EC2 free tier + RDS free tier（= t4g.micro EC2 + db.t4g.micro RDS 
 4. **窗口失焦**：用户切走 5 分钟再回来，只要用户没有在11“打字界面功能操作bar”上进行“暂停”操作，就是自动统计的。
 5. **退格穿越**：用户能退格回到上一行修正， 最多退回到本次文本循环的文本起点。 但是”打字界面数据统计bar“是线性统计的，退格穿越的话，时间也是增加累积的，也就是意味着打字速度统计上会变慢。
 6. **退格穿越的边界极限**： 只能在这个文本循环里，不能退回到上个文本循环。
+
 7. **输入法干扰（IME）**：目标用户是非英语母语，他们电脑上**很可能装着中文/日文/韩文输入法**——这会导致输入英文时跳出候选框、变成全角字符、产生 composition events。这对"无延迟打字"是致命的
 不要试图屏蔽，**检测并提醒**就好：
 
@@ -636,6 +732,31 @@ inputEl.addEventListener('compositionstart', () => {
 ```
 
 你目标用户是中文母语者，他们知道这个问题，提示就够了。强行 `ime-mode: disabled` 在新浏览器已经废弃，不可靠。
+
+「IME 暂停」的恢复条件： 唯一可靠的信号:用户重新敲出合法字符
+IME(输入法)干扰处理:
+	1. compositionstart 事件 → 暂停 session,显示提示 banner: "Detected non-English input method. Please switch to English keyboard and resume typing."
+
+	2. compositionend 事件 → banner 弱化为"等待英文输入..."状态, session 保持暂停(因为compositionend 不代表用户切回了英文)。
+	
+	3. 检测到合法英文输入(input 事件 + ASCII 字符 + 非合成态) → banner 消失,session 自动恢复,该字符正常计入统计。
+	
+	设计原理:JavaScript 无法直接探测"用户切换输入法"事件,唯一可靠的"用户已切回英文"信号是检测到合法英文输入。这与"手动暂停后开始输入自动恢复"逻辑一致。
+
+
+	暂停期间 banner 怎么显示：
+	把 banner 行为细化:
+  compositionstart → 显示 banner(红色/橙色,顶部固定),暂停 session
+  compositionend   → banner 改成"已检测到合成结束,等待英文输入..."(灰色),仍暂停
+  检测到合法英文输入 → banner 消失,session 恢复
+  为什么这样设计:
+
+  compositionstart 时,用户在用中文输入法——banner 强提示
+  compositionend 时,不确定用户切没切——banner 不消失,但弱化为"等待"状态
+  真正的英文输入——才是恢复信号
+
+  这给用户一个明确的反馈循环:看到 banner → 知道要切输入法 → 切完敲字 → banner 消失 → 知道恢复了。
+
 
 
 8. 粘贴行为：用户在打字行 Ctrl+V 粘贴整段答案，统计上如何处理
