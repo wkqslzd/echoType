@@ -1,4 +1,10 @@
-import type { CourseDTO, CreateCourseInput, CreateSessionInput, SessionDTO } from '@echotype/shared';
+import type {
+  CourseDTO,
+  CreateCourseInput,
+  UpdateCourseInput,
+  CreateSessionInput,
+  SessionDTO,
+} from '@echotype/shared';
 
 const BASE = '/api';
 
@@ -22,6 +28,8 @@ export const api = {
   getCourse: (id: string) => request<CourseDTO>(`/courses/${id}`),
   createCourse: (input: CreateCourseInput) =>
     request<CourseDTO>('/courses', { method: 'POST', body: JSON.stringify(input) }),
+  updateCourse: (id: string, input: UpdateCourseInput) =>
+    request<CourseDTO>(`/courses/${id}`, { method: 'PUT', body: JSON.stringify(input) }),
   createSession: (input: CreateSessionInput) =>
     request<SessionDTO>('/sessions', { method: 'POST', body: JSON.stringify(input) }),
   listSessions: (courseId?: string) =>
