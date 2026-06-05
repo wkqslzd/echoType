@@ -1,0 +1,60 @@
+---
+description: EchoType workflow gates — design-first, scope control, and two-step user approval before git actions
+alwaysApply: true
+---
+
+# Workflow Gates
+
+These gates apply to every task in this repo. When a gate blocks progress, stop and ask — do not improvise past it.
+
+## Design before code
+
+**Do** answer design questions by:
+1. State the proposed approach
+2. List trade-offs and alternatives
+3. Ask 2–5 specific discrete decisions if the design has them
+4. Wait for explicit user approval ("go", "OK start coding", etc.) before writing any code
+
+**Don't** proceed to code while the user is still considering options, or bundle "here is my plan" with a full diff in the same turn unless the user asked for both.
+
+**When** the task is non-trivial (new feature, multi-file change, UX flow, API contract, or architectural choice), design-first is mandatory. When in doubt about whether a task is non-trivial, ask the user first instead of guessing. "Trivial" is judged from the user's risk perspective, not from code line count.
+
+**Why:** EchoType phases are gated (Phase 2 → 3 → 4). The追问 mechanism is proven; shipping the wrong shape costs more than one review round.
+
+## Scope control
+
+**Do** change only files and behavior required by the current, user-approved scope. Match existing naming, types, and patterns in surrounding code.
+
+**Don't** refactor, rename, reformat, or "improve" unrelated code; don't add tests, docs, or tooling the user did not request.
+
+**Why:** Small, reviewable diffs keep phase boundaries honest and make regressions easy to spot.
+
+## When scope must grow
+
+**Do** stop, explain what extra work is needed and why, and wait for user approval before touching those files.
+
+**Don't** expand scope silently because it "seems helpful" or "will only take a minute."
+
+**Why:** Unrequested changes erode trust and bypass the user's phase plan.
+
+## Two-step git gate (summary)
+
+**Do** treat git writes as gated actions:
+1. Show `git diff --stat` (or equivalent scope summary)
+2. End your current turn — do NOT continue with commit commands
+3. Wait for the user's NEXT message containing explicit approval
+4. Commit only after this new approval
+5. End the turn again — wait for a SEPARATE new message with push approval
+6. Push only after this second new approval
+
+**Don't** chain diff → commit → push in one turn. "Stop" means end the turn; do not preemptively run `git commit` while drafting the response. Even if the user's message contained "commit and push", treat it as two-step intent: still wait for a new message after showing the diff.
+
+**Why:** The user must reject or adjust scope before history is written or published. Details live in `git-commit-push.mdc`.
+
+## Stop conditions
+
+**Do** report blockers, failed checks, or ambiguous requirements immediately and pause.
+
+**Don't** debug silently for a long stretch or commit/push to "unblock" yourself.
+
+**Why:** Early stops are cheaper than reverting bad commits or re-litigating scope.

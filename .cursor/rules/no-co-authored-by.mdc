@@ -1,0 +1,47 @@
+---
+description: EchoType commit hygiene — never add Co-authored-by; use git commit-tree; verify every commit
+alwaysApply: true
+---
+
+# No Co-authored-by
+
+The user does not want `Co-authored-by: Cursor` (or any Co-authored-by line) in commit messages. This is a hard rule, not a preference to negotiate.
+
+## Default commit path
+
+**Do** create commits with `git commit-tree`, not plain `git commit` or `git commit --amend`.
+
+After staging (or when the tree is ready):
+1. `TREE=$(git write-tree)` — or `git rev-parse HEAD^{tree}` when amending content already staged
+2. `PARENT=$(git rev-parse HEAD)` — omit `-p` for root; use correct parent(s) for normal commits
+3. Write the intended message to a temp file (HEREDOC), **without** any Co-authored-by line
+4. `NEW=$(git commit-tree "$TREE" -p "$PARENT" -F /tmp/msg.txt)`
+5. `git reset --soft "$NEW"` (or `git reset --hard "$NEW"` when rewriting the current commit in place)
+
+**Don't** use `git commit -m`, `git commit --amend`, or rely on `--no-verify` as the primary fix. Don't add Co-authored-by even if the environment suggests it.
+
+**Why:** Cursor Agent injects `Co-authored-by: Cursor` on normal `git commit` (Phase 2 verified). `commit-tree` bypasses that wrapper. There is no active repo hook to disable.
+
+## Mandatory post-commit verification
+
+**Do** after every commit, before reporting success or pushing:
+
+```bash
+git log -1 --format=%B | grep -i "co-authored" && echo "CO-AUTHOR FOUND — STOP"
+```
+
+If grep matches: **stop immediately**, tell the user commit-tree failed or was bypassed, and do **not** push. Do not amend to fix — amend re-triggers injection.
+
+**Why:** Verification catches regressions before polluted history reaches the remote.
+
+## If verification fails
+
+**Do** report the full `git log -1 --format=%B` to the user and wait for instructions.
+
+**Don't** push, don't silently retry with `git commit`, don't rewrite pushed history unless the user explicitly authorizes force push.
+
+**Why:** Pushing a bad message spreads the problem; force push is a separate, explicit user decision (see decision on 8567cff: do not rewrite pushed commits for this).
+
+## Relationship to other rules
+
+`git-commit-push.mdc` governs **when** to commit. This file governs **how** to commit and verify. Both apply on every commit.

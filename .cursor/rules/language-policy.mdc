@@ -1,0 +1,48 @@
+---
+description: EchoType language policy — English for code/UI/commits; Chinese for kickoff doc and seed noteText
+alwaysApply: true
+---
+
+# Language Policy
+
+EchoType uses a deliberate split: product-facing engineering artifacts in English; Chinese where the spec or demo data calls for it.
+
+## Code and comments
+
+**Do** write identifiers, UI strings, error messages, validation copy, and code comments in English.
+
+**Don't** mix Chinese into TypeScript/TSX source, API error bodies, or `annotationMessages.ts`-style user-facing strings unless the user explicitly requests a locale change.
+
+**Why:** The web app and API are English-first; mixed-language source makes review and grep harder.
+
+## Commit messages and PR text
+
+**Do** write commit messages, PR titles, and PR bodies in English.
+
+**Don't** use Chinese in git history or GitHub PR descriptions for this repo unless the user asks for a specific exception.
+
+**Why:** Commit history is shared engineering record; English keeps it consistent with the codebase.
+
+## docs/project-kickoff.md
+
+**Do** write and edit `docs/project-kickoff.md` in Chinese, matching the existing spec voice.
+
+**Don't** translate kickoff sections to English or rewrite Chinese spec prose into English without user approval.
+
+**Why:** Kickoff is the Chinese product/spec source of truth; English code implements it, not replaces it.
+
+## Seed and demo annotation text
+
+**Do** keep `noteText` in seed data and demo annotations in Chinese when that is the intended learning content (e.g. bilingual glosses).
+
+**Don't** anglicize seed `noteText` for "consistency" if the demo is meant to show Chinese notes above English source text.
+
+**Why:** Seed notes model real user content; Chinese notes on English passages are a valid product scenario.
+
+## Agent replies to the user
+
+**Do** follow the user's conversation language preference (Chinese replies when the user writes in Chinese).
+
+**Don't** let chat language bleed into code commits or UI strings — replying in Chinese does not mean committing Chinese UI copy.
+
+**Why:** Conversation language and artifact language are separate concerns.

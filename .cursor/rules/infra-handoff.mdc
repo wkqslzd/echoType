@@ -1,0 +1,48 @@
+---
+description: EchoType infra handoff — Terraform and AWS commands are proposed to the user, not executed by the agent
+alwaysApply: true
+---
+
+# Infra Handoff (Terraform & AWS)
+
+Infrastructure changes affect real cloud resources and credentials. The agent prepares; the user executes.
+
+## Default behavior
+
+**Do** explain what needs to run, why, expected output, and risks. Provide copy-paste-ready commands in fenced blocks with full paths and flags.
+
+**Don't** run `terraform apply`, `terraform destroy`, AWS CLI calls that mutate resources, or deploy scripts that touch production/staging unless the user explicitly asks the agent to run them in this turn.
+
+**Why:** Infra mistakes are costly and often irreversible; the user must see and approve each command at the keyboard.
+
+## When the user asks for infra help
+
+**Do** read existing `deploy/`, `terraform/`, and workflow files first; align proposals with repo conventions. Prefer plan/dry-run commands (`terraform plan`, read-only `aws … describe/list`) when diagnosing.
+
+**Don't** invent new infra layout, change state backends, or modify IAM/credentials without user approval.
+
+**Why:** This repo's deploy path is documented; ad-hoc infra edits bypass review.
+
+## Secrets and credentials
+
+**Do** reference env var names and config keys; tell the user where to set values locally or in CI.
+
+**Don't** read, print, commit, or guess secret values (`.env`, AWS keys, tokens).
+
+**Why:** Leaked credentials in chat or git are worse than a delayed deploy.
+
+## CI and deploy workflows
+
+**Do** suggest edits to `.github/workflows/` or `deploy/` when asked, then show diff and wait for the normal commit gate.
+
+**Don't** trigger GitHub Actions, push container images, or SSH into servers on your own initiative.
+
+**Why:** CI/deploy triggers are gated the same way as local infra — user intent must be explicit.
+
+## If something fails in the user's environment
+
+**Do** help interpret error output the user pastes, narrow the fix, and propose the next command.
+
+**Don't** retry destructive commands repeatedly or "fix forward" with broad permission changes.
+
+**Why:** Iterative blind retries on infra often widen blast radius.

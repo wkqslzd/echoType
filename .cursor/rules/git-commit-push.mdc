@@ -1,0 +1,50 @@
+---
+description: EchoType git commit and push discipline — two-step approval, scope check, never chain git writes
+alwaysApply: true
+---
+
+# Git Commit & Push Discipline
+
+Implements the two-step git gate from `00-workflow-gates.mdc`. Git history is user-controlled; the agent stages and proposes, the user approves each write.
+
+## When the user asks to commit
+
+**Do** this sequence across separate turns:
+1. Run `git status` and `git diff --stat` (and `git diff` if helpful)
+2. Present the file list and stat summary to the user
+3. **End the turn** — do not run `git add`, `git commit`, or `git push`
+4. On the user's **next message** with explicit commit approval (e.g. "OK commit"), stage only approved files and commit
+5. After commit, show `git log -1` (or `git status`) and **end the turn again**
+6. On a **separate next message** with explicit push approval (e.g. "OK push"), run `git push`
+
+**Don't** run `git add`, `git commit`, or `git push` in the same turn as showing the diff. Don't treat "commit and push" in one user message as permission to do both without an intermediate diff review turn.
+
+**Why:** Phase 3.2 showed that bundling diff + commit + push bypasses the user's scope gate even when the outcome is correct.
+
+## When the user asks to commit AND push
+
+**Do** still treat this as two gated steps: diff turn → user OK → commit turn → user OK → push turn. Never collapse into one turn.
+
+**Don't** assume prior messages in the conversation count as approval for the current diff.
+
+**Why:** Each diff is a new proposal; approval must match what is actually being committed.
+
+## Commit scope
+
+**Do** stage only files the user approved. Exclude secrets (`.env`, credentials). Draft the commit message in English; focus on why, not just what.
+
+**Don't** commit unrelated changes, empty commits, or files the user did not review.
+
+**Why:** Commit scope is part of the review contract, not an agent convenience.
+
+## If commit is unclear
+
+**Do** ask whether to commit before staging anything.
+
+**Don't** commit "because the work looks done" or because a previous phase used the same pattern.
+
+**Why:** Only the user's explicit OK authorizes writing history.
+
+## Co-authored-by and hooks
+
+Commit execution details (including `git commit-tree` and post-commit verification) live in `no-co-authored-by.mdc`. This file governs **when** to commit; that file governs **how**.
