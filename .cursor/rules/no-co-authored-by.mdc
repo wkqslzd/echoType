@@ -27,12 +27,14 @@ After staging (or when the tree is ready):
 **Do** after every commit, before reporting success or pushing:
 
 ```bash
-git log -1 --format=%B | grep -i "co-authored" && echo "CO-AUTHOR FOUND — STOP"
+git log -1 --format=%B | grep -iE '^Co-authored-by:' && echo "CO-AUTHOR FOUND — STOP"
 ```
+
+Match only a **trailer line** (`^Co-authored-by:`), not body text that mentions the phrase (e.g. a bullet "no Co-authored-by" in the message).
 
 If grep matches: **stop immediately**, tell the user commit-tree failed or was bypassed, and do **not** push. Do not amend to fix — amend re-triggers injection.
 
-**Why:** Verification catches regressions before polluted history reaches the remote.
+**Why:** Verification catches regressions before polluted history reaches the remote; anchored grep avoids false positives on descriptive commit body text.
 
 ## If verification fails
 
