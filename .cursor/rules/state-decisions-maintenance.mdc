@@ -5,9 +5,14 @@ alwaysApply: true
 # STATE / DECISIONS Maintenance
 
 ## Update STATE.md (overwrite) — same turn, when any of these happen:
-- A phase / sub-phase completes -> update the Roadmap icon + "Now working on".
-- A phase is split finer (X -> X.1/X.2) -> add the sub-node to the Roadmap
-  immediately.
+- STATE.md has TWO roadmaps: a Capability Roadmap (project-level, one line per
+  capability) and a Phase Roadmap (the ACTIVE capability's internal steps only).
+- When a capability completes: mark it [x] in the Capability Roadmap, and replace
+  the entire Phase Roadmap with the next active capability's phases.
+- When the active capability is split finer (X -> X.1/X.2): expand it in the
+  Phase Roadmap in the same turn.
+- Keep completed capabilities collapsed to one line; their internal phase history
+  lives in git/DECISIONS, not here.
 - A debt item is added or paid off -> edit the "Known debt" table.
 - A new fragile "do not touch" area appears -> edit the "Do NOT touch" list.
 Update by rewriting the relevant line. Never append duplicate paragraphs or keep
