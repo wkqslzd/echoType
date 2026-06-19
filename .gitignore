@@ -177,5 +177,8 @@ build/
 **/.aws/
 aws-credentials.txt
 
+# Local git hooks (optional; enable with: git config core.hooksPath .githooks)
+.githooks/
+
 # Private local docs (not published to the remote repo)
 docs/project-kickoff.md
