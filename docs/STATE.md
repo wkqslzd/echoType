@@ -30,7 +30,7 @@ Active capability: Cloud deploy
 - [x] CI deploy + 4G verify (https://d3a9mgremswg7d.cloudfront.net — UI + /api)
 - [x] Post-deploy: create-mode content-change review
 - [x] Post-deploy: line-ending normalize + control-character filter (ADR-0004)
-- [ ] Post-deploy: click-to-view note popover
+- [x] Post-deploy: click-to-view note popover (typing page)
 - [ ] Go live -> real EchoType usage
 - [ ] Resume other feature development
 
@@ -40,9 +40,9 @@ Active capability: Cloud deploy
 
 ## Now working on (describe ONLY the in-progress item)
 - Goal (one line): Stabilize the live CloudFront deployment before moving to the next capability.
-- Sub-steps done: Full stack apply; CI deploy green; 4G verified; create-mode review + content hygiene (ADR-0004) shipped.
-- Next step: Sub-phase C — typing page click-to-view note popover; then go live / self-usage.
-- Related decisions: ADR-0003, ADR-0004
+- Sub-steps done: Post-deploy fixes complete (review, content hygiene, note popover, emoji-anchor hotfix).
+- Next step: Go live — real self-usage on CloudFront; then resume feature development.
+- Related decisions: ADR-0003, ADR-0004, ADR-0005
 
 ## Contract pointers (don't memorize, go read the source)
 - Types/validation: packages/shared/course.ts
@@ -60,5 +60,4 @@ Active capability: Cloud deploy
 |---|---|---|---|---|
 | Course mgmt | CoursesPage not split into routes | Phase 3.0 debt | course management capability | — |
 | Annotation | false-green (duplicate substring, no index shift) | MVP skips index shift | user reanchor | — |
-| Typing | Typing page: no click-to-view full note (hover title only) | Phase 2 scope | post-deploy Sub-phase C | — |
 | Annotation | Overlay measurement = mirror offsetTop (lines) + per-glyph getBoundingClientRect (charEdges); NOT Range.getClientRects() | Phase 2 deliberate | do not revert without ADR | ADR-0002 |

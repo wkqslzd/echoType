@@ -122,7 +122,7 @@ function TypingSession({
         </Link>
       </div>
 
-      <AnnotatedText content={target} annotations={annotations} typed={typed} />
+      <AnnotatedText content={target} annotations={annotations} typed={typed} clickableNotes />
 
       <input
         ref={inputRef}
