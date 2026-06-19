@@ -13,6 +13,8 @@ export const MSG_ANCHOR_START_WHITESPACE =
 export const MSG_ANCHOR_END_WHITESPACE =
   'The end anchor cannot be a space or line break. Pick again.';
 export const MSG_ORDER_INVALID = 'Invalid anchor order. Pick again.';
+export const MSG_ILL_FORMED_RANGE =
+  'Anchor range splits an emoji or combined character. Reselect the full character.';
 export const MSG_BOUNDS_INVALID = 'Anchor range is outside the text. Reselect anchors.';
 export const MSG_NOTE_EMPTY = 'Annotation text cannot be empty.';
 export const MSG_SERIAL_BLOCK = 'Finish or cancel the current annotation first.';
@@ -99,6 +101,8 @@ export function mapAnnotationIssueMessage(
       return `Annotation "${label}": ${MSG_ORDER_INVALID}`;
     case 'bounds':
       return `Annotation "${label}": ${MSG_BOUNDS_INVALID}`;
+    case 'ill_formed_range':
+      return `Annotation "${label}": ${MSG_ILL_FORMED_RANGE}`;
     case 'overlap': {
       const overlapMsg = issue.message.match(/annotation #(\d+)/);
       const otherIdx = overlapMsg ? Number(overlapMsg[1]) : -1;

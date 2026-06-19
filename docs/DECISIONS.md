@@ -120,3 +120,35 @@
   - Legacy courses with CRLF get silent index remap on first edit open (console log for debug).
   - Direct API callers must send indices relative to normalized content or get 422 bounds errors.
 - Supersedes / superseded-by: none
+
+---
+
+## ADR-0005 — Annotation anchors: grapheme-boundary expansion + ill-formed range guard
+- Status: Accepted (2026-06-11)
+- Commit/PR anchor: pending emoji-anchor hotfix merge
+- Plain summary (owner reads this): When you anchor a note on an emoji, the editor
+  now selects the whole emoji automatically; if a range still cuts through the
+  middle of a multi-unit character, save is blocked with a clear message instead
+  of a server crash.
+- Context: Annotation indices follow JavaScript UTF-16 code units (same as
+  `content.length`). Emoji such as 🇯🇵 occupy multiple units; clicking only part
+  of an emoji produced an ill-formed `anchoredText` string. PostgreSQL rejected
+  it and the API returned 500 during course save.
+- Decision:
+  1. **On pick** (editor `tryRange`): expand the inclusive range to grapheme-cluster
+     boundaries via `Intl.Segmenter` (`expandRangeToGraphemeBoundaries` in shared).
+  2. **On save** (shared `validateAnnotations`): reject ranges whose slice is not
+     well-formed UTF-16 (`ill_formed_range` → 422), as defense in depth.
+  3. **Keep UTF-16 indices** — do not switch to grapheme-only indexing (would
+     ripple through measurement, review, and stored DB rows; see ADR-0002).
+- Rejected alternatives:
+  - Grapheme-only index system — large cross-cutting refactor; deferred.
+  - Server-only 422 without pick-time expansion — users would hit errors often when
+    clicking emoji; expansion fixes the common case silently.
+  - Catch Prisma error and return 500 message — masks root cause; validation belongs
+    in shared rules with other annotation checks.
+- Consequences:
+  - Requires `Intl.Segmenter` (modern browsers; Node 20+ on API — already our floor).
+  - Picking inside an emoji may slightly widen the highlighted anchor (intended).
+  - Direct API clients sending split-surrogate ranges get 422, not 500.
+- Supersedes / superseded-by: none

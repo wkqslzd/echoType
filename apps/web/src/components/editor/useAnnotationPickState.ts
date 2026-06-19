@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { expandRangeToGraphemeBoundaries } from '@echotype/shared';
 import {
   MSG_ANCHOR_END_WHITESPACE,
   MSG_ANCHOR_START_WHITESPACE,
+  MSG_ILL_FORMED_RANGE,
   MSG_NOTE_EMPTY,
   MSG_ORDER_INVALID,
   MSG_REVIEW_NEW_ANNOTATION,
@@ -148,8 +150,9 @@ export function useAnnotationPickState({
       excludeLocalId: number | undefined,
       onValid: (start: number, end: number) => void,
     ) => {
-      const start = Math.min(rawStart, rawEnd);
-      const end = Math.max(rawStart, rawEnd);
+      let start = Math.min(rawStart, rawEnd);
+      let end = Math.max(rawStart, rawEnd);
+      ({ startIndex: start, endIndex: end } = expandRangeToGraphemeBoundaries(content, start, end));
       const startErr = whitespaceError(content, start, false);
       if (startErr) {
         setError(startErr);
@@ -511,6 +514,8 @@ export function buildValidateDraft(
       }
       case 'order':
         return { message: MSG_ORDER_INVALID };
+      case 'ill_formed_range':
+        return { message: MSG_ILL_FORMED_RANGE };
       default:
         return { message: MSG_ORDER_INVALID };
     }

@@ -202,6 +202,7 @@ export type AnnotationIssueCode =
   | 'bounds' // index outside [0, content.length)
   | 'anchor_start_whitespace' // start anchor char is whitespace
   | 'anchor_end_whitespace' // end anchor char is whitespace
+  | 'ill_formed_range' // slice splits a surrogate pair / grapheme (e.g. partial emoji)
   | 'overlap'; // two annotations share characters
 
 export type AnnotationIssue = {
@@ -213,6 +214,56 @@ export type AnnotationIssue = {
 // endIndex is inclusive: the anchored slice is content.slice(start, end + 1).
 export function deriveAnchoredText(content: string, startIndex: number, endIndex: number): string {
   return content.slice(startIndex, endIndex + 1);
+}
+
+/** Detect lone UTF-16 surrogates (invalid for PostgreSQL text). */
+function isWellFormedUtf16String(value: string): boolean {
+  for (let i = 0; i < value.length; i++) {
+    const code = value.charCodeAt(i);
+    if (code >= 0xd800 && code <= 0xdbff) {
+      if (i + 1 >= value.length) return false;
+      const next = value.charCodeAt(i + 1);
+      if (next < 0xdc00 || next > 0xdfff) return false;
+      i++;
+    } else if (code >= 0xdc00 && code <= 0xdfff) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/** True when the inclusive range is safe to store (no split UTF-16 surrogates). */
+export function isWellFormedAnnotationRange(
+  content: string,
+  startIndex: number,
+  endIndex: number,
+): boolean {
+  if (startIndex > endIndex) return false;
+  return isWellFormedUtf16String(deriveAnchoredText(content, startIndex, endIndex));
+}
+
+/**
+ * Expand an inclusive range to grapheme-cluster boundaries so emoji/ZWJ sequences
+ * are not split. Indices remain UTF-16 code-unit offsets (same as content.length).
+ */
+export function expandRangeToGraphemeBoundaries(
+  content: string,
+  startIndex: number,
+  endIndex: number,
+): { startIndex: number; endIndex: number } {
+  let start = startIndex;
+  let end = endIndex;
+  const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+  for (const { index, segment } of segmenter.segment(content)) {
+    const segEnd = index + segment.length - 1;
+    if (startIndex > index && startIndex <= segEnd) {
+      start = index;
+    }
+    if (endIndex >= index && endIndex < segEnd) {
+      end = segEnd;
+    }
+  }
+  return { startIndex: start, endIndex: end };
 }
 
 export function validateAnnotations(
@@ -232,6 +283,14 @@ export function validateAnnotations(
         index: i,
         code: 'bounds',
         message: `range [${a.startIndex}, ${a.endIndex}] is outside content [0, ${len - 1}]`,
+      });
+      return;
+    }
+    if (!isWellFormedAnnotationRange(content, a.startIndex, a.endIndex)) {
+      issues.push({
+        index: i,
+        code: 'ill_formed_range',
+        message: 'anchor range splits a multi-code-unit character (e.g. emoji)',
       });
       return;
     }
