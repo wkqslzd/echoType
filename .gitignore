@@ -180,5 +180,8 @@ aws-credentials.txt
 # Local git hooks (optional; enable with: git config core.hooksPath .githooks)
 .githooks/
 
+# Local UI experiment screenshots (not published to the remote repo)
+assets/spacing-experiment/
+
 # Private local docs (not published to the remote repo)
 docs/project-kickoff.md
