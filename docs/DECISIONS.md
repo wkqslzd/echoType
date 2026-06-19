@@ -158,8 +158,8 @@
 ---
 
 ## ADR-0006 — Session charCount is monotonic keystroke count (backspace does not reduce)
-- Status: Accepted (2026-06-11)
-- Commit/PR anchor: {ANCHOR}
+- Status: Accepted (2026-06-19)
+- Commit/PR anchor: d51f4cc
 - Plain summary (owner reads this): When you save a typing session, charCount
   counts every key you pressed that added a character — even if you backspaced
   later — so WPM reflects typing activity, not final draft length.
