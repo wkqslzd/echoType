@@ -319,3 +319,44 @@
   - Phase 2+ course management builds on mode-scoped lists (search/sort per route;
     categories scoped by mode in schema).
 - Supersedes / superseded-by: none
+
+---
+
+## ADR-0010 — Course DELETE: physical row removal, 204, no undo
+- Status: Accepted (2026-06-22)
+- Commit/PR anchor: 816ff3f
+- Plain summary (owner reads this): Deleting a course removes it from the database
+  for good (annotations and typing sessions cascade). The list uses a browser
+  confirm dialog; success returns HTTP 204. Sample/seed courses are deletable like
+  any course — restore only via re-seed or deploy, not in-app undo. Visiting a
+  deleted course's typing URL shows a friendly 404 and auto-redirects home after
+  5 seconds.
+- Context: Course management Phase 2 needed delete on mode-scoped list cards.
+  Kickoff implies hard removal, not a recycle bin. Typing sessions and annotations
+  are owned by the course; orphan rows would complicate stats and editor state.
+  Users may bookmark `/type/:id` or keep a tab open after delete.
+- Decision:
+  1. **Semantics**: `prisma.course.delete` — physical delete; `Annotation` and
+     `TypingSession` removed via schema `onDelete: Cascade` (no soft-delete column).
+  2. **API**: `DELETE /courses/:id` — owner check (`userId`), **204 No Content**
+     on success; 404 when missing or not owned.
+  3. **UI confirm**: `window.confirm` (same pattern as typing "Start over"); no
+     custom modal in Phase 2.
+  4. **Seed / samples**: seed courses are normal rows for `demo-user`; deletable.
+     Recovery is operational (re-run seed / deploy upsert), not user-facing undo.
+  5. **Typing 404**: `getCourse` 404 → friendly panel + 5s countdown → `/` (Home
+     mode picker), with immediate "Go now" link; no retry on 404.
+  6. **Client HTTP**: bodyless DELETE must not send `Content-Type: application/json`
+     (Fastify 5 rejects empty JSON body → 500).
+- Rejected alternatives:
+  - Soft delete / recycle bin — deferred; adds list filters, restore UX, and
+    typing-session ambiguity for "deleted but restorable" courses.
+  - DELETE 200 with body — REST convention prefers 204 for success without entity.
+  - 404 redirect to `/courses/short` — Home (`/`) is the canonical mode entry.
+  - Custom confirm modal — unnecessary for Phase 2; matches existing Start over.
+- Consequences:
+  - No undo API or "recently deleted" list until a future phase explicitly adds one.
+  - List invalidate `['courses', mode]` + `removeQueries(['course', id])` on success.
+  - Production delete requires API deploy (not web-only).
+  - Phase 3 search/sort operates on surviving courses only (no tombstones).
+- Supersedes / superseded-by: none
