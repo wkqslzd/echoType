@@ -183,3 +183,44 @@
     activity volume).
   - Extreme backspace spam inflates charCount; acceptable for echo use case.
 - Supersedes / superseded-by: none
+
+---
+
+## ADR-0007 — Newline skip sync: typed holds real keystrokes; target `\n` auto-skipped (direction R)
+- Status: Accepted (2026-06-22)
+- Commit/PR anchor: bceab65
+- Plain summary (owner reads this): When the passage has line breaks, you can keep
+  typing without pressing Enter — skipped breaks stay invisible; if you do press
+  Enter on a break you get a green ↵, and a wrong Enter elsewhere shows red ↵.
+- Context: Phase 1 aligned `typed[i]` to `target[i]` index-for-index. Courses with
+  `\n` (paragraphs, speeches) broke: single-line `<input>` could not insert `\n`,
+  and typing past a break without Enter caused red diff cascades and no auto-loop.
+  Echo repetition should not force users to hunt line breaks; stats must still
+  reflect real keystrokes (ADR-0006).
+- Decision:
+  1. **`typed` buffer** stores only user keystrokes (paste included); never
+     auto-insert `\n` for skipped target newlines.
+  2. **Sync alignment** (`syncTypedToTarget` in `typingAlign.ts`): dual-pointer
+     walk; when `target[t] === '\n'` and `typed[u] !== '\n'`, skip `t` without
+     consuming `u`. **Pass complete** when both pointers exhaust (`isPassComplete`).
+  3. **Visual (direction R)**: skipped `\n` → no marker (passage natural wrap only);
+     user Enter on target `\n` → emerald **↵**; Enter on non-`\n` → red **↵**.
+     AnnotatedText typing page uses per-target `typingStatuses[]`; editor path
+     unchanged.
+  4. **Paste**: clipboard `\n` enters `typed` as-is; sync aligns (no strip in paste
+     handler); `pasteRanges` length counts pasted chars including `\n`.
+  5. **charCount / errors**: monotonic charCount (ADR-0006) counts real keys only —
+     skipped `\n` does not add virtual keystrokes; aligned errors from sync path.
+- Rejected alternatives:
+  - Strict index match (Phase 1) — unusable on multiline courses without Enter.
+  - Auto-insert `\n` into `typed` on skip — falsifies buffer and copy/paste UX.
+  - Gray ↵ on every skipped break — noisy on long multiline passages; quiet echo UX.
+  - `typed.length === target.length` as loop gate — wrong when `\n` skipped
+    (`typed.length < target.length` at completion).
+- Consequences:
+  - `progress` and cursor use sync `targetCursor`, not `typed.length`.
+  - No-`\n` courses degenerate to index-aligned behavior (Phase 1 regression guard).
+  - Phase 3 IME must gate loop/stats on `compositionend`; sync logic reused as-is.
+  - Implementation: `apps/web/src/lib/typingAlign.ts`, `TypingPage.tsx`,
+    `AnnotatedText.tsx` (`typingStatuses` prop only — no charEdges change; ADR-0002).
+- Supersedes / superseded-by: none
