@@ -2,6 +2,7 @@ import type {
   AnnotationIssue,
   ContentIssue,
   CourseDTO,
+  CourseListSort,
   CourseMode,
   CreateCourseInput,
   CreateSessionInput,
@@ -107,8 +108,14 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  listCourses: (mode?: CourseMode) =>
-    request<CourseDTO[]>(mode ? `/courses?mode=${mode}` : '/courses'),
+  listCourses: (mode?: CourseMode, opts?: { q?: string; sort?: CourseListSort }) => {
+    const params = new URLSearchParams();
+    if (mode) params.set('mode', mode);
+    if (opts?.q) params.set('q', opts.q);
+    if (opts?.sort) params.set('sort', opts.sort);
+    const qs = params.toString();
+    return request<CourseDTO[]>(`/courses${qs ? `?${qs}` : ''}`);
+  },
   getCourse: (id: string) => request<CourseDTO>(`/courses/${id}`),
   createCourse: (input: CreateCourseInput) =>
     request<CourseDTO>('/courses', { method: 'POST', body: JSON.stringify(input) }),

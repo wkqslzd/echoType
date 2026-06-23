@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import type { CourseDTO, CourseMode } from '@echotype/shared';
+import type { CourseDTO, CourseListSort, CourseMode } from '@echotype/shared';
+import { SEARCH_Q_MAX } from '@echotype/shared';
 import { api, ApiError, isCourseNotFoundError } from '../lib/api';
 import { CourseEditorModal } from '../components/editor/CourseEditorModal';
 import { toCardPreviewLine } from '../lib/courseCard';
+import { useImeAwareDebouncedSearch } from '../lib/useImeAwareDebouncedSearch';
 
 type EditorTarget =
   | { mode: 'create' }
@@ -12,6 +14,15 @@ type EditorTarget =
   | null;
 
 const HIGHLIGHT_MS = 2000;
+
+const DEFAULT_SORT: CourseListSort = 'createdAt_desc';
+
+const SORT_OPTIONS: { value: CourseListSort; label: string }[] = [
+  { value: 'createdAt_desc', label: 'Newest first' },
+  { value: 'createdAt_asc', label: 'Oldest first' },
+  { value: 'updatedAt_desc', label: 'Recently updated' },
+  { value: 'title_asc', label: 'Title A–Z' },
+];
 
 const MODE_COPY: Record<
   CourseMode,
@@ -34,10 +45,16 @@ const MODE_COPY: Record<
 export function CourseListPage({ courseMode }: { courseMode: CourseMode }) {
   const copy = MODE_COPY[courseMode];
   const qc = useQueryClient();
+  const search = useImeAwareDebouncedSearch();
+  const [sort, setSort] = useState<CourseListSort>(DEFAULT_SORT);
 
   const { data: courses, isLoading } = useQuery({
-    queryKey: ['courses', courseMode],
-    queryFn: () => api.listCourses(courseMode),
+    queryKey: ['courses', courseMode, search.query, sort],
+    queryFn: () =>
+      api.listCourses(courseMode, {
+        q: search.query || undefined,
+        sort,
+      }),
   });
 
   const [editor, setEditor] = useState<EditorTarget>(null);
@@ -104,10 +121,54 @@ export function CourseListPage({ courseMode }: { courseMode: CourseMode }) {
           </p>
         )}
 
+        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="relative min-w-0 flex-1">
+            <input
+              type="text"
+              role="searchbox"
+              value={search.draft}
+              onChange={(e) => search.setDraft(e.target.value)}
+              onCompositionStart={search.onCompositionStart}
+              onCompositionEnd={(e) => search.onCompositionEnd(e.currentTarget.value)}
+              maxLength={SEARCH_Q_MAX}
+              placeholder="Search title, content, notes, or description…"
+              className="w-full rounded-md border px-3 py-2 pr-9 text-sm"
+              aria-label="Search courses"
+            />
+            {search.showClear && (
+              <button
+                type="button"
+                onClick={search.clear}
+                className="absolute top-1/2 right-2 -translate-y-1/2 rounded p-0.5 text-slate-400 hover:text-slate-700"
+                aria-label="Clear search"
+              >
+                ×
+              </button>
+            )}
+          </div>
+          <label className="flex shrink-0 items-center gap-2 text-sm text-slate-600">
+            <span className="hidden sm:inline">Sort</span>
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as CourseListSort)}
+              className="rounded-md border px-2 py-2 text-sm"
+              aria-label="Sort courses"
+            >
+              {SORT_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
         {isLoading ? (
           <p className="text-slate-500">Loading…</p>
         ) : !courses?.length ? (
-          <p className="text-slate-500">{copy.empty}</p>
+          <p className="text-slate-500">
+            {search.query ? 'No courses match your search.' : copy.empty}
+          </p>
         ) : (
           <ul className="grid gap-3 sm:grid-cols-2">
             {courses.map((c) => (

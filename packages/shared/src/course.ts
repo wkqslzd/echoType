@@ -73,8 +73,20 @@ export const CourseDTO = z.object({
 });
 export type CourseDTO = z.infer<typeof CourseDTO>;
 
+export const SEARCH_Q_MAX = 200;
+
+export const CourseListSort = z.enum([
+  'createdAt_desc',
+  'createdAt_asc',
+  'updatedAt_desc',
+  'title_asc',
+]);
+export type CourseListSort = z.infer<typeof CourseListSort>;
+
 export const ListCoursesQuery = z.object({
   mode: CourseMode.optional(),
+  q: z.string().trim().max(SEARCH_Q_MAX).optional(),
+  sort: CourseListSort.optional(),
 });
 export type ListCoursesQuery = z.infer<typeof ListCoursesQuery>;
 

@@ -5,6 +5,7 @@ import {
   UpdateCourseInput,
   ListCoursesQuery,
   CourseMode,
+  type CourseListSort,
   type AnnotationInput,
   type CourseMode as CourseModeType,
   deriveAnchoredText,
@@ -105,15 +106,44 @@ function toAnnotationRows(content: string, annotations: AnnotationInput[]) {
   }));
 }
 
+function listCoursesOrderBy(sort: CourseListSort): Prisma.CourseOrderByWithRelationInput {
+  switch (sort) {
+    case 'createdAt_asc':
+      return { createdAt: 'asc' };
+    case 'updatedAt_desc':
+      return { updatedAt: 'desc' };
+    case 'title_asc':
+      return { title: 'asc' };
+    default:
+      return { createdAt: 'desc' };
+  }
+}
+
 export async function registerCourseRoutes(app: FastifyInstance) {
   app.get('/courses', async (req) => {
     const query = ListCoursesQuery.parse(req.query);
+    const q = query.q?.trim() || undefined;
+    const sort = query.sort ?? 'createdAt_desc';
     const courses = await prisma.course.findMany({
       where: {
         userId: req.userId,
         ...(query.mode ? { mode: query.mode } : {}),
+        ...(q
+          ? {
+              OR: [
+                { title: { contains: q, mode: 'insensitive' } },
+                { content: { contains: q, mode: 'insensitive' } },
+                { description: { contains: q, mode: 'insensitive' } },
+                {
+                  annotations: {
+                    some: { noteText: { contains: q, mode: 'insensitive' } },
+                  },
+                },
+              ],
+            }
+          : {}),
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: listCoursesOrderBy(sort),
       include: { annotations: true },
     });
     return courses.map(serializeCourse);
