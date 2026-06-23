@@ -17,6 +17,11 @@ import { prisma } from '../prisma.js';
 
 type CourseWithAnnotations = Course & { annotations: Annotation[] };
 
+function toOptionalDescription(value: string | null | undefined): string | null {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
+}
+
 function serializeCourse(course: CourseWithAnnotations) {
   return {
     id: course.id,
@@ -24,6 +29,7 @@ function serializeCourse(course: CourseWithAnnotations) {
     content: course.content,
     mode: course.mode,
     categoryId: course.categoryId,
+    description: course.description,
     annotations: course.annotations
       .slice()
       .sort((a, b) => a.startIndex - b.startIndex)
@@ -139,6 +145,7 @@ export async function registerCourseRoutes(app: FastifyInstance) {
         content,
         mode: body.mode as CourseMode,
         categoryId: body.categoryId ?? null,
+        description: toOptionalDescription(body.description),
         annotations: { create: toAnnotationRows(content, body.annotations) },
       },
       include: { annotations: true },
@@ -173,6 +180,7 @@ export async function registerCourseRoutes(app: FastifyInstance) {
           content,
           mode: body.mode as CourseMode,
           categoryId: body.categoryId ?? null,
+          description: toOptionalDescription(body.description),
           annotations: { create: toAnnotationRows(content, body.annotations) },
         },
         include: { annotations: true },

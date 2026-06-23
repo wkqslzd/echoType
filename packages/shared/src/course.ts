@@ -14,6 +14,8 @@ export const ARTICLE_MAX = 5000;
 
 export const MAX_ANNOTATIONS = 200;
 export const NOTE_TEXT_MAX = 500;
+/** Optional background notes on Course (Phase 5 Category reuses this cap). */
+export const DESCRIPTION_MAX = 1000;
 
 // What the client sends per annotation. anchoredText is NOT accepted from the
 // client: the server derives it from `content` at save time (see deriveAnchoredText)
@@ -46,6 +48,7 @@ const courseFields = {
   content: z.string(),
   mode: CourseMode,
   categoryId: z.string().cuid().nullish(),
+  description: z.string().trim().max(DESCRIPTION_MAX).nullish(),
   annotations: z.array(AnnotationInput).max(MAX_ANNOTATIONS).default([]),
 };
 
@@ -63,6 +66,7 @@ export const CourseDTO = z.object({
   content: z.string(),
   mode: CourseMode,
   categoryId: z.string().nullable(),
+  description: z.string().nullable(),
   annotations: z.array(AnnotationDTO),
   createdAt: z.string(),
   updatedAt: z.string(),

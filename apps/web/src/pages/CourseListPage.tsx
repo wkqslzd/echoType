@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import type { CourseDTO, CourseMode } from '@echotype/shared';
 import { api, ApiError, isCourseNotFoundError } from '../lib/api';
 import { CourseEditorModal } from '../components/editor/CourseEditorModal';
+import { toCardPreviewLine } from '../lib/courseCard';
 
 type EditorTarget =
   | { mode: 'create' }
@@ -112,13 +113,24 @@ export function CourseListPage({ courseMode }: { courseMode: CourseMode }) {
             {courses.map((c) => (
               <li
                 key={c.id}
-                className={`rounded-md border bg-white p-4 transition-shadow ${
+                className={`flex min-h-40 flex-col rounded-md border bg-white p-4 transition-shadow ${
                   highlightCourseId === c.id ? 'ring-2 ring-emerald-400' : ''
                 }`}
               >
-                <h3 className="mb-1 font-medium">{c.title}</h3>
-                <p className="line-clamp-2 text-sm text-slate-500">{c.content}</p>
-                <div className="mt-3 flex items-center gap-2">
+                <h3 className="line-clamp-1 overflow-hidden font-medium">{c.title}</h3>
+                <p
+                  className={`mt-1 line-clamp-1 overflow-hidden text-sm leading-5 ${
+                    c.description?.trim() ? 'text-slate-500' : 'text-slate-300'
+                  }`}
+                >
+                  {c.description?.trim() ? toCardPreviewLine(c.description) : '—'}
+                </p>
+                <div className="h-5 shrink-0" aria-hidden />
+                <p className="line-clamp-1 overflow-hidden text-sm leading-5 text-slate-500">
+                  <span className="text-slate-400">Content: </span>
+                  {toCardPreviewLine(c.content)}
+                </p>
+                <div className="mt-auto flex flex-wrap items-center gap-2 pt-3">
                   <Link
                     to={`/courses/${c.id}/type`}
                     className="rounded bg-slate-900 px-3 py-1 text-sm text-white hover:bg-slate-800"

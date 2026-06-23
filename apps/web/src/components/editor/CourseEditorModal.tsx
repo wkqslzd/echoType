@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ARTICLE_MAX, ARTICLE_MIN, SHORT_MAX, SHORT_MIN, type CourseDTO, type CourseMode } from '@echotype/shared';
 import { api, ApiError } from '../../lib/api';
 import { AnnotatedText } from '../AnnotatedText';
+import { OptionalDescriptionField } from '../OptionalDescriptionField';
 import { AnnotatedTextEditor, confirmAbandonPick } from './AnnotatedTextEditor';
 import {
   MSG_CONTENT_REVIEW_WARNING,
@@ -304,6 +305,8 @@ function Step1({ ed }: { ed: ReturnType<typeof useCourseEditor> }) {
           placeholder="e.g. Stray Birds - 49"
         />
       </label>
+
+      <OptionalDescriptionField value={ed.description} onChange={ed.setDescription} />
 
       <div className="rounded-md border bg-slate-50 px-3 py-2">
         <p className="text-sm font-medium text-slate-800">{modeLabel}</p>

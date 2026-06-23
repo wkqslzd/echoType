@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import type { AnnotationDTO, CourseMode, PasteRange } from '@echotype/shared';
 import { api, isCourseNotFoundError } from '../lib/api';
+import { CourseDescriptionPanel } from '../components/CourseDescriptionPanel';
 import { AnnotatedText } from '../components/AnnotatedText';
 import {
   alignedProgress,
@@ -91,6 +92,7 @@ export function TypingPage() {
       courseMode={course.mode}
       target={course.content}
       title={course.title}
+      description={course.description}
       annotations={course.annotations}
     />
   );
@@ -105,12 +107,14 @@ function TypingSession({
   courseMode,
   target,
   title,
+  description,
   annotations,
 }: {
   courseId: string;
   courseMode: CourseMode;
   target: string;
   title: string;
+  description: string | null;
   annotations: AnnotationDTO[];
 }) {
   const [typed, setTyped] = useState('');
@@ -330,6 +334,8 @@ function TypingSession({
           ← Back
         </Link>
       </div>
+
+      {description?.trim() && <CourseDescriptionPanel description={description} />}
 
       <div
         className={immersiveMode ? 'cursor-text' : undefined}

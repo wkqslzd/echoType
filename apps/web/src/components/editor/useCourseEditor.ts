@@ -84,6 +84,8 @@ export interface UseCourseEditor {
 
   title: string;
   setTitle: (v: string) => void;
+  description: string;
+  setDescription: (v: string) => void;
   content: string;
   setContent: (v: string) => void;
   courseMode: CourseMode;
@@ -141,6 +143,7 @@ export function useCourseEditor(
 
   const [step, setStep] = useState<EditorStep>(1);
   const [title, setTitle] = useState(initial?.title ?? '');
+  const [description, setDescription] = useState(initial?.description ?? '');
   const [content, setContentState] = useState(initialState.content);
   const setContent = useCallback((v: string) => {
     setContentState(normalizeLineEndings(v));
@@ -298,28 +301,30 @@ export function useCourseEditor(
 
   const isDirty = useMemo(() => {
     if (editorMode === 'create') {
-      return title.trim() !== '' || content !== '' || annotations.length > 0;
+      return title.trim() !== '' || description.trim() !== '' || content !== '' || annotations.length > 0;
     }
     return (
       title !== (initial?.title ?? '') ||
+      description !== (initial?.description ?? '') ||
       content !== initialContentNorm ||
       courseMode !== (initial?.mode ?? 'SHORT') ||
       annotations.length !== originalAnnotationCount
     );
-  }, [editorMode, title, content, courseMode, annotations.length, initial, originalAnnotationCount, initialContentNorm]);
+  }, [editorMode, title, description, content, courseMode, annotations.length, initial, originalAnnotationCount, initialContentNorm]);
 
   const buildPayload = useCallback(
     (): CreateCourseInput => ({
       title: title.trim(),
       content,
       mode: courseMode,
+      description: description.trim() || undefined,
       annotations: annotations.map((a) => ({
         startIndex: a.startIndex,
         endIndex: a.endIndex,
         noteText: a.noteText,
       })),
     }),
-    [title, content, courseMode, annotations],
+    [title, content, courseMode, description, annotations],
   );
 
   const validateBeforeSave = useCallback((): PreSubmitResult => {
@@ -353,6 +358,8 @@ export function useCourseEditor(
     step,
     title,
     setTitle,
+    description,
+    setDescription,
     content,
     setContent,
     courseMode,

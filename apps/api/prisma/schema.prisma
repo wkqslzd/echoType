@@ -52,6 +52,7 @@ model Course {
   title      String
   content    String
   mode       CourseMode
+  description String? @db.VarChar(1000)
 
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt

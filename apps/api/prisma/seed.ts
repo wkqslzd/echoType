@@ -81,6 +81,9 @@ const DEER_ENCLOSURE_ANNOTATIONS = buildAnnotations(DEER_ENCLOSURE, [
   { phrase: '复照青苔上', note: 'Shining once more upon luscious, green moss' },
 ]);
 
+const DEER_ENCLOSURE_DESCRIPTION =
+  'Deer Enclosure (Lu Zhai) is a celebrated Tang dynasty poem by Wang Wei, and one of the most beloved works in the Chinese literary canon. The poem moves through stillness, echo, and returning light: "Yet I hear the echo of voices" evokes echo, while "Shining once more upon luscious green moss" suggests return, repetition, and quiet settling. This course lets you type Wang Wei\'s lines, and the poem mirrors EchoType itself: quiet, repeated, echoing, and reflective, in sync with what the product is named for.';
+
 async function upsertAnnotatedCourse(
   userId: string,
   categoryId: string,
@@ -88,6 +91,7 @@ async function upsertAnnotatedCourse(
   content: string,
   mode: CourseMode,
   annotations: ReturnType<typeof buildAnnotations>,
+  description?: string | null,
 ) {
   let course = await prisma.course.findFirst({ where: { userId, title } });
   if (!course) {
@@ -98,13 +102,17 @@ async function upsertAnnotatedCourse(
         title,
         content,
         mode,
+        description: description ?? null,
         annotations: { create: annotations },
       },
     });
     return course;
   }
   await prisma.$transaction([
-    prisma.course.update({ where: { id: course.id }, data: { content, mode, categoryId } }),
+    prisma.course.update({
+      where: { id: course.id },
+      data: { content, mode, categoryId, description: description ?? null },
+    }),
     prisma.annotation.deleteMany({ where: { courseId: course.id } }),
     prisma.annotation.createMany({
       data: annotations.map((a) => ({ ...a, courseId: course.id })),
@@ -222,6 +230,7 @@ async function main() {
     DEER_ENCLOSURE,
     CourseMode.SHORT,
     DEER_ENCLOSURE_ANNOTATIONS,
+    DEER_ENCLOSURE_DESCRIPTION,
   );
 
   console.log(`Seed complete. Demo user: ${user.id}`);
