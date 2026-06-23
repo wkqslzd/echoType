@@ -27,7 +27,7 @@ Active capability: Course management
 - [x] Phase 1 — Mode shell (`/courses/short` + `/courses/article`, shared `CourseListPage`; Home cards; `/courses` → `/`; create preset mode; edit mode read-only)
 - [x] Phase 2 — DELETE (`DELETE /courses/:id` 204, physical + Prisma cascade, `window.confirm`, typing not-found → `/`; GET missing **410** + CloudFront client guard; ADR-0010)
 - [x] Phase 3 — Course description (`DESCRIPTION_MAX` 1000; migration; Step 1 `OptionalDescriptionField`; typing 1-line + overflow Show more/less + URL linkify; card 4-row + `Content:` + blank spacer; Deer Enclosure EN seed; ADR-0011)
-- [ ] Phase 4 — Search + sort (server `GET /courses?q&sort`; search title/content/noteText/**description**; sort createdAt asc/desc, updatedAt desc, title A–Z; IME-aware debounce; English UI; no URL state)
+- [x] Phase 4 — Search + sort (server `GET /courses?q&sort`; OR title/content/noteText/**description**; 4 sorts; IME debounce + Clear; `type=text` searchbox; English UI; no URL state; ADR-0012)
 - [ ] Phase 5 — Categories / album (album description reuses Phase 3 field + editor pattern)
 
 > Legend: [x] done  [~] in progress  [ ] todo  (blocked) noted inline
@@ -35,10 +35,10 @@ Active capability: Course management
 > new capability's phases and move YOU ARE HERE above.
 
 ## Now working on (describe ONLY the in-progress item)
-- Goal (one line): Course management Phase 4 — search + sort on mode-scoped lists.
-- Sub-steps done: Phase 3 description shipped (29216d9; owner验收 pass)
-- Next step: Phase 4 design review, then implement
-- Related decisions: ADR-0011 (description); ADR-0009 (mode-scoped lists); ADR-0010 (delete)
+- Goal (one line): Course management Phase 5 — categories / album.
+- Sub-steps done: Phase 4 search + sort shipped (eaced3e; owner验收 pass)
+- Next step: Phase 5 design review, then implement
+- Related decisions: ADR-0012 (search/sort); ADR-0011 (description); ADR-0009 (mode-scoped lists)
 
 ## Contract pointers (don't memorize, go read the source)
 - Types/validation: packages/shared/course.ts
@@ -54,7 +54,7 @@ Active capability: Course management
 ## Known debt / intentionally deferred
 | Capability | Item | Reason | Picks it up | Related ADR |
 |---|---|---|---|---|
-| Course mgmt | Sort modes 4/5/7 (loop count, cumulative session time, last practice) + card cumulative stats on list cards | Need aggregated course stats from TypingSession; Phase 4 sort limited to createdAt/updatedAt/title | **return after Course stats capability** — wire sorts + card fields then | — |
+| Course mgmt | Sort modes 4/5/7 (loop count, cumulative session time, last practice) + card cumulative stats on list cards | Need aggregated course stats from TypingSession; list sort limited to createdAt/updatedAt/title (ADR-0012) | **return after Course stats capability** — wire sorts + card fields then | ADR-0012 |
 | Course mgmt | Full markdown in description (headings, `[text](url)` syntax) | Phase 3 plain text + URL linkify on typing page only; no markdown renderer | future polish if users paste rich notes | ADR-0011 |
 | Typing | English course + accidental IME shows red diff only, no explicit "switch to English" guidance | Phase 3 chose IME-as-valid-input (ADR-0008) over kickoff #7 banner/pause; red diff implies the error | future polish / real-usage feedback | ADR-0008 |
 | Annotation | false-green (duplicate substring, no index shift) | MVP skips index shift | user reanchor | — |

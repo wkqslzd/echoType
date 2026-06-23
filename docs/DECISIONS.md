@@ -420,3 +420,50 @@
   - `OptionalDescriptionField` is the reuse point for Phase 5 album description.
   - Deploy requires API migration + web; re-seed updates Deer Enclosure description.
 - Supersedes / superseded-by: none
+
+---
+
+## ADR-0012 — Course list search + sort (server `q`/`sort`, IME-aware debounce)
+- Status: Accepted (2026-06-23)
+- Commit/PR anchor: eaced3e
+- Plain summary (owner reads this): Mode-scoped course lists support server-side
+  search and sort. Search matches title, content, description, or any annotation
+  noteText (case-insensitive substring, including Chinese). Sort offers four modes
+  (newest/oldest/updated/title A–Z). The list toolbar uses debounced search with
+  IME composition gating, a clear button, and English labels; filter state stays in
+  component memory, not the URL.
+- Context: Kickoff mode screen requires search + sort on course cards (ADR-0009
+  mode-scoped routes). Phase 3 added `description`, which must be searchable
+  (ADR-0011). Chinese-speaking users may search with pinyin IME — intermediate
+  composition must not hit the API. Stats-based sorts (loop count, practice time)
+  remain deferred until Course stats capability.
+- Decision:
+  1. **API**: extend `GET /courses` with `q` (optional, trim, max 200) and `sort`
+     (`CourseListSort` enum); default `createdAt_desc` when `sort` omitted.
+  2. **Search**: Prisma `OR` — `title`, `content`, `description`, and
+     `annotations.some.noteText`, all `contains` + `mode: 'insensitive'`; empty `q`
+     = no text filter; **description is not a sort key**.
+  3. **Sort (exactly four)**: `createdAt_desc` | `createdAt_asc` | `updatedAt_desc`
+     | `title_asc` — PostgreSQL default byte order for title (case-sensitive A–Z).
+  4. **UI**: toolbar on `CourseListPage` — search input + sort `<select>`; English
+     labels; **no URL query persistence**; Short/Article routes keep independent state.
+  5. **Debounce + IME**: `useImeAwareDebouncedSearch` (300ms); while composing, do
+     not commit `q` to React Query; flush on `compositionend`.
+  6. **Clear**: custom × clears draft + query; input `type="text"` + `role="searchbox"`
+     (not `type="search"`) to avoid duplicate native clear control.
+  7. **Empty states**: no courses vs `No courses match your search.` when `q` set.
+- Rejected alternatives:
+  - Client-side filter/sort only — duplicates server `mode=` pattern; poor fit once
+    description search is server-side.
+  - URL `?q=&sort=` — deferred; MVP keeps list state in component memory.
+  - `title_asc` case-insensitive — extra SQL/`LOWER()`; PostgreSQL default chosen.
+  - `type="search"` input — browser native clear duplicates custom ×.
+  - Sort modes 4/5/7 — deferred to Course stats capability (Known debt).
+  - CJK tokenization / full-text index — unnecessary; `contains` suffices for MVP.
+- Consequences:
+  - React Query key: `['courses', mode, q, sort]`; invalidate by `['courses', mode]`
+    prefix on create/edit/delete.
+  - Deploy requires **both** API and web.
+  - Phase 5 categories build on the same list shell; category filter is a future
+    `GET /courses` query extension, not Phase 4.
+- Supersedes / superseded-by: none
