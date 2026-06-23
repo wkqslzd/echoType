@@ -36,6 +36,44 @@ stale lines.
 - Overturning a decision: write a NEW ADR and flip the old entry's Status to
   "Superseded by ADR-xx (date)". Do not edit the old entry's reasoning.
 
+## Two-commit discipline (work, then docs) — default per phase
+
+Each phase or other meaningful feature ships as **two commits by default**, not
+one. This is a dependency-order rule, not a style preference.
+
+**Why:** An ADR `Commit/PR anchor` must point at the **implementing** commit's
+sha. That sha does not exist until the work commit is created. Putting code and
+ADR finalization in the same commit forces filling an anchor for a commit that
+does not yet exist — a circular dependency that produces `pending` anchors,
+wrong dates, or last-minute edits. Splitting commits removes the contradiction.
+
+### Commit 1 — work (code only)
+
+- **Include:** implementation code, migrations, seed changes, shared contracts —
+  everything needed to run the feature.
+- **Exclude:** `docs/STATE.md`, `docs/DECISIONS.md` (and local kickoff).
+- **Gate:** normal diff → owner OK commit → owner OK push (`git-commit-push.mdc`).
+- Design-time ADR **reasoning** may be drafted in chat or left as a working note,
+  but do **not** set `Accepted` + anchor in DECISIONS until Commit 1 exists.
+
+### Commit 2 — docs (after owner验收 of Commit 1)
+
+- **When:** only after the owner has验收'd Commit 1 (local and/or deployed as
+  appropriate for the phase).
+- **Include:** `docs/STATE.md` (phase `[x]`, "Now working on", debt lines as
+  needed) and `docs/DECISIONS.md` (ADR `Accepted`, final semantics).
+- **ADR anchor:** Commit 1's sha (short or full).
+- **Accepted date:** `git log -1 --format=%cs <commit-1-sha>` — never the design
+  day, never Cursor `user_info` date, never Commit 2's date.
+- **Gate:** separate diff → owner OK commit → owner OK push. Do not bundle with
+  Commit 1 unless the owner explicitly overrides (see Exception).
+
+### Exception
+
+- **Pure doc touch-ups** (typo, single-line STATE tweak, no new ADR anchor) may
+  ship in one commit when the owner **explicitly** says to combine — not by agent
+  default.
+
 ## Revert reconciliation (important):
 - A code revert may cross the implementation point of an Accepted ADR, physically
   undoing that decision while the log still says "Accepted" — this creates a
