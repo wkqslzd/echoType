@@ -378,3 +378,45 @@
   - Any future API route that must surface real 404 JSON through CloudFront should
     avoid 404 or add a client guard — same SPA rewrite applies to all origins.
 - Supersedes / superseded-by: none
+
+---
+
+## ADR-0011 — Optional course description (plain text, typing + card display)
+- Status: Accepted (2026-06-23)
+- Commit/PR anchor: 29216d9
+- Plain summary (owner reads this): Each course may have an optional background
+  description (up to 1000 characters). It is edited in Step 1 of the course editor,
+  shown on the typing page (with URL linkify), and summarized on list cards in a
+  fixed four-row layout. Storage is plain text only—no markdown renderer in Phase 3.
+  Phase 5 album/category descriptions reuse the same max length and input component.
+- Context: English-native audience needs context beyond the title (e.g. cultural
+  background for Deer Enclosure). Search (Phase 4) will include description in OR
+  filters; the field must exist first. Product copy and seed content stay in English.
+- Decision:
+  1. **Schema**: `Course.description String? @db.VarChar(1000)`; shared constant
+     `DESCRIPTION_MAX = 1000` in `@echotype/shared` for future `Category.description`.
+  2. **API**: optional on create/update; empty string → `null`; included in
+     `CourseDTO`; not a sort key (Phase 4 search only).
+  3. **Editor**: `OptionalDescriptionField` on Step 1 (optional textarea); not
+     required for step1 validation.
+  4. **Typing page**: show when non-empty; default **one line** (`line-clamp-1`);
+     Show more/less only when `scrollHeight` overflows (not always-on); **URL
+     linkify only** (`https?://…` → clickable `<a>`).
+  5. **List card**: fixed four rows — title `line-clamp-1`, description
+     `line-clamp-1` (placeholder `—` when empty), **blank spacer row**, `Content:`
+     + content `line-clamp-1` (`toCardPreviewLine` collapses newlines); pinned
+     action row (`mt-auto`); **plain text on card** (no linkify).
+  6. **Seed**: Deer Enclosure sample gets an English description tying echo/repetition
+     to EchoType; other seeds remain `null`.
+- Rejected alternatives:
+  - Full markdown rendering — deferred to Known debt; XSS/syntax scope too large
+    for Phase 3.
+  - Linkify on list cards — truncated URLs and distraction; typing page only.
+  - Omit description row when empty — breaks equal card heights (chosen: A1 `—`).
+  - Chinese product copy in description UI/seed — primary audience is English-native.
+- Consequences:
+  - Phase 4 search adds `description` to server OR filter alongside title/content/
+    noteText.
+  - `OptionalDescriptionField` is the reuse point for Phase 5 album description.
+  - Deploy requires API migration + web; re-seed updates Deer Enclosure description.
+- Supersedes / superseded-by: none
