@@ -528,7 +528,7 @@
 
 ## ADR-0014 — Course stats: persistence policy, phases, list UI, timer, pause
 - Status: Accepted (2026-06-24)
-- Commit/PR anchor: c9421bd (Phase 2 persistence); fd15f5d (Phase 1 STATS + loops display)
+- Commit/PR anchor: c9421bd (Phase 2 persistence); 2b0e443 (Phase 3 collection rollup); fd15f5d (Phase 1 STATS + loops display)
 - Plain summary (owner reads this): Course and collection **statistics** are driven by
   explicit **Save session** (`POST /sessions`); formulas live in `docs/STATS.md`.
   Cumulative course fields update in the same transaction as each saved session.
@@ -558,6 +558,9 @@
      `createBrowserRouter` + `useBlocker`, Save helper copy.
   6. **Collection rollup**: sum duration/passes, max `lastPracticedAt` from members;
      collection-owned `createdAt`/`updatedAt`/`courseCount` unchanged (ADR-0013).
+     **Phase 3 shipped** (`2b0e443`): `CategoryDTO.rollup` on `GET/POST/PUT /categories`;
+     read-time aggregate via `categoryRollupFromMembers` (no Category table columns).
+     Local smoke: `apps/api/scripts/phase3-rollup-probe.mjs`.
   7. **Course card UI**: explicit `Xh Ym · N loops`; popover for full stats +
      annotation count (moved off card face); **Recent** if `lastPracticedAt` within
      7 days (rolling, local clock).
@@ -585,7 +588,7 @@
   - Collection tag when any member practiced recently (S6 B) — mode-wide winner only.
   - STATS.md as combined product + metrics doc — split per doc layering.
 - Consequences:
-  - Phases 3–7 remain in STATE; Phase 2 anchor `c9421bd`.
+  - Phases 4–7 remain in STATE; Phase 3 anchor `2b0e443`.
   - ADR-0012 Known debt sorts/card stats close in Phases 4–5.
   - Timer/pause behavior does not change metric formulas in STATS.md; pause only
     affects when `activeMs` advances.

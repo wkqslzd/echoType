@@ -98,15 +98,17 @@ Code: `packages/shared/src/courseStats.ts`, `apps/api/src/courseStats.ts`.
 
 **Static (not from typing):** `createdAt`, `updatedAt` (collection metadata edits only), `courseCount`.
 
-**Rollup from member courses** (recomputed when any member’s cumulative changes):
+**Rollup from member courses** (recomputed on each `GET/POST/PUT /categories` from member course cumulative columns):
 
-| Field | Definition |
-|-------|------------|
-| `rollupDurationSec` | `sum(member.totalDurationSec)` |
-| `rollupCompletedPasses` | `sum(member.totalCompletedPasses)` |
-| `rollupLastPracticedAt` | `max(member.lastPracticedAt)` over members; `null` if all null |
+| Concept (STATS) | `CategoryDTO.rollup` field | Definition |
+|-----------------|----------------------------|------------|
+| `rollupDurationSec` | `totalDurationSec` | `sum(member.totalDurationSec)` |
+| `rollupCompletedPasses` | `totalCompletedPasses` | `sum(member.totalCompletedPasses)` |
+| `rollupLastPracticedAt` | `lastPracticedAt` | `max(member.lastPracticedAt)` over members; `null` if all null |
 
-Empty collection: rollups `0` / `0` / `null`.
+Empty collection: `rollup` is `{ totalDurationSec: 0, totalCompletedPasses: 0, lastPracticedAt: null }`.
+
+Code: `packages/shared/src/categoryRollup.ts`, `apps/api/src/routes/categories.ts`.
 
 ## 5. List sort keys (stats-based)
 
