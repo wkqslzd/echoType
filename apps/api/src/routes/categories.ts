@@ -4,15 +4,25 @@ import {
   CreateCategoryInput,
   UpdateCategoryInput,
   ListCategoriesQuery,
+  categoryRollupFromMembers,
   type CourseListSort,
 } from '@echotype/shared';
 import { prisma } from '../prisma.js';
 import { toOptionalDescription } from '../text.js';
 import { isUniqueConstraintViolation } from '../prismaErrors.js';
 
-type CategoryWithCount = Prisma.CategoryGetPayload<{
-  include: { _count: { select: { courses: true } } };
-}>;
+const categoryInclude = {
+  _count: { select: { courses: true } },
+  courses: {
+    select: {
+      totalDurationSec: true,
+      totalCompletedPasses: true,
+      lastPracticedAt: true,
+    },
+  },
+} satisfies Prisma.CategoryInclude;
+
+type CategoryWithRollup = Prisma.CategoryGetPayload<{ include: typeof categoryInclude }>;
 
 function listCategoriesOrderBy(sort: CourseListSort): Prisma.CategoryOrderByWithRelationInput {
   switch (sort) {
@@ -27,7 +37,7 @@ function listCategoriesOrderBy(sort: CourseListSort): Prisma.CategoryOrderByWith
   }
 }
 
-function serializeCategory(category: CategoryWithCount) {
+function serializeCategory(category: CategoryWithRollup) {
   return {
     id: category.id,
     name: category.name,
@@ -36,6 +46,7 @@ function serializeCategory(category: CategoryWithCount) {
     courseCount: category._count.courses,
     createdAt: category.createdAt.toISOString(),
     updatedAt: category.updatedAt.toISOString(),
+    rollup: categoryRollupFromMembers(category.courses),
   };
 }
 
@@ -58,7 +69,7 @@ export async function registerCategoryRoutes(app: FastifyInstance) {
           : {}),
       },
       orderBy: listCategoriesOrderBy(sort),
-      include: { _count: { select: { courses: true } } },
+      include: categoryInclude,
     });
     return categories.map(serializeCategory);
   });
@@ -66,7 +77,7 @@ export async function registerCategoryRoutes(app: FastifyInstance) {
   app.get<{ Params: { id: string } }>('/categories/:id', async (req, reply) => {
     const category = await prisma.category.findFirst({
       where: { id: req.params.id, userId: req.userId },
-      include: { _count: { select: { courses: true } } },
+      include: categoryInclude,
     });
     if (!category) {
       return reply.status(404).send({ error: 'not_found' });
@@ -84,7 +95,7 @@ export async function registerCategoryRoutes(app: FastifyInstance) {
           mode: body.mode,
           description: toOptionalDescription(body.description),
         },
-        include: { _count: { select: { courses: true } } },
+        include: categoryInclude,
       });
       return reply.status(201).send(serializeCategory(created));
     } catch (error) {
@@ -111,7 +122,7 @@ export async function registerCategoryRoutes(app: FastifyInstance) {
           name: body.name,
           description: toOptionalDescription(body.description),
         },
-        include: { _count: { select: { courses: true } } },
+        include: categoryInclude,
       });
       return serializeCategory(updated);
     } catch (error) {

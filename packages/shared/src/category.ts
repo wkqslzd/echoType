@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { CourseMode, CourseListSort, DESCRIPTION_MAX, SEARCH_Q_MAX } from './course.js';
+import { CategoryRollupDTO } from './categoryRollup.js';
 
 export const CATEGORY_NAME_MAX = 200;
 export const PATCH_COURSES_CATEGORY_MAX = 100;
@@ -25,6 +26,7 @@ export const CategoryDTO = z.object({
   courseCount: z.number().int().nonnegative(),
   createdAt: z.string(),
   updatedAt: z.string(),
+  rollup: CategoryRollupDTO,
 });
 export type CategoryDTO = z.infer<typeof CategoryDTO>;
 
