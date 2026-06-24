@@ -11,7 +11,7 @@
 - [x] Cloud deploy (CloudFront cutover; live at *.cloudfront.net + post-deploy fixes)
 - [x] Typing experience (auto-loop, newline skip, session flow, IME composition; ADR-0006/0007/0008)
 - [x] Course management (mode routes, card list, DELETE, description, search/sort, collections; ADR-0009–0013)
-- [ ] Course stats (per-session + cumulative; needs typing session data first)    <-- YOU ARE HERE
+- [ ] Course stats (per-session + cumulative; STATS.md contract; phases below)    <-- YOU ARE HERE
 - [ ] Auth (Cognito; replaces demo-user shim; required before sharing externally)
 - [ ] Custom domain (purchase + ACM cert + CloudFront alias; deferred until self-testing settles)
 - [ ] Ops & safety (Sentry, CloudWatch, rate limiting, disclaimer, error/empty states)
@@ -24,22 +24,30 @@
 
 ## Phase Roadmap (active capability only)
 Active capability: Course stats
-- [ ] Phase 1 — Per-session `TypingSession` capture wired from typing flow
-- [ ] Phase 2 — Per-course cumulative metrics + deferred list sorts/card fields (ADR-0012/0013 debt)
+- [x] Phase 1 — `docs/STATS.md` metrics reference + stats bar completed-loops display fix
+- [ ] Phase 2 — Manual Save → `TypingSession` + course cumulative columns + Save copy + in-app leave guard (3-button)
+- [ ] Phase 3 — Collection rollup fields on categories API
+- [ ] Phase 4 — Course/collection card stats UI (explicit/implicit) + Recent + Last practiced here tags
+- [ ] Phase 5 — List sort modes 4/5/7 (ADR-0012 debt)
+- [ ] Phase 6 — Session timer card (10min–2h) + countdown-end modal (Save / Don't save) + T3-A untimed continuation
+- [ ] Phase 7 — Pause/resume (freezes active time + countdown; resume on keystroke)
 
 > Legend: [x] done  [~] in progress  [ ] todo  (blocked) noted inline
 > When the active capability changes, replace this entire Phase Roadmap with the
 > new capability's phases and move YOU ARE HERE above.
 
 ## Now working on (describe ONLY the in-progress item)
-- Goal (one line): Course stats — session recording and cumulative metrics.
-- Sub-steps done: Course management Phase 5 collections shipped (f26a6ed; owner验收 pass)
-- Next step: Course stats design review, then Phase 1
-- Related decisions: ADR-0013 (collections); ADR-0012 (deferred stats sorts)
+- Goal (one line): Course stats Phase 2 — persist sessions into course cumulative metrics.
+- Sub-steps done: Design sign-off (T1–T3); Phase 1 STATS.md + loop display fix
+- Next step: Schema migration for course cumulative columns; wire `POST /sessions` transaction; Save helper copy; leave guard
+- Related decisions: ADR-0006/0007 (session counters); ADR-0012 (sorts Phase 5); ADR-0013 (collection rollups Phase 3); formulas in STATS.md
 
 ## Contract pointers (don't memorize, go read the source)
+- Stats metrics (definitions/formulas only): docs/STATS.md
+- Session types/API: packages/shared/session.ts, apps/api/src/routes/sessions.ts
 - Types/validation: packages/shared/course.ts, packages/shared/category.ts
 - Course + collection routes: apps/api/src/routes/courses.ts, apps/api/src/routes/categories.ts
+- Typing UI: apps/web/src/pages/TypingPage.tsx
 - Mode list + collections UI: apps/web/src/pages/CourseListPage.tsx, CollectionDetailPage.tsx
 - Annotation rendering: apps/web/src/components/AnnotatedText.tsx + apps/web/src/components/annotated-text/useTextMeasurement.ts
 - Editor + review: apps/web/src/components/editor/useCourseEditor.ts, reviewUtils.ts, AnnotatedTextEditor.tsx
@@ -53,7 +61,9 @@ Active capability: Course stats
 ## Known debt / intentionally deferred
 | Capability | Item | Reason | Picks it up | Related ADR |
 |---|---|---|---|---|
-| Course mgmt | Sort modes 4/5/7 (loop count, cumulative session time, last practice) + card cumulative stats on list cards | Need aggregated course stats from TypingSession; list sort limited to createdAt/updatedAt/title | **return after Course stats capability** — wire sorts + card fields then | ADR-0012 |
+| Course stats | Typing stats lost on browser close / crash without Save | MVP: manual Save only; no beforeunload | intentional (Phase 2 policy) | — |
+| Course stats | Timer visit abandoned via external close before end modal | Same as above | intentional (Phase 6) | — |
+| Course mgmt | Sort modes 4/5/7 + card cumulative stats | Waiting on course cumulative columns | Course stats Phase 4–5 | ADR-0012 |
 | Course mgmt | Collection detail in-page search | MVP: sort only on detail; mode list has global search | future polish | ADR-0013 |
 | Course mgmt | Full markdown in description (headings, `[text](url)` syntax) | Phase 3 plain text + URL linkify on typing/collection detail only; no markdown renderer | future polish if users paste rich notes | ADR-0011 |
 | Typing | English course + accidental IME shows red diff only, no explicit "switch to English" guidance | Phase 3 chose IME-as-valid-input (ADR-0008) over kickoff #7 banner/pause; red diff implies the error | future polish / real-usage feedback | ADR-0008 |

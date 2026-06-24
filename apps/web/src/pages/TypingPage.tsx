@@ -175,7 +175,8 @@ function TypingSession({
   const wpm =
     elapsedSecWhole > 0 ? sessionCharCount / 5 / (elapsedSecWhole / 60) : 0;
   const progress = alignedProgress(typed, target);
-  const passNumber = startedAt ? loopCount + 1 : null;
+  /** Completed passes in the current unsaved segment (see docs/STATS.md §3). */
+  const completedLoops = startedAt !== null ? loopCount : null;
 
   function beginFreshSession() {
     setTyped('');
@@ -416,7 +417,7 @@ function TypingSession({
         accuracy={liveStats.accuracy}
         progress={progress}
         errors={liveStats.errors}
-        pass={passNumber}
+        completedLoops={completedLoops}
       />
 
       <div className="flex gap-2">
@@ -466,14 +467,14 @@ function StatsBar({
   accuracy,
   progress,
   errors,
-  pass,
+  completedLoops,
 }: {
   durationSec: number;
   wpm: number;
   accuracy: number;
   progress: number;
   errors: number;
-  pass: number | null;
+  completedLoops: number | null;
 }) {
   return (
     <div className="grid grid-cols-2 gap-2 rounded-md border bg-white p-3 text-sm sm:grid-cols-6">
@@ -482,7 +483,7 @@ function StatsBar({
       <Stat label="accuracy" value={`${(accuracy * 100).toFixed(1)}%`} />
       <Stat label="progress" value={`${(progress * 100).toFixed(0)}%`} />
       <Stat label="errors" value={String(errors)} />
-      <Stat label="pass" value={pass === null ? '—' : String(pass)} />
+      <Stat label="loops" value={completedLoops === null ? '—' : String(completedLoops)} />
     </div>
   );
 }

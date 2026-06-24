@@ -523,3 +523,68 @@
   - Phase 4 list `categoryId` filter extends ADR-0012 list contract.
   - Course stats capability picks up deferred sort modes 4/5/7 (STATE Known debt).
 - Supersedes / superseded-by: refines ADR-0012 consequence on category filter (implemented in Phase 5, not deferred)
+
+---
+
+## ADR-0014 — Course stats: persistence policy, phases, list UI, timer, pause
+- Status: Pending
+- Commit/PR anchor: pending
+- Plain summary (owner reads this): Course and collection **statistics** are driven by
+  explicit **Save session** (`POST /sessions`); formulas live in `docs/STATS.md`.
+  Cumulative course fields update in the same transaction as each saved session.
+  List cards show explicit duration + loops; full stats in a popover. **Recent**
+  tag (rolling 7 days) on courses; **Last practiced here** on collections when the
+  mode-wide most recently practiced course belongs to that collection. Session
+  **timer** (10min–2h) and **pause** ship in later phases of this capability.
+- Context: ADR-0006/0007 define per-session counters; ADR-0012 deferred sort modes
+  4/5/7 and card stats; ADR-0013 added collections needing rollup metrics. Kickoff
+  requires cumulative stats on cards and practice-based sorts. Product sign-off
+  (2026-06) split **metrics reference** (`STATS.md`) from **product rules** (this
+  ADR + STATE Phase Roadmap).
+- Decision:
+  1. **Metrics doc**: `docs/STATS.md` — static field definitions and formulas only;
+     no UX phases or persistence policy.
+  2. **Persistence (MVP)**: only **Save session** writes `TypingSession` and updates
+     course cumulative columns; UI copy states stats count only after Save.
+  3. **Leave guard**: in-app navigation away from typing with unsaved progress →
+     three-choice confirm: **Stay** / **Leave without saving** / **Save and leave**.
+  4. **Browser close / crash / external kill**: no `beforeunload`; lost unsaved
+     stats are intentional Known debt (user responsibility).
+  5. **Course cumulative**: materialized on `Course` (`totalDurationSec`,
+     `totalCompletedPasses`, `sessionCount`, `lastPracticedAt`, weighted
+     `avgWpm`/`avgAccuracy`); see STATS.md §3.
+  6. **Collection rollup**: sum duration/passes, max `lastPracticedAt` from members;
+     collection-owned `createdAt`/`updatedAt`/`courseCount` unchanged (ADR-0013).
+  7. **Course card UI**: explicit `Xh Ym · N loops`; popover for full stats +
+     annotation count (moved off card face); **Recent** if `lastPracticedAt` within
+     7 days (rolling, local clock).
+  8. **Collection card UI**: explicit rollup duration + loops (symmetric to course);
+     **Last practiced here** when mode-wide last-practiced course (tie-break smallest
+     `courseId`) has `categoryId` equal to this collection; same tag on collection
+     detail header.
+  9. **Sort modes 4/5/7**: `loopCount_desc`, `totalDuration_desc`,
+     `lastPracticed_desc` — wire after cumulative columns exist (STATE Phase 5).
+  10. **Session timer**: pre-typing choice untimed vs timed (10min–2h); countdown
+      at 0 → lock input → modal **Save session** / **Don't save** only; both
+      dismiss to **stay on typing page** with `beginFreshSession()` (same as Start
+      over); Save posts if unsaved segment exists; after dismiss timer UI off for
+      rest of visit (**T3-A** untimed continuation). Mid-timer Save posts segment
+      and resets counters but countdown continues.
+  11. **Pause**: stops active-time accumulation and countdown; resume on any
+      keystroke (STATE Phase 7).
+  12. **Loops display**: stats bar shows completed `loopCount` only, not
+      `loopCount + 1` (Phase 1 shipped).
+- Rejected alternatives:
+  - Auto-save on timer end or page leave — MVP keeps manual Save (sign-off S1).
+  - `Practiced today` (24h) tag — only **Recent** (7d) retained.
+  - Navigate to mode list after timer-end modal — stay on course typing page (T2).
+  - Re-arm countdown after timer block (T3-B) — untimed continuation for rest of visit.
+  - Collection tag when any member practiced recently (S6 B) — mode-wide winner only.
+  - STATS.md as combined product + metrics doc — split per doc layering.
+- Consequences:
+  - Implementation phased in STATE (Phases 2–7); anchor commit flips Status to
+    Accepted when Phase 2 persistence lands (or owner chooses earlier).
+  - ADR-0012 Known debt sorts/card stats close in Phases 4–5.
+  - Timer/pause behavior does not change metric formulas in STATS.md; pause only
+    affects when `activeMs` advances.
+- Supersedes / superseded-by: none (extends ADR-0012 deferred sorts; extends ADR-0013 with rollup UI)
