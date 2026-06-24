@@ -25,7 +25,7 @@
 ## Phase Roadmap (active capability only)
 Active capability: Course stats
 - [x] Phase 1 — `docs/STATS.md` metrics reference + stats bar completed-loops display fix
-- [ ] Phase 2 — Manual Save → `TypingSession` + course cumulative columns + Save copy + in-app leave guard (3-button)
+- [x] Phase 2 — Manual Save → `TypingSession` + course cumulative columns + Save copy + in-app leave guard (3-button)
 - [ ] Phase 3 — Collection rollup fields on categories API
 - [ ] Phase 4 — Course/collection card stats UI (explicit/implicit) + Recent + Last practiced here tags
 - [ ] Phase 5 — List sort modes 4/5/7 (ADR-0012 debt)
@@ -37,13 +37,14 @@ Active capability: Course stats
 > new capability's phases and move YOU ARE HERE above.
 
 ## Now working on (describe ONLY the in-progress item)
-- Goal (one line): Course stats Phase 2 — persist sessions into course cumulative metrics.
-- Sub-steps done: Design sign-off (T1–T3); Phase 1 STATS.md + loop display fix
-- Next step: Schema migration for course cumulative columns; wire `POST /sessions` transaction; Save helper copy; leave guard
-- Related decisions: ADR-0006/0007 (session counters); ADR-0012 (sorts Phase 5); ADR-0013 (collection rollups Phase 3); formulas in STATS.md
+- Goal (one line): Course stats Phase 3 — collection rollup fields on categories API.
+- Sub-steps done: Phase 2 shipped (c9421bd): cumulative columns, POST /sessions transaction, leave guard
+- Next step: Category rollup API + shared types
+- Related decisions: ADR-0014; STATS.md §3–4
 
 ## Contract pointers (don't memorize, go read the source)
 - Stats metrics (definitions/formulas only): docs/STATS.md
+- Course stats serialize: packages/shared/courseStats.ts, apps/api/src/courseStats.ts
 - Session types/API: packages/shared/session.ts, apps/api/src/routes/sessions.ts
 - Types/validation: packages/shared/course.ts, packages/shared/category.ts
 - Course + collection routes: apps/api/src/routes/courses.ts, apps/api/src/routes/categories.ts
@@ -61,9 +62,9 @@ Active capability: Course stats
 ## Known debt / intentionally deferred
 | Capability | Item | Reason | Picks it up | Related ADR |
 |---|---|---|---|---|
-| Course stats | Typing stats lost on browser close / crash without Save | MVP: manual Save only; no beforeunload | intentional (Phase 2 policy) | — |
-| Course stats | Timer visit abandoned via external close before end modal | Same as above | intentional (Phase 6) | — |
-| Course mgmt | Sort modes 4/5/7 + card cumulative stats | Waiting on course cumulative columns | Course stats Phase 4–5 | ADR-0012 |
+| Course stats | Typing stats lost on browser close / crash without Save | MVP: manual Save only; no beforeunload | intentional (ADR-0014) | ADR-0014 |
+| Course stats | Timer visit abandoned via external close before end modal | Same as above | intentional (Phase 6) | ADR-0014 |
+| Course mgmt | Sort modes 4/5/7 + card cumulative stats display | Cumulative columns live; list sort + card UI not wired | Course stats Phase 4–5 | ADR-0012 |
 | Course mgmt | Collection detail in-page search | MVP: sort only on detail; mode list has global search | future polish | ADR-0013 |
 | Course mgmt | Full markdown in description (headings, `[text](url)` syntax) | Phase 3 plain text + URL linkify on typing/collection detail only; no markdown renderer | future polish if users paste rich notes | ADR-0011 |
 | Typing | English course + accidental IME shows red diff only, no explicit "switch to English" guidance | Phase 3 chose IME-as-valid-input (ADR-0008) over kickoff #7 banner/pause; red diff implies the error | future polish / real-usage feedback | ADR-0008 |

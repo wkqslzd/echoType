@@ -527,8 +527,8 @@
 ---
 
 ## ADR-0014 — Course stats: persistence policy, phases, list UI, timer, pause
-- Status: Pending
-- Commit/PR anchor: pending
+- Status: Accepted (2026-06-24)
+- Commit/PR anchor: c9421bd (Phase 2 persistence); fd15f5d (Phase 1 STATS + loops display)
 - Plain summary (owner reads this): Course and collection **statistics** are driven by
   explicit **Save session** (`POST /sessions`); formulas live in `docs/STATS.md`.
   Cumulative course fields update in the same transaction as each saved session.
@@ -551,8 +551,11 @@
   4. **Browser close / crash / external kill**: no `beforeunload`; lost unsaved
      stats are intentional Known debt (user responsibility).
   5. **Course cumulative**: materialized on `Course` (`totalDurationSec`,
-     `totalCompletedPasses`, `sessionCount`, `lastPracticedAt`, weighted
-     `avgWpm`/`avgAccuracy`); see STATS.md §3.
+     `totalCompletedPasses`, `sessionCount`, `lastPracticedAt`, plus internal
+     `totalCharCount` / `totalWpmCharSum` / `totalAccCharSum` for weighted
+     averages); `POST /sessions` increments in one transaction; see STATS.md §3.
+     **Phase 2 shipped** (`c9421bd`): `CourseDTO.stats`, leave guard via
+     `createBrowserRouter` + `useBlocker`, Save helper copy.
   6. **Collection rollup**: sum duration/passes, max `lastPracticedAt` from members;
      collection-owned `createdAt`/`updatedAt`/`courseCount` unchanged (ADR-0013).
   7. **Course card UI**: explicit `Xh Ym · N loops`; popover for full stats +
@@ -582,8 +585,7 @@
   - Collection tag when any member practiced recently (S6 B) — mode-wide winner only.
   - STATS.md as combined product + metrics doc — split per doc layering.
 - Consequences:
-  - Implementation phased in STATE (Phases 2–7); anchor commit flips Status to
-    Accepted when Phase 2 persistence lands (or owner chooses earlier).
+  - Phases 3–7 remain in STATE; Phase 2 anchor `c9421bd`.
   - ADR-0012 Known debt sorts/card stats close in Phases 4–5.
   - Timer/pause behavior does not change metric formulas in STATS.md; pause only
     affects when `activeMs` advances.

@@ -69,20 +69,30 @@ Persist snapshots §2 fields into `TypingSession`.
 
 ## 3. Course cumulative (on `Course`)
 
-Aggregated from all `TypingSession` rows for that course. Updated when a new session row is added.
+Materialized on the `courses` table. Updated atomically (increment) when a new `TypingSession` row is inserted. Exposed as `CourseDTO.stats` (`CourseStatsDTO`).
 
-| Field | Definition |
-|-------|------------|
-| `totalDurationSec` | `sum(durationSec)` |
-| `totalCompletedPasses` | `sum(loopCount)` |
-| `sessionCount` | `count(*)` of session rows |
-| `lastPracticedAt` | `max(endedAt)`; `null` if no sessions |
-| `avgWpm` | `sum(wpm * charCount) / sum(charCount)` if `sum(charCount) > 0`, else undefined |
-| `avgAccuracy` | `sum(accuracy * charCount) / sum(charCount)` if `sum(charCount) > 0`, else undefined |
+| Field (API / `CourseStatsDTO`) | DB column | Definition |
+|-------------------------------|-----------|------------|
+| `totalDurationSec` | `totalDurationSec` | `sum(durationSec)` |
+| `totalCompletedPasses` | `totalCompletedPasses` | `sum(loopCount)` |
+| `sessionCount` | `sessionCount` | `count(*)` of session rows |
+| `lastPracticedAt` | `lastPracticedAt` | `max(endedAt)`; `null` if no sessions |
+| `avgWpm` | *(derived)* | `totalWpmCharSum / totalCharCount` if `totalCharCount > 0`, else `null` |
+| `avgAccuracy` | *(derived)* | `totalAccCharSum / totalCharCount` if `totalCharCount > 0`, else `null` |
+
+**Internal storage only** (not in `CourseStatsDTO`; incremented per saved session):
+
+| Column | Increment per session |
+|--------|-------------------------|
+| `totalCharCount` | `+ charCount` |
+| `totalWpmCharSum` | `+ wpm × charCount` |
+| `totalAccCharSum` | `+ accuracy × charCount` |
 
 `Course.updatedAt` is **last course edit** (content/title/annotations), not `lastPracticedAt`.
 
-Default when no sessions: `totalDurationSec = 0`, `totalCompletedPasses = 0`, `sessionCount = 0`, `lastPracticedAt = null`.
+Default when no sessions: `totalDurationSec = 0`, `totalCompletedPasses = 0`, `sessionCount = 0`, `lastPracticedAt = null`, averages `null`.
+
+Code: `packages/shared/src/courseStats.ts`, `apps/api/src/courseStats.ts`.
 
 ## 4. Collection rollup (on `Category`)
 
