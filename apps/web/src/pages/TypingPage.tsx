@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import type { AnnotationDTO, CourseMode, PasteRange } from '@echotype/shared';
+import { Link, useBlocker, useNavigate, useParams } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { AnnotationDTO, CourseDTO, CourseMode, CreateSessionInput, PasteRange } from '@echotype/shared';
 import { api, isCourseNotFoundError } from '../lib/api';
 import { CourseDescriptionPanel } from '../components/CourseDescriptionPanel';
 import { AnnotatedText } from '../components/AnnotatedText';
+import { TypingLeaveDialog } from '../components/typing/TypingLeaveDialog';
 import {
   alignedProgress,
   buildTargetStatuses,
@@ -117,6 +118,7 @@ function TypingSession({
   description: string | null;
   annotations: AnnotationDTO[];
 }) {
+  const queryClient = useQueryClient();
   const [typed, setTyped] = useState('');
   /** Raw textarea value (mirrors the DOM, incl. IME preedit). Invariant: draft === textarea value. */
   const [draft, setDraft] = useState('');
@@ -136,12 +138,26 @@ function TypingSession({
     loopCount: number;
   }>(null);
   const [immersiveMode, setImmersiveMode] = useState(readImmersiveModePreference);
+  const [leaveSaveError, setLeaveSaveError] = useState<string | null>(null);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lastActivityAtRef = useRef<number | null>(null);
   const pasteMetaRef = useRef<{ start: number; end: number; clipLen: number } | null>(null);
   /** True between compositionstart and compositionend (IME in progress). */
   const composingRef = useRef(false);
+
+  const hasUnsavedProgress = startedAt !== null;
+
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      hasUnsavedProgress && currentLocation.pathname !== nextLocation.pathname,
+  );
+
+  useEffect(() => {
+    if (blocker.state === 'blocked') {
+      setLeaveSaveError(null);
+    }
+  }, [blocker.state]);
 
   useEffect(() => {
     textareaRef.current?.focus();
@@ -190,9 +206,35 @@ function TypingSession({
     lastActivityAtRef.current = null;
   }
 
+  function buildSessionPayload(): CreateSessionInput {
+    if (!startedAt) {
+      throw new Error('Nothing to save');
+    }
+    const endedAt = new Date();
+    const durationSec = Math.max(0, Math.round(activeMs / 1000));
+    const partialErrors = typed.length > 0 ? countAlignedErrors(typed, target) : 0;
+    const errorCount = sessionErrorCount + partialErrors;
+    const finalWpm = durationSec > 0 ? sessionCharCount / 5 / (durationSec / 60) : 0;
+    const accuracy = sessionCharCount === 0 ? 1 : 1 - errorCount / sessionCharCount;
+
+    return {
+      courseId,
+      startedAt: startedAt.toISOString(),
+      endedAt: endedAt.toISOString(),
+      durationSec,
+      charCount: sessionCharCount,
+      errorCount,
+      wpm: Number(finalWpm.toFixed(2)),
+      accuracy: Number(accuracy.toFixed(4)),
+      loopCount,
+      pasteRanges,
+    };
+  }
+
   const submitMutation = useMutation({
-    mutationFn: api.createSession,
-    onSuccess: (s) => {
+    mutationFn: (input: CreateSessionInput) => api.createSession(input),
+    onSuccess: (data) => {
+      const s = data.session;
       setLastSaved({
         durationSec: s.durationSec,
         wpm: s.wpm,
@@ -201,6 +243,10 @@ function TypingSession({
         charCount: s.charCount,
         loopCount: s.loopCount,
       });
+      queryClient.setQueryData<CourseDTO>(['course', courseId], (old) =>
+        old ? { ...old, stats: data.courseStats } : old,
+      );
+      void queryClient.invalidateQueries({ queryKey: ['courses', courseMode] });
       beginFreshSession();
       queueMicrotask(() => textareaRef.current?.focus());
     },
@@ -294,25 +340,20 @@ function TypingSession({
 
   function handleFinish() {
     if (!startedAt) return;
-    const endedAt = new Date();
-    const durationSec = Math.max(0, Math.round(activeMs / 1000));
-    const partialErrors = typed.length > 0 ? countAlignedErrors(typed, target) : 0;
-    const errorCount = sessionErrorCount + partialErrors;
-    const finalWpm = durationSec > 0 ? sessionCharCount / 5 / (durationSec / 60) : 0;
-    const accuracy = sessionCharCount === 0 ? 1 : 1 - errorCount / sessionCharCount;
+    submitMutation.mutate(buildSessionPayload());
+  }
 
-    submitMutation.mutate({
-      courseId,
-      startedAt: startedAt.toISOString(),
-      endedAt: endedAt.toISOString(),
-      durationSec,
-      charCount: sessionCharCount,
-      errorCount,
-      wpm: Number(finalWpm.toFixed(2)),
-      accuracy: Number(accuracy.toFixed(4)),
-      loopCount,
-      pasteRanges,
-    });
+  async function handleSaveAndLeave() {
+    if (!startedAt) return;
+    setLeaveSaveError(null);
+    try {
+      await submitMutation.mutateAsync(buildSessionPayload());
+      if (blocker.state === 'blocked') {
+        blocker.proceed();
+      }
+    } catch (err) {
+      setLeaveSaveError(err instanceof Error ? err.message : 'Failed to save session.');
+    }
   }
 
   function handleReset() {
@@ -329,6 +370,16 @@ function TypingSession({
 
   return (
     <div className="space-y-6">
+      {blocker.state === 'blocked' && (
+        <TypingLeaveDialog
+          saving={submitMutation.isPending}
+          saveError={leaveSaveError}
+          onStay={() => blocker.reset()}
+          onLeave={() => blocker.proceed()}
+          onSaveAndLeave={() => void handleSaveAndLeave()}
+        />
+      )}
+
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">{title}</h1>
         <Link to={coursesListPath(courseMode)} className="text-sm text-slate-500 hover:text-slate-800">
@@ -420,20 +471,25 @@ function TypingSession({
         completedLoops={completedLoops}
       />
 
-      <div className="flex gap-2">
-        <button
-          onClick={handleFinish}
-          disabled={!startedAt || submitMutation.isPending}
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          {submitMutation.isPending ? 'Saving…' : 'Save session'}
-        </button>
-        <button
-          onClick={handleReset}
-          className="rounded-md border bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
-        >
-          Start over
-        </button>
+      <div className="space-y-2">
+        <div className="flex gap-2">
+          <button
+            onClick={handleFinish}
+            disabled={!startedAt || submitMutation.isPending}
+            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {submitMutation.isPending ? 'Saving…' : 'Save session'}
+          </button>
+          <button
+            onClick={handleReset}
+            className="rounded-md border bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+          >
+            Start over
+          </button>
+        </div>
+        <p className="text-sm text-slate-500">
+          Course statistics update only when you save this session.
+        </p>
       </div>
 
       {lastSaved && (
@@ -454,7 +510,7 @@ function TypingSession({
           </p>
         </div>
       )}
-      {submitMutation.isError && (
+      {submitMutation.isError && blocker.state !== 'blocked' && (
         <p className="text-sm text-red-600">Failed to save: {(submitMutation.error as Error).message}</p>
       )}
     </div>

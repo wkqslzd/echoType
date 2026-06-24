@@ -19,6 +19,7 @@ import {
 import { prisma } from '../prisma.js';
 import { toOptionalDescription } from '../text.js';
 import { isUniqueConstraintViolation } from '../prismaErrors.js';
+import { serializeCourseStats } from '../courseStats.js';
 
 type CourseWithAnnotations = Course & {
   annotations: Annotation[];
@@ -46,6 +47,7 @@ function serializeCourse(course: CourseWithAnnotations) {
       })),
     createdAt: course.createdAt.toISOString(),
     updatedAt: course.updatedAt.toISOString(),
+    stats: serializeCourseStats(course),
   };
 }
 

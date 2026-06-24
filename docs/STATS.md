@@ -33,7 +33,7 @@ API/DB field name: `loopCount`. UI label: **loops**.
 
 ### 1.3 Active time
 
-`activeMs` — milliseconds counted toward session duration on the typing page. Increments in fixed ticks only while the user is **active** (no keystroke/paste for ≥ 2s stops the clock).  
+`activeMs` — milliseconds counted toward session duration on the typing page. Increments in fixed ticks only while the user is **active** (no keystroke/paste for ≥ 5s stops the clock).  
 `durationSec = max(0, round(activeMs / 1000))`.
 
 ## 2. `TypingSession` row (per persisted session)

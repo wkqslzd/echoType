@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CourseStatsDTO } from './courseStats.js';
 
 export const CourseMode = z.enum(['SHORT', 'ARTICLE']);
 export type CourseMode = z.infer<typeof CourseMode>;
@@ -71,6 +72,7 @@ export const CourseDTO = z.object({
   annotations: z.array(AnnotationDTO),
   createdAt: z.string(),
   updatedAt: z.string(),
+  stats: CourseStatsDTO,
 });
 export type CourseDTO = z.infer<typeof CourseDTO>;
 

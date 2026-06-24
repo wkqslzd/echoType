@@ -8,6 +8,7 @@ import type {
   CreateCategoryInput,
   CreateCourseInput,
   CreateSessionInput,
+  CreateSessionResponse,
   ModeIssue,
   SessionDTO,
   UpdateCategoryInput,
@@ -158,7 +159,7 @@ export const api = {
     request<CourseDTO>(`/courses/${id}`, { method: 'PUT', body: JSON.stringify(input) }),
   deleteCourse: (id: string) => request<void>(`/courses/${id}`, { method: 'DELETE' }),
   createSession: (input: CreateSessionInput) =>
-    request<SessionDTO>('/sessions', { method: 'POST', body: JSON.stringify(input) }),
+    request<CreateSessionResponse>('/sessions', { method: 'POST', body: JSON.stringify(input) }),
   listSessions: (courseId?: string) =>
     request<SessionDTO[]>(`/sessions${courseId ? `?courseId=${courseId}` : ''}`),
 };

@@ -58,11 +58,22 @@ model Course {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
+  totalDurationSec      Int       @default(0)
+  totalCompletedPasses  Int       @default(0)
+  sessionCount          Int       @default(0)
+  totalCharCount        Int       @default(0)
+  totalWpmCharSum       Float     @default(0)
+  totalAccCharSum       Float     @default(0)
+  lastPracticedAt       DateTime?
+
   annotations Annotation[]
   sessions    TypingSession[]
 
   @@unique([userId, mode, title])
   @@index([userId, mode, createdAt])
+  @@index([userId, mode, lastPracticedAt])
+  @@index([userId, mode, totalCompletedPasses])
+  @@index([userId, mode, totalDurationSec])
   @@map("courses")
 }
 

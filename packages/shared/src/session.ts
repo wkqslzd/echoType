@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CourseStatsDTO } from './courseStats.js';
 
 export const PasteRange = z.object({
   start: z.number().int().nonnegative(),
@@ -36,3 +37,9 @@ export const SessionDTO = z.object({
   createdAt: z.string(),
 });
 export type SessionDTO = z.infer<typeof SessionDTO>;
+
+export const CreateSessionResponse = z.object({
+  session: SessionDTO,
+  courseStats: CourseStatsDTO,
+});
+export type CreateSessionResponse = z.infer<typeof CreateSessionResponse>;
