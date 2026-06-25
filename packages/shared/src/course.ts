@@ -85,6 +85,9 @@ export const CourseListSort = z.enum([
   'createdAt_asc',
   'updatedAt_desc',
   'title_asc',
+  'loopCount_desc',
+  'totalDuration_desc',
+  'lastPracticed_desc',
 ]);
 export type CourseListSort = z.infer<typeof CourseListSort>;
 

@@ -1,3 +1,5 @@
+import { createPortal } from 'react-dom';
+
 type TypingLeaveDialogProps = {
   saving: boolean;
   saveError: string | null;
@@ -13,11 +15,11 @@ export function TypingLeaveDialog({
   onLeave,
   onSaveAndLeave,
 }: TypingLeaveDialogProps) {
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4"
       role="presentation"
-      onMouseDown={(e) => {
+      onClick={(e) => {
         if (e.target === e.currentTarget && !saving) onStay();
       }}
     >
@@ -26,6 +28,8 @@ export function TypingLeaveDialog({
         aria-modal="true"
         aria-labelledby="typing-leave-title"
         className="w-full max-w-md rounded-lg border bg-white p-6 shadow-lg"
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
         <h2 id="typing-leave-title" className="text-lg font-semibold text-slate-900">
           Leave typing page?
@@ -61,6 +65,7 @@ export function TypingLeaveDialog({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

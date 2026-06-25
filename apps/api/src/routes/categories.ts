@@ -25,7 +25,9 @@ const categoryInclude = {
 
 type CategoryWithRollup = Prisma.CategoryGetPayload<{ include: typeof categoryInclude }>;
 
-function listCategoriesOrderBy(sort: CourseListSort): Prisma.CategoryOrderByWithRelationInput {
+function listCategoriesOrderBy(
+  sort: CourseListSort,
+): Prisma.CategoryOrderByWithRelationInput | Prisma.CategoryOrderByWithRelationInput[] {
   switch (sort) {
     case 'createdAt_asc':
       return { createdAt: 'asc' };
@@ -36,6 +38,49 @@ function listCategoriesOrderBy(sort: CourseListSort): Prisma.CategoryOrderByWith
     default:
       return { createdAt: 'desc' };
   }
+}
+
+function isStatsSort(sort: CourseListSort): boolean {
+  return (
+    sort === 'loopCount_desc' || sort === 'totalDuration_desc' || sort === 'lastPracticed_desc'
+  );
+}
+
+function compareLastPracticedDesc(a: Date | null, b: Date | null): number {
+  if (a === null && b === null) return 0;
+  if (a === null) return 1;
+  if (b === null) return -1;
+  return b.getTime() - a.getTime();
+}
+
+/** Prisma cannot order Category by member sum/max; sort in memory using rollup. */
+function sortCategoriesByStats(
+  categories: CategoryWithRollup[],
+  sort: CourseListSort,
+): CategoryWithRollup[] {
+  const copy = [...categories];
+  copy.sort((a, b) => {
+    const ra = categoryRollupFromMembers(a.courses);
+    const rb = categoryRollupFromMembers(b.courses);
+    let cmp = 0;
+    switch (sort) {
+      case 'loopCount_desc':
+        cmp = rb.totalCompletedPasses - ra.totalCompletedPasses;
+        break;
+      case 'totalDuration_desc':
+        cmp = rb.totalDurationSec - ra.totalDurationSec;
+        break;
+      case 'lastPracticed_desc':
+        cmp = compareLastPracticedDesc(
+          ra.lastPracticedAt ? new Date(ra.lastPracticedAt) : null,
+          rb.lastPracticedAt ? new Date(rb.lastPracticedAt) : null,
+        );
+        break;
+    }
+    if (cmp !== 0) return cmp;
+    return a.name.localeCompare(b.name);
+  });
+  return copy;
 }
 
 function serializeCategory(category: CategoryWithRollup, lastPracticeHere: boolean) {
@@ -69,7 +114,7 @@ export async function registerCategoryRoutes(app: FastifyInstance) {
     const query = ListCategoriesQuery.parse(req.query);
     const q = query.q?.trim() || undefined;
     const sort = query.sort ?? 'createdAt_desc';
-    const categories = await prisma.category.findMany({
+    let categories = await prisma.category.findMany({
       where: {
         userId: req.userId,
         ...(query.mode ? { mode: query.mode } : {}),
@@ -85,6 +130,9 @@ export async function registerCategoryRoutes(app: FastifyInstance) {
       orderBy: listCategoriesOrderBy(sort),
       include: categoryInclude,
     });
+    if (isStatsSort(sort)) {
+      categories = sortCategoriesByStats(categories, sort);
+    }
     const winnerByMode = await modeLastPracticeCategoryIds(
       req.userId,
       categories.map((c) => c.mode),

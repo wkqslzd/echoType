@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { CategoryDTO, CourseDTO, CourseListSort, CourseMode } from '@echotype/shared';
 import { api, isCourseNotFoundError } from '../lib/api';
 import { modeListPath } from '../lib/collectionPaths';
-import { DEFAULT_SORT, SORT_OPTIONS } from '../lib/courseListSort';
+import { readStoredSort, SORT_OPTIONS, writeStoredSort } from '../lib/courseListSort';
 import { BulkActionBar } from '../components/BulkActionBar';
 import { CourseDescriptionPanel } from '../components/CourseDescriptionPanel';
 import { CollectionCardPracticeStats, PracticeTag } from '../components/card/CardPracticeStats';
@@ -30,7 +30,7 @@ export function CollectionDetailPage({ courseMode }: CollectionDetailPageProps) 
   const { collectionId } = useParams<{ collectionId: string }>();
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const [sort, setSort] = useState<CourseListSort>(DEFAULT_SORT);
+  const [sort, setSort] = useState<CourseListSort>(() => readStoredSort(courseMode, 'detail'));
   const [bulkMode, setBulkMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [editor, setEditor] = useState<EditorTarget>(null);
@@ -313,7 +313,11 @@ export function CollectionDetailPage({ courseMode }: CollectionDetailPageProps) 
           <span className="hidden sm:inline">Sort</span>
           <select
             value={sort}
-            onChange={(e) => setSort(e.target.value as CourseListSort)}
+            onChange={(e) => {
+              const next = e.target.value as CourseListSort;
+              setSort(next);
+              writeStoredSort(courseMode, 'detail', next);
+            }}
             className="rounded-md border px-2 py-2 text-sm"
             aria-label="Sort courses"
           >

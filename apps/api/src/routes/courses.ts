@@ -128,8 +128,16 @@ function toAnnotationRows(content: string, annotations: AnnotationInput[]) {
   }));
 }
 
-function listCoursesOrderBy(sort: CourseListSort): Prisma.CourseOrderByWithRelationInput {
+function listCoursesOrderBy(
+  sort: CourseListSort,
+): Prisma.CourseOrderByWithRelationInput | Prisma.CourseOrderByWithRelationInput[] {
   switch (sort) {
+    case 'loopCount_desc':
+      return [{ totalCompletedPasses: 'desc' }, { title: 'asc' }];
+    case 'totalDuration_desc':
+      return [{ totalDurationSec: 'desc' }, { title: 'asc' }];
+    case 'lastPracticed_desc':
+      return [{ lastPracticedAt: { sort: 'desc', nulls: 'last' } }, { title: 'asc' }];
     case 'createdAt_asc':
       return { createdAt: 'asc' };
     case 'updatedAt_desc':

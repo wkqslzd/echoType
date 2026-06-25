@@ -404,7 +404,7 @@ function TypingSession({
           content={target}
           annotations={annotations}
           typingStatuses={typingStatuses}
-          clickableNotes
+          clickableNotes={blocker.state !== 'blocked'}
         />
       </div>
 

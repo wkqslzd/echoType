@@ -10,7 +10,7 @@ import { CollectionEditorModal } from '../components/collection/CollectionEditor
 import { CollectionPickerModal } from '../components/collection/CollectionPickerModal';
 import { CourseListCard } from '../components/course/CourseListCard';
 import { CourseEditorModal } from '../components/editor/CourseEditorModal';
-import { DEFAULT_SORT, SORT_OPTIONS } from '../lib/courseListSort';
+import { readStoredSort, SORT_OPTIONS, writeStoredSort } from '../lib/courseListSort';
 import { useImeAwareDebouncedSearch } from '../lib/useImeAwareDebouncedSearch';
 import type { OverflowMenuItem } from '../components/CardOverflowMenu';
 
@@ -43,7 +43,7 @@ export function CourseListPage({ courseMode }: { courseMode: CourseMode }) {
   const copy = MODE_COPY[courseMode];
   const qc = useQueryClient();
   const search = useImeAwareDebouncedSearch();
-  const [sort, setSort] = useState<CourseListSort>(DEFAULT_SORT);
+  const [sort, setSort] = useState<CourseListSort>(() => readStoredSort(courseMode, 'list'));
   const [bulkMode, setBulkMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [editor, setEditor] = useState<EditorTarget>(null);
@@ -332,7 +332,11 @@ export function CourseListPage({ courseMode }: { courseMode: CourseMode }) {
             <span className="hidden sm:inline">Sort</span>
             <select
               value={sort}
-              onChange={(e) => setSort(e.target.value as CourseListSort)}
+              onChange={(e) => {
+                const next = e.target.value as CourseListSort;
+                setSort(next);
+                writeStoredSort(courseMode, 'list', next);
+              }}
               className="rounded-md border px-2 py-2 text-sm"
               aria-label="Sort collections and courses"
             >
