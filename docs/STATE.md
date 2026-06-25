@@ -28,7 +28,7 @@ Active capability: Course stats
 - [x] Phase 2 — Manual Save → `TypingSession` + course cumulative columns + Save copy + in-app leave guard (3-button)
 - [x] Phase 3 — Collection rollup fields on categories API (`CategoryDTO.rollup`; read-time from members)
 - [x] Phase 4 — Course/collection card stats UI + `lastPracticeHere` tags (`d58ed9b`)
-- [ ] Phase 5 — List sort modes 4/5/7 (ADR-0012 debt)
+- [x] Phase 5 — List sort modes 4/5/7 + per-mode sort preference in localStorage (`691e0a1`)
 - [ ] Phase 6 — Session timer card (10min–2h) + countdown-end modal (Save / Don't save) + T3-A untimed continuation
 - [ ] Phase 7 — Pause/resume (freezes active time + countdown; resume on keystroke)
 
@@ -37,10 +37,10 @@ Active capability: Course stats
 > new capability's phases and move YOU ARE HERE above.
 
 ## Now working on (describe ONLY the in-progress item)
-- Goal (one line): Course stats Phase 5 — wire sort modes 4/5/7.
-- Sub-steps done: Phase 4 shipped (`d58ed9b`): card explicit stats, course ⓘ popover (hover preview + click-pinned), `lastPracticeHere` on courses and collections; collection list card inline stats only (no ⓘ)
-- Next step: `loopCount_desc`, `totalDuration_desc`, `lastPracticed_desc` on course list API + UI
-- Related decisions: ADR-0014; STATS.md §5
+- Goal (one line): Course stats Phase 6 — session timer card + countdown-end modal.
+- Sub-steps done: Phase 5 shipped (`691e0a1`): stats sort on courses/categories API + UI; sort preference in localStorage (list vs detail keys, per mode); leave-dialog button fix (body portal `z-[100]`)
+- Next step: Pre-typing timed/untimed choice; countdown-end Save / Don't save modal (ADR-0014 §10)
+- Related decisions: ADR-0014 §10–11
 
 ## Contract pointers (don't memorize, go read the source)
 - Stats metrics (definitions/formulas only): docs/STATS.md
@@ -53,6 +53,7 @@ Active capability: Course stats
 - Course + collection routes: apps/api/src/routes/courses.ts, apps/api/src/routes/categories.ts
 - Typing UI: apps/web/src/pages/TypingPage.tsx
 - Mode list + collections UI: apps/web/src/pages/CourseListPage.tsx, CollectionDetailPage.tsx
+- List sort options + localStorage: apps/web/src/lib/courseListSort.ts
 - Card stats UI: apps/web/src/components/card/CardPracticeStats.tsx
 - Annotation rendering: apps/web/src/components/AnnotatedText.tsx + apps/web/src/components/annotated-text/useTextMeasurement.ts
 - Editor + review: apps/web/src/components/editor/useCourseEditor.ts, reviewUtils.ts, AnnotatedTextEditor.tsx
@@ -68,7 +69,6 @@ Active capability: Course stats
 |---|---|---|---|---|
 | Course stats | Typing stats lost on browser close / crash without Save | MVP: manual Save only; no beforeunload | intentional (ADR-0014) | ADR-0014 |
 | Course stats | Timer visit abandoned via external close before end modal | Same as above | intentional (Phase 6) | ADR-0014 |
-| Course mgmt | Sort modes 4/5/7 | Rollup + card stats live; list sort not wired | Course stats Phase 5 | ADR-0012 |
 | Course mgmt | Collection detail in-page search | MVP: sort only on detail; mode list has global search | future polish | ADR-0013 |
 | Course mgmt | Full markdown in description (headings, `[text](url)` syntax) | Phase 3 plain text + URL linkify on typing/collection detail only; no markdown renderer | future polish if users paste rich notes | ADR-0011 |
 | Typing | English course + accidental IME shows red diff only, no explicit "switch to English" guidance | Phase 3 chose IME-as-valid-input (ADR-0008) over kickoff #7 banner/pause; red diff implies the error | future polish / real-usage feedback | ADR-0008 |

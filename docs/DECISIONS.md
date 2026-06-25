@@ -424,41 +424,53 @@
 ---
 
 ## ADR-0012 — Course list search + sort (server `q`/`sort`, IME-aware debounce)
-- Status: Accepted (2026-06-23)
-- Commit/PR anchor: eaced3e
+- Status: Accepted (2026-06-23); stats sorts + sort preference (2026-06-25, `691e0a1`)
+- Commit/PR anchor: eaced3e; `691e0a1` (Phase 5 stats sorts + localStorage preference)
 - Plain summary (owner reads this): Mode-scoped course lists support server-side
   search and sort. Search matches title, content, description, or any annotation
-  noteText (case-insensitive substring, including Chinese). Sort offers four modes
-  (newest/oldest/updated/title A–Z). The list toolbar uses debounced search with
-  IME composition gating, a clear button, and English labels; filter state stays in
-  component memory, not the URL.
+  noteText (case-insensitive substring, including Chinese). Sort offers **seven**
+  modes (newest/oldest/updated/title A–Z + most loops / most practice time /
+  recently practiced). The list toolbar uses debounced search with IME composition
+  gating; **`q` stays in component memory** (no URL); **last chosen `sort` persists
+  in localStorage per mode**, with **separate keys for mode list vs collection
+  detail**.
 - Context: Kickoff mode screen requires search + sort on course cards (ADR-0009
   mode-scoped routes). Phase 3 added `description`, which must be searchable
   (ADR-0011). Chinese-speaking users may search with pinyin IME — intermediate
-  composition must not hit the API. Stats-based sorts (loop count, practice time)
-  remain deferred until Course stats capability.
+  composition must not hit the API. Stats-based sorts shipped in Course stats
+  Phase 5 (`691e0a1`).
 - Decision:
   1. **API**: extend `GET /courses` with `q` (optional, trim, max 200) and `sort`
      (`CourseListSort` enum); default `createdAt_desc` when `sort` omitted.
   2. **Search**: Prisma `OR` — `title`, `content`, `description`, and
      `annotations.some.noteText`, all `contains` + `mode: 'insensitive'`; empty `q`
      = no text filter; **description is not a sort key**.
-  3. **Sort (exactly four)**: `createdAt_desc` | `createdAt_asc` | `updatedAt_desc`
-     | `title_asc` — PostgreSQL default byte order for title (case-sensitive A–Z).
-  4. **UI**: toolbar on `CourseListPage` — search input + sort `<select>`; English
-     labels; **no URL query persistence**; Short/Article routes keep independent state.
-  5. **Debounce + IME**: `useImeAwareDebouncedSearch` (300ms); while composing, do
+  3. **Sort (seven)**: metadata — `createdAt_desc` | `createdAt_asc` |
+     `updatedAt_desc` | `title_asc` (PostgreSQL default byte order for title);
+     stats — `loopCount_desc` | `totalDuration_desc` | `lastPracticed_desc`
+     (see STATS.md §5; courses DB orderBy; categories rollup sort in memory).
+     Tie-break on equal stats: **`title` / `name` A–Z**.
+  4. **UI**: toolbar on `CourseListPage` and `CollectionDetailPage` — search input +
+     sort `<select>`; English labels; **no URL query persistence** for `q` or `sort`;
+     Short/Article routes keep independent sort memory.
+  5. **Sort preference (localStorage)**: keys `echotype.courseListSort.list.v1` (mode
+     list: collections + uncategorized) and `echotype.courseListSort.detail.v1`
+     (collection detail courses only); JSON map `{ SHORT, ARTICLE } → sort`; invalid
+     value → `createdAt_desc`; search `q` **not** persisted.
+  6. **Debounce + IME**: `useImeAwareDebouncedSearch` (300ms); while composing, do
      not commit `q` to React Query; flush on `compositionend`.
-  6. **Clear**: custom × clears draft + query; input `type="text"` + `role="searchbox"`
+  7. **Clear**: custom × clears draft + query; input `type="text"` + `role="searchbox"`
      (not `type="search"`) to avoid duplicate native clear control.
-  7. **Empty states**: no courses vs `No courses match your search.` when `q` set.
+  8. **Empty states**: no courses vs `No courses match your search.` when `q` set.
 - Rejected alternatives:
   - Client-side filter/sort only — duplicates server `mode=` pattern; poor fit once
     description search is server-side.
   - URL `?q=&sort=` — deferred; MVP keeps list state in component memory.
   - `title_asc` case-insensitive — extra SQL/`LOWER()`; PostgreSQL default chosen.
   - `type="search"` input — browser native clear duplicates custom ×.
-  - Sort modes 4/5/7 — deferred to Course stats capability (Known debt).
+  - Sort modes 4/5/7 — initially deferred to Course stats; **shipped** Phase 5
+    (`691e0a1`).
+  - Shared list/detail sort preference — rejected; separate localStorage keys (B).
   - CJK tokenization / full-text index — unnecessary; `contains` suffices for MVP.
 - Consequences:
   - React Query key: `['courses', mode, q, sort]`; invalidate by `['courses', mode]`
@@ -521,14 +533,14 @@
 - Consequences:
   - Deploy requires API migrations + web together.
   - Phase 4 list `categoryId` filter extends ADR-0012 list contract.
-  - Course stats capability picks up deferred sort modes 4/5/7 (STATE Known debt).
+  - Course stats capability closed ADR-0012 sort debt in Phase 5 (`691e0a1`).
 - Supersedes / superseded-by: refines ADR-0012 consequence on category filter (implemented in Phase 5, not deferred)
 
 ---
 
 ## ADR-0014 — Course stats: persistence policy, phases, list UI, timer, pause
 - Status: Accepted (2026-06-24)
-- Commit/PR anchor: c9421bd (Phase 2 persistence); 2b0e443 (Phase 3 collection rollup); fd15f5d (Phase 1 STATS + loops display); d58ed9b (Phase 4 card stats UI + tags)
+- Commit/PR anchor: c9421bd (Phase 2 persistence); 2b0e443 (Phase 3 collection rollup); fd15f5d (Phase 1 STATS + loops display); d58ed9b (Phase 4 card stats UI + tags); `691e0a1` (Phase 5 stats sorts + leave-dialog fix)
 - Plain summary (owner reads this): Course and collection **statistics** are driven by
   explicit **Save session** (`POST /sessions`); formulas live in `docs/STATS.md`.
   Cumulative course fields update in the same transaction as each saved session.
@@ -548,6 +560,8 @@
      course cumulative columns; UI copy states stats count only after Save.
   3. **Leave guard**: in-app navigation away from typing with unsaved progress →
      three-choice confirm: **Stay** / **Leave without saving** / **Save and leave**.
+     Dialog portaled to `document.body` at `z-[100]` (above annotation note popovers)
+     so action buttons remain clickable.
   4. **Browser close / crash / external kill**: no `beforeunload`; lost unsaved
      stats are intentional Known debt (user responsibility).
   5. **Course cumulative**: materialized on `Course` (`totalDurationSec`,
@@ -578,7 +592,10 @@
      course card). **Phase 4 shipped** (`d58ed9b`): `CategoryDTO.lastPracticeHere`
      via `modeLastPractice.ts`.
   9. **Sort modes 4/5/7**: `loopCount_desc`, `totalDuration_desc`,
-     `lastPracticed_desc` — wire after cumulative columns exist (STATE Phase 5).
+     `lastPracticed_desc` on `GET /courses` and `GET /categories` (rollup in memory
+     for collections); UI labels Most loops / Most practice time / Recently practiced;
+     sort preference localStorage per ADR-0012.
+     **Phase 5 shipped** (`691e0a1`); probe `apps/api/scripts/phase5-sort-probe.mjs`.
   10. **Session timer**: pre-typing choice untimed vs timed (10min–2h); countdown
       at 0 → lock input → modal **Save session** / **Don't save** only; both
       dismiss to **stay on typing page** with `beginFreshSession()` (same as Start
@@ -600,8 +617,8 @@
   - Collection tag when any member practiced recently (S6 B) — mode-wide winner only.
   - STATS.md as combined product + metrics doc — split per doc layering.
 - Consequences:
-  - Phases 5–7 remain in STATE; Phase 4 anchor `d58ed9b`.
-  - ADR-0012 Known debt sorts close in Phase 5.
+  - Phases 6–7 remain in STATE; Phase 5 anchor `691e0a1`.
+  - ADR-0012 sort debt closed in Phase 5.
   - Timer/pause behavior does not change metric formulas in STATS.md; pause only
     affects when `activeMs` advances.
 - Supersedes / superseded-by: none (extends ADR-0012 deferred sorts; extends ADR-0013 with rollup UI)

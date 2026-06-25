@@ -116,13 +116,19 @@ Code: `packages/shared/src/categoryRollup.ts`, `apps/api/src/routes/categories.t
 
 ## 5. List sort keys (stats-based)
 
-| Sort key | Orders by |
-|----------|-----------|
-| `loopCount_desc` | `totalCompletedPasses` descending |
-| `totalDuration_desc` | `totalDurationSec` descending |
-| `lastPracticed_desc` | `lastPracticedAt` descending, nulls last |
+| Sort key | Orders by | Tie-break |
+|----------|-----------|-----------|
+| `loopCount_desc` | `totalCompletedPasses` descending | `title` ascending (courses); `name` ascending (collections) |
+| `totalDuration_desc` | `totalDurationSec` descending | same |
+| `lastPracticed_desc` | `lastPracticedAt` descending, nulls last | same |
 
-Non-stats sorts (`createdAt_*`, `updatedAt_desc`, `title_asc`) use `Course` metadata only — see ADR-0012.
+**Implementation:** `GET /courses` uses materialized columns + DB `orderBy`. `GET /categories`
+stats sorts order by member rollup (`categoryRollupFromMembers`) **in memory** after fetch
+(Prisma cannot aggregate orderBy on relation sum/max for Category).
+
+Non-stats sorts (`createdAt_*`, `updatedAt_desc`, `title_asc`) use `Course` / `Category`
+metadata only — see ADR-0012. Sort preference: localStorage keys `echotype.courseListSort.list.v1`
+(mode list) and `echotype.courseListSort.detail.v1` (collection detail), per SHORT/ARTICLE.
 
 ## 6. Card face display (explicit stats line)
 
