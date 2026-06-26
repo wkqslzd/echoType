@@ -29,7 +29,7 @@ Active capability: Course stats
 - [x] Phase 3 — Collection rollup fields on categories API (`CategoryDTO.rollup`; read-time from members)
 - [x] Phase 4 — Course/collection card stats UI + `lastPracticeHere` tags (`d58ed9b`)
 - [x] Phase 5 — List sort modes 4/5/7 + per-mode sort preference in localStorage (`691e0a1`)
-- [ ] Phase 6 — Session timer card (10min–2h) + countdown-end modal (Save / Don't save) + T3-A untimed continuation
+- [x] Phase 6 — Session timer strip (10min–2h) + countdown-end modal + segment Save rules (`0aa8ebb`)
 - [ ] Phase 7 — Pause/resume (freezes active time + countdown; resume on keystroke)
 
 > Legend: [x] done  [~] in progress  [ ] todo  (blocked) noted inline
@@ -37,10 +37,10 @@ Active capability: Course stats
 > new capability's phases and move YOU ARE HERE above.
 
 ## Now working on (describe ONLY the in-progress item)
-- Goal (one line): Course stats Phase 6 — session timer card + countdown-end modal.
-- Sub-steps done: Phase 5 shipped (`691e0a1`): stats sort on courses/categories API + UI; sort preference in localStorage (list vs detail keys, per mode); leave-dialog button fix (body portal `z-[100]`)
-- Next step: Pre-typing timed/untimed choice; countdown-end Save / Don't save modal (ADR-0014 §10)
-- Related decisions: ADR-0014 §10–11
+- Goal (one line): Course stats Phase 7 — pause/resume on typing page.
+- Sub-steps done: Phase 6 shipped (`0aa8ebb`): session timer strip, countdown-end modal, segment Save semantics (STATS.md §2.2), hide/show preference, collection-aware Back
+- Next step: Pause freezes active time + wall-clock countdown; resume on keystroke (ADR-0014 §11)
+- Related decisions: ADR-0014 §11
 
 ## Contract pointers (don't memorize, go read the source)
 - Stats metrics (definitions/formulas only): docs/STATS.md
@@ -52,6 +52,8 @@ Active capability: Course stats
 - Types/validation: packages/shared/course.ts, packages/shared/category.ts
 - Course + collection routes: apps/api/src/routes/courses.ts, apps/api/src/routes/categories.ts
 - Typing UI: apps/web/src/pages/TypingPage.tsx
+- Session timer: apps/web/src/components/typing/SessionTimerStrip.tsx, TimerEndDialog.tsx, apps/web/src/lib/sessionTimer.ts
+- Typing Back paths: apps/web/src/lib/collectionPaths.ts
 - Mode list + collections UI: apps/web/src/pages/CourseListPage.tsx, CollectionDetailPage.tsx
 - List sort options + localStorage: apps/web/src/lib/courseListSort.ts
 - Card stats UI: apps/web/src/components/card/CardPracticeStats.tsx

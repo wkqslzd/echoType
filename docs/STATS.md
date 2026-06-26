@@ -67,6 +67,38 @@ While typing, the stats bar uses the **same formulas** on the current in-memory 
 
 Persist snapshots §2 fields into `TypingSession`.
 
+### 2.2 Timed countdown and unsaved segments
+
+A **timed block** (session timer countdown) is a **wall-clock UX constraint** only. It does
+not create a separate DB aggregate, rollup row, or “whole block” stats object. Formulas in
+§1–§2 are unchanged.
+
+**Segment** — in-memory typing counters (`startedAt`, `activeMs`, `charCount`, `loopCount`,
+etc.) since the last successful Save, or since the first keystroke of the current segment if
+the user has not saved yet in this visit.
+
+| Action | Effect on persistence |
+|--------|------------------------|
+| **Save session** (any time, including mid-countdown) | Inserts one `TypingSession` row for the **current segment** only; increments course cumulative (§3); then **resets** in-memory counters. Countdown **continues**. |
+| **Time’s up → Save session** | Same as above for the **current unsaved segment** only — i.e. typing since the **last** Save session click (or since segment start if no mid-save). |
+| **Time’s up → Don’t save** | Discards the **current unsaved segment** only; nothing new is inserted. Earlier segments saved mid-countdown remain in the DB. |
+
+Rules:
+
+1. **No double-counting** — keystrokes and loops in a segment already persisted via an earlier
+   Save are not included in a later Save payload.
+2. **No block-level summary** — the app does not sum or display “total achievement for this
+   timed block” on the client; each Save is one row; `sessionCount` increments per Save (S1).
+3. **Modal scope** — timer-end **Save** / **Don’t save** decide only the **last unsaved
+   segment** (from last Save — or from first keystroke of that segment — until the modal
+   opens). They do not affect segments already saved mid-countdown.
+4. **Save disabled at timer end** when there is no unsaved segment (`startedAt` is null after
+   a mid-countdown Save with no further typing).
+
+Countdown duration (wall clock) and persisted `durationSec` (§1.3 active time) are independent.
+
+UX copy: timer-end modal explains unsaved-segment scope (§2.2). Flow details: ADR-0014 §10.
+
 ## 3. Course cumulative (on `Course`)
 
 Materialized on the `courses` table. Updated atomically (increment) when a new `TypingSession` row is inserted. Exposed as `CourseDTO.stats` (`CourseStatsDTO`).

@@ -540,14 +540,14 @@
 
 ## ADR-0014 — Course stats: persistence policy, phases, list UI, timer, pause
 - Status: Accepted (2026-06-24)
-- Commit/PR anchor: c9421bd (Phase 2 persistence); 2b0e443 (Phase 3 collection rollup); fd15f5d (Phase 1 STATS + loops display); d58ed9b (Phase 4 card stats UI + tags); `691e0a1` (Phase 5 stats sorts + leave-dialog fix)
+- Commit/PR anchor: c9421bd (Phase 2 persistence); 2b0e443 (Phase 3 collection rollup); fd15f5d (Phase 1 STATS + loops display); d58ed9b (Phase 4 card stats UI + tags); `691e0a1` (Phase 5 stats sorts + leave-dialog fix); `0aa8ebb` (Phase 6 session timer strip + countdown-end modal)
 - Plain summary (owner reads this): Course and collection **statistics** are driven by
   explicit **Save session** (`POST /sessions`); formulas live in `docs/STATS.md`.
   Cumulative course fields update in the same transaction as each saved session.
   Course cards show explicit duration + loops and a hover/pinned stats popover (ⓘ).
   **Last practiced here** tags the mode-wide most recently practiced course (per
-  SHORT/ARTICLE) and the collection that contains it. Session **timer** (10min–2h)
-  and **pause** ship in later phases of this capability.
+  SHORT/ARTICLE) and the collection that contains it. Optional session **timer** strip
+  (10min–2h wall-clock countdown) shipped Phase 6; **pause** remains Phase 7.
 - Context: ADR-0006/0007 define per-session counters; ADR-0012 deferred sort modes
   4/5/7 and card stats; ADR-0013 added collections needing rollup metrics. Kickoff
   requires cumulative stats on cards and practice-based sorts. Product sign-off
@@ -596,12 +596,17 @@
      for collections); UI labels Most loops / Most practice time / Recently practiced;
      sort preference localStorage per ADR-0012.
      **Phase 5 shipped** (`691e0a1`); probe `apps/api/scripts/phase5-sort-probe.mjs`.
-  10. **Session timer**: pre-typing choice untimed vs timed (10min–2h); countdown
-      at 0 → lock input → modal **Save session** / **Don't save** only; both
-      dismiss to **stay on typing page** with `beginFreshSession()` (same as Start
-      over); Save posts if unsaved segment exists; after dismiss timer UI off for
-      rest of visit (**T3-A** untimed continuation). Mid-timer Save posts segment
-      and resets counters but countdown continues.
+  10. **Session timer**: default untimed practice; optional **Set session timer** strip
+      above passage (presets 10min–2h + custom 10–120, Confirm locks duration, first
+      keystroke after Confirm starts wall-clock countdown). At 0 → lock input → modal
+      **Save session** / **Don't save** for **unsaved segment only** (STATS.md §2.2;
+      one `TypingSession` row per Save, S1); modal portaled `z-[100]`; `timerEndOpen`
+      blocks leave dialog and Back. After dismiss: stay on typing page, `beginFreshSession()`,
+      strip hidden for visit (**T3-A**); **Start over** clears timer and restores strip.
+      Mid-timer Save posts segment, resets counters, countdown continues. Hide/show strip
+      via localStorage `echotype-session-timer-hidden`. Leave/timer modal mutual exclusion.
+      **Phase 6 shipped** (`0aa8ebb`); probes `apps/web/scripts/phase6-timer-probe.mjs`,
+      `phase6-session-timer-unit.mjs`.
   11. **Pause**: stops active-time accumulation and countdown; resume on any
       keystroke (STATE Phase 7).
   12. **Loops display**: stats bar shows completed `loopCount` only, not
@@ -617,8 +622,8 @@
   - Collection tag when any member practiced recently (S6 B) — mode-wide winner only.
   - STATS.md as combined product + metrics doc — split per doc layering.
 - Consequences:
-  - Phases 6–7 remain in STATE; Phase 5 anchor `691e0a1`.
+  - Phase 7 (pause) remains in STATE; Phase 6 anchor `0aa8ebb`.
   - ADR-0012 sort debt closed in Phase 5.
-  - Timer/pause behavior does not change metric formulas in STATS.md; pause only
-    affects when `activeMs` advances.
+  - Timer/pause behavior does not change metric formulas in STATS.md; timed-block
+    segment rules in STATS.md §2.2; pause only affects when `activeMs` advances.
 - Supersedes / superseded-by: none (extends ADR-0012 deferred sorts; extends ADR-0013 with rollup UI)
