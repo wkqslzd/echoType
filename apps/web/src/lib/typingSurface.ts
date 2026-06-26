@@ -10,6 +10,29 @@ export const TYPING_TEXTAREA_IMMERSIVE_CLASS =
 
 export const IMMERSIVE_MODE_STORAGE_KEY = 'echotype-immersive-mode';
 
+/** When `'1'`, idle session-timer control is hidden until user restores it. */
+export const SESSION_TIMER_HIDDEN_STORAGE_KEY = 'echotype-session-timer-hidden';
+
+export function readSessionTimerHiddenPreference(): boolean {
+  try {
+    return localStorage.getItem(SESSION_TIMER_HIDDEN_STORAGE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function writeSessionTimerHiddenPreference(hidden: boolean): void {
+  try {
+    if (hidden) {
+      localStorage.setItem(SESSION_TIMER_HIDDEN_STORAGE_KEY, '1');
+    } else {
+      localStorage.removeItem(SESSION_TIMER_HIDDEN_STORAGE_KEY);
+    }
+  } catch {
+    /* ignore quota / private mode */
+  }
+}
+
 /** Whole-second duration as minutes:seconds (e.g. 0:07, 2:05). */
 export function formatTypingDuration(totalSec: number): string {
   const sec = Math.max(0, Math.floor(totalSec));

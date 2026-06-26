@@ -21,7 +21,7 @@ export function CourseDescriptionPanel({ description }: CourseDescriptionPanelPr
   if (!trimmed) return null;
 
   return (
-    <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
+    <div>
       <div
         ref={clampRef}
         className={`text-sm leading-snug text-slate-600 ${

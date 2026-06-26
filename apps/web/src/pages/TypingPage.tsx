@@ -6,6 +6,11 @@ import { api, isCourseNotFoundError } from '../lib/api';
 import { CourseDescriptionPanel } from '../components/CourseDescriptionPanel';
 import { AnnotatedText } from '../components/AnnotatedText';
 import { TypingLeaveDialog } from '../components/typing/TypingLeaveDialog';
+import { SessionTimerStrip, type SessionTimerStripPhase } from '../components/typing/SessionTimerStrip';
+import { TimerEndDialog } from '../components/typing/TimerEndDialog';
+import {
+  resolveTimedDurationMinutes,
+} from '../lib/sessionTimer';
 import {
   alignedProgress,
   buildTargetStatuses,
@@ -14,7 +19,13 @@ import {
   isPassComplete,
 } from '../lib/typingAlign';
 import {
+  collectionDetailPath,
+  modeListPath,
+} from '../lib/collectionPaths';
+import {
   IMMERSIVE_MODE_STORAGE_KEY,
+  readSessionTimerHiddenPreference,
+  writeSessionTimerHiddenPreference,
   TYPING_TEXTAREA_CLASS,
   TYPING_TEXTAREA_IMMERSIVE_CLASS,
   formatTypingDuration,
@@ -23,6 +34,17 @@ import {
 const IDLE_MS = 5000;
 const TICK_MS = 100;
 const COURSE_NOT_FOUND_REDIRECT_SEC = 5;
+
+declare global {
+  interface Window {
+    __phase6Timer?: {
+      expireNow: () => void;
+      getRemainingSec: () => number | null;
+      /** DEV: open config, set preset, and confirm armed duration. */
+      armTimed: (minutes: number) => void;
+    };
+  }
+}
 
 function readImmersiveModePreference(): boolean {
   try {
@@ -91,6 +113,7 @@ export function TypingPage() {
       key={course.id}
       courseId={course.id}
       courseMode={course.mode}
+      categoryId={course.categoryId}
       target={course.content}
       title={course.title}
       description={course.description}
@@ -99,13 +122,15 @@ export function TypingPage() {
   );
 }
 
-function coursesListPath(mode: CourseMode): string {
-  return mode === 'SHORT' ? '/courses/short' : '/courses/article';
+function typingBackPath(mode: CourseMode, categoryId: string | null): string {
+  if (categoryId) return collectionDetailPath(mode, categoryId);
+  return modeListPath(mode);
 }
 
 function TypingSession({
   courseId,
   courseMode,
+  categoryId,
   target,
   title,
   description,
@@ -113,6 +138,7 @@ function TypingSession({
 }: {
   courseId: string;
   courseMode: CourseMode;
+  categoryId: string | null;
   target: string;
   title: string;
   description: string | null;
@@ -138,26 +164,83 @@ function TypingSession({
     loopCount: number;
   }>(null);
   const [immersiveMode, setImmersiveMode] = useState(readImmersiveModePreference);
+  const [sessionTimerHidden, setSessionTimerHidden] = useState(readSessionTimerHiddenPreference);
   const [leaveSaveError, setLeaveSaveError] = useState<string | null>(null);
+
+  const [timerConfigOpen, setTimerConfigOpen] = useState(false);
+  const [armedMinutes, setArmedMinutes] = useState<number | null>(null);
+  const [presetMinutes, setPresetMinutes] = useState(30);
+  const [customMinutesInput, setCustomMinutesInput] = useState('');
+  const [durationError, setDurationError] = useState<string | null>(null);
+  const [timerVisitDone, setTimerVisitDone] = useState(false);
+  const [countdownStarted, setCountdownStarted] = useState(false);
+  const [remainingSec, setRemainingSec] = useState<number | null>(null);
+  const [timerEndOpen, setTimerEndOpen] = useState(false);
+  const [timerEndSaveError, setTimerEndSaveError] = useState<string | null>(null);
+
+  const armedMinutesRef = useRef<number | null>(null);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lastActivityAtRef = useRef<number | null>(null);
   const pasteMetaRef = useRef<{ start: number; end: number; clipLen: number } | null>(null);
   /** True between compositionstart and compositionend (IME in progress). */
   const composingRef = useRef(false);
+  const countdownStartedAtRef = useRef<number | null>(null);
+  const countdownTotalSecRef = useRef<number | null>(null);
+  const remainingSecRef = useRef<number | null>(null);
 
   const hasUnsavedProgress = startedAt !== null;
+  const shouldBlockNavigation = hasUnsavedProgress || timerEndOpen;
 
   const blocker = useBlocker(
     ({ currentLocation, nextLocation }) =>
-      hasUnsavedProgress && currentLocation.pathname !== nextLocation.pathname,
+      shouldBlockNavigation && currentLocation.pathname !== nextLocation.pathname,
   );
 
+  const showLeaveDialog = blocker.state === 'blocked' && !timerEndOpen;
+
   useEffect(() => {
-    if (blocker.state === 'blocked') {
+    remainingSecRef.current = remainingSec;
+  }, [remainingSec]);
+
+  useEffect(() => {
+    armedMinutesRef.current = armedMinutes;
+  }, [armedMinutes]);
+
+  const timerStripPhase: SessionTimerStripPhase = countdownStarted
+    ? 'running'
+    : armedMinutes != null
+      ? 'armed'
+      : timerConfigOpen
+        ? 'configuring'
+        : 'idle';
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    window.__phase6Timer = {
+      expireNow: () => {
+        setRemainingSec(0);
+        setTimerEndOpen(true);
+      },
+      getRemainingSec: () => remainingSecRef.current,
+      armTimed: (minutes: number) => {
+        setTimerConfigOpen(false);
+        setArmedMinutes(minutes);
+        setPresetMinutes(minutes);
+        setCustomMinutesInput('');
+        setDurationError(null);
+      },
+    };
+    return () => {
+      delete window.__phase6Timer;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (showLeaveDialog) {
       setLeaveSaveError(null);
     }
-  }, [blocker.state]);
+  }, [showLeaveDialog]);
 
   useEffect(() => {
     textareaRef.current?.focus();
@@ -205,6 +288,60 @@ function TypingSession({
     setActiveMs(0);
     lastActivityAtRef.current = null;
   }
+
+  function startCountdown(minutes: number) {
+    const totalSec = minutes * 60;
+    const now = Date.now();
+    countdownStartedAtRef.current = now;
+    countdownTotalSecRef.current = totalSec;
+    setCountdownStarted(true);
+    setRemainingSec(totalSec);
+  }
+
+  function resetTimerState() {
+    setTimerVisitDone(false);
+    setTimerConfigOpen(false);
+    setArmedMinutes(null);
+    setPresetMinutes(30);
+    setCustomMinutesInput('');
+    setDurationError(null);
+    setCountdownStarted(false);
+    setRemainingSec(null);
+    countdownStartedAtRef.current = null;
+    countdownTotalSecRef.current = null;
+  }
+
+  function completeTimerBlock() {
+    setTimerEndOpen(false);
+    setTimerEndSaveError(null);
+    setTimerVisitDone(true);
+    setTimerConfigOpen(false);
+    setArmedMinutes(null);
+    setCountdownStarted(false);
+    setRemainingSec(null);
+    countdownStartedAtRef.current = null;
+    countdownTotalSecRef.current = null;
+  }
+
+  useEffect(() => {
+    if (!countdownStarted || timerEndOpen || timerVisitDone) return;
+    const tick = () => {
+      const startAt = countdownStartedAtRef.current;
+      const total = countdownTotalSecRef.current;
+      if (startAt == null || total == null) return;
+      const elapsed = Math.floor((Date.now() - startAt) / 1000);
+      const left = total - elapsed;
+      if (left <= 0) {
+        setRemainingSec(0);
+        setTimerEndOpen(true);
+      } else {
+        setRemainingSec(left);
+      }
+    };
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [countdownStarted, timerEndOpen, timerVisitDone]);
 
   function buildSessionPayload(): CreateSessionInput {
     if (!startedAt) {
@@ -273,6 +410,13 @@ function TypingSession({
 
   /** Commit a settled (non-composing) textarea value into the aligned `typed` buffer + stats. */
   function commitDraft(raw: string) {
+    if (timerEndOpen) return;
+
+    const armed = armedMinutesRef.current;
+    if (armed != null && countdownStartedAtRef.current == null) {
+      startCountdown(armed);
+    }
+
     const normalized = clampTyped(raw, target);
 
     if (pasteMetaRef.current) {
@@ -339,8 +483,63 @@ function TypingSession({
   }
 
   function handleFinish() {
-    if (!startedAt) return;
+    if (!startedAt || timerEndOpen) return;
     submitMutation.mutate(buildSessionPayload());
+  }
+
+  async function handleTimerEndSave() {
+    if (!startedAt) return;
+    setTimerEndSaveError(null);
+    try {
+      await submitMutation.mutateAsync(buildSessionPayload());
+      completeTimerBlock();
+      queueMicrotask(() => textareaRef.current?.focus());
+    } catch (err) {
+      setTimerEndSaveError(err instanceof Error ? err.message : 'Failed to save session.');
+    }
+  }
+
+  function handleTimerEndDontSave() {
+    beginFreshSession();
+    completeTimerBlock();
+    queueMicrotask(() => textareaRef.current?.focus());
+  }
+
+  function handleTimerConfirm() {
+    const resolved = resolveTimedDurationMinutes(presetMinutes, customMinutesInput);
+    if (!resolved.ok) {
+      setDurationError(resolved.message);
+      return;
+    }
+    setDurationError(null);
+    setTimerConfigOpen(false);
+    setArmedMinutes(resolved.minutes);
+  }
+
+  function handleTimerOpenConfig() {
+    setDurationError(null);
+    setTimerConfigOpen(true);
+  }
+
+  function handleTimerHideIdle() {
+    setSessionTimerHidden(true);
+    writeSessionTimerHiddenPreference(true);
+  }
+
+  function handleTimerShowIdle() {
+    setSessionTimerHidden(false);
+    writeSessionTimerHiddenPreference(false);
+  }
+
+  function handleTimerCancelConfig() {
+    setTimerConfigOpen(false);
+    setDurationError(null);
+  }
+
+  function handlePresetChange(minutes: number) {
+    setPresetMinutes(minutes);
+    setCustomMinutesInput('');
+    setDurationError(null);
   }
 
   async function handleSaveAndLeave() {
@@ -365,12 +564,13 @@ function TypingSession({
     }
     beginFreshSession();
     setLastSaved(null);
+    resetTimerState();
     textareaRef.current?.focus();
   }
 
   return (
     <div className="space-y-6">
-      {blocker.state === 'blocked' && (
+      {showLeaveDialog && (
         <TypingLeaveDialog
           saving={submitMutation.isPending}
           saveError={leaveSaveError}
@@ -380,14 +580,54 @@ function TypingSession({
         />
       )}
 
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">{title}</h1>
-        <Link to={coursesListPath(courseMode)} className="text-sm text-slate-500 hover:text-slate-800">
-          ← Back
-        </Link>
+      {timerEndOpen && (
+        <TimerEndDialog
+          saving={submitMutation.isPending}
+          saveError={timerEndSaveError}
+          canSave={startedAt !== null}
+          onSave={() => void handleTimerEndSave()}
+          onDontSave={handleTimerEndDontSave}
+        />
+      )}
+
+      <div>
+        {timerEndOpen ? (
+          <span className="text-sm text-slate-300" aria-disabled="true">
+            ← Back
+          </span>
+        ) : (
+          <Link to={typingBackPath(courseMode, categoryId)} className="text-sm text-slate-500 hover:text-slate-800">
+            ← Back
+          </Link>
+        )}
+        <h1 className="mt-1 text-xl font-semibold">{title}</h1>
       </div>
 
       {description?.trim() && <CourseDescriptionPanel description={description} />}
+
+      {!timerVisitDone && (
+        <div className="flex justify-center">
+          <SessionTimerStrip
+            phase={timerStripPhase}
+            idleHidden={sessionTimerHidden}
+            presetMinutes={presetMinutes}
+            customMinutesInput={customMinutesInput}
+            durationError={durationError}
+            armedMinutes={armedMinutes}
+            remainingSec={remainingSec}
+            onOpenConfig={handleTimerOpenConfig}
+            onHideIdle={handleTimerHideIdle}
+            onShowIdle={handleTimerShowIdle}
+            onCancelConfig={handleTimerCancelConfig}
+            onConfirm={handleTimerConfirm}
+            onPresetChange={handlePresetChange}
+            onCustomChange={(value) => {
+              setCustomMinutesInput(value);
+              setDurationError(null);
+            }}
+          />
+        </div>
+      )}
 
       <div
         className={immersiveMode ? 'cursor-text' : undefined}
@@ -404,7 +644,7 @@ function TypingSession({
           content={target}
           annotations={annotations}
           typingStatuses={typingStatuses}
-          clickableNotes={blocker.state !== 'blocked'}
+          clickableNotes={!showLeaveDialog && !timerEndOpen}
         />
       </div>
 
@@ -442,6 +682,7 @@ function TypingSession({
           autoFocus
           rows={1}
           value={draft}
+          disabled={timerEndOpen}
           onChange={handleChange}
           onCompositionStart={handleCompositionStart}
           onCompositionEnd={handleCompositionEnd}
@@ -475,7 +716,7 @@ function TypingSession({
         <div className="flex gap-2">
           <button
             onClick={handleFinish}
-            disabled={!startedAt || submitMutation.isPending}
+            disabled={!startedAt || submitMutation.isPending || timerEndOpen}
             className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {submitMutation.isPending ? 'Saving…' : 'Save session'}
@@ -510,7 +751,7 @@ function TypingSession({
           </p>
         </div>
       )}
-      {submitMutation.isError && blocker.state !== 'blocked' && (
+      {submitMutation.isError && !showLeaveDialog && !timerEndOpen && (
         <p className="text-sm text-red-600">Failed to save: {(submitMutation.error as Error).message}</p>
       )}
     </div>
