@@ -4,9 +4,9 @@ export const TYPING_SURFACE_CLASS =
 
 export const TYPING_TEXTAREA_CLASS = `${TYPING_SURFACE_CLASS} w-full resize-none overflow-y-auto whitespace-pre-wrap break-words text-slate-900 focus:border-slate-500 focus:outline-none max-h-[40vh]`;
 
-/** Visually hidden but focusable — immersive mode still captures keyboard/paste. */
+/** Visually hidden but focusable — anchored in typing panel, not viewport-fixed. */
 export const TYPING_TEXTAREA_IMMERSIVE_CLASS =
-  'sr-only fixed left-0 top-0 h-px w-px resize-none overflow-hidden opacity-0';
+  'pointer-events-none absolute left-0 top-0 h-px w-px resize-none overflow-hidden opacity-0 border-0 p-0';
 
 export const IMMERSIVE_MODE_STORAGE_KEY = 'echotype-immersive-mode';
 

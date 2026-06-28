@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { CategoryDTO, CourseDTO, CourseListSort, CourseMode } from '@echotype/shared';
@@ -26,15 +26,15 @@ const MODE_COPY: Record<
   { title: string; empty: string; otherLabel: string; otherPath: string }
 > = {
   SHORT: {
-    title: 'Short courses',
-    empty: 'No short courses yet. Create one above.',
-    otherLabel: 'Article courses',
+    title: 'Short mode',
+    empty: 'No collections or courses yet. Create one above.',
+    otherLabel: 'Article mode',
     otherPath: '/courses/article',
   },
   ARTICLE: {
-    title: 'Article courses',
-    empty: 'No article courses yet. Create one above.',
-    otherLabel: 'Short courses',
+    title: 'Article mode',
+    empty: 'No collections or courses yet. Create one above.',
+    otherLabel: 'Short mode',
     otherPath: '/courses/short',
   },
 };
@@ -54,7 +54,10 @@ export function CourseListPage({ courseMode }: { courseMode: CourseMode }) {
     null,
   );
   const [moveToCollectionOpen, setMoveToCollectionOpen] = useState(false);
+  const [pickerAnchorKind, setPickerAnchorKind] = useState<'bulk' | 'menu' | null>(null);
   const [pickerCourseIds, setPickerCourseIds] = useState<string[] | null>(null);
+  const bulkBarRef = useRef<HTMLDivElement>(null);
+  const menuAnchorRef = useRef<HTMLButtonElement | null>(null);
   const [pendingNewCollectionCourseIds, setPendingNewCollectionCourseIds] = useState<string[] | null>(null);
 
   const hasQuery = !!search.query;
@@ -216,8 +219,21 @@ export function CourseListPage({ courseMode }: { courseMode: CourseMode }) {
     deleteCollection.mutate(cat.id);
   }
 
-  function openMovePicker(courseIds: string[]) {
+  function openMovePicker(
+    courseIds: string[],
+    options?: { anchorToBulkBar?: boolean; menuTrigger?: HTMLButtonElement },
+  ) {
     setPickerCourseIds(courseIds);
+    if (options?.anchorToBulkBar) {
+      menuAnchorRef.current = null;
+      setPickerAnchorKind('bulk');
+    } else if (options?.menuTrigger) {
+      menuAnchorRef.current = options.menuTrigger;
+      setPickerAnchorKind('menu');
+    } else {
+      menuAnchorRef.current = null;
+      setPickerAnchorKind(null);
+    }
     setMoveToCollectionOpen(true);
   }
 
@@ -238,7 +254,9 @@ export function CourseListPage({ courseMode }: { courseMode: CourseMode }) {
       items.push(
         {
           label: 'Move to collection…',
-          onClick: () => openMovePicker([course.id]),
+          onClick: (ctx) => {
+            if (ctx?.trigger) openMovePicker([course.id], { menuTrigger: ctx.trigger });
+          },
         },
         {
           label: 'Remove from collection',
@@ -248,7 +266,9 @@ export function CourseListPage({ courseMode }: { courseMode: CourseMode }) {
     } else {
       items.push({
         label: 'Add to collection…',
-        onClick: () => openMovePicker([course.id]),
+        onClick: (ctx) => {
+          if (ctx?.trigger) openMovePicker([course.id], { menuTrigger: ctx.trigger });
+        },
       });
     }
     return items;
@@ -275,7 +295,7 @@ export function CourseListPage({ courseMode }: { courseMode: CourseMode }) {
       <section>
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h2 className="text-xl font-semibold">{copy.title}</h2>
+            <h2 className="mode-page-title">{copy.title}</h2>
             <Link to={copy.otherPath} className="text-sm text-slate-500 hover:text-slate-800">
               Switch to {copy.otherLabel.toLowerCase()} →
             </Link>
@@ -349,37 +369,6 @@ export function CourseListPage({ courseMode }: { courseMode: CourseMode }) {
           </label>
         </div>
 
-        <BulkActionBar
-          bulkMode={bulkMode}
-          onEnterBulkMode={() => setBulkMode(true)}
-          onCancelBulkMode={exitBulkMode}
-          selectedCount={selectedIds.length}
-        >
-          <button
-            type="button"
-            onClick={() => openMovePicker(selectedIds)}
-            className="rounded border bg-white px-3 py-1 text-sm hover:bg-slate-50"
-          >
-            Move to collection…
-          </button>
-          {selectedInCollectionIds.length > 0 && (
-            <button
-              type="button"
-              onClick={handleRemoveSelected}
-              className="rounded border bg-white px-3 py-1 text-sm hover:bg-slate-50"
-            >
-              Remove from collection
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={handleDeleteSelected}
-            className="rounded border border-red-200 bg-white px-3 py-1 text-sm text-red-700 hover:bg-red-50"
-          >
-            Delete selected
-          </button>
-        </BulkActionBar>
-
         {isLoading ? (
           <p className="text-slate-500">Loading…</p>
         ) : isEmpty ? (
@@ -390,7 +379,7 @@ export function CourseListPage({ courseMode }: { courseMode: CourseMode }) {
           <div className="space-y-6">
             {!!categories?.length && (
               <div>
-                <h3 className="mb-2 text-sm font-medium text-slate-500">Collections</h3>
+                <h3 className="mb-2 text-xl font-semibold">Collections</h3>
                 <ul
                   className={`flex flex-col gap-2 ${
                     categories.length > 3 ? 'max-h-[18.5rem] overflow-y-auto pr-1' : ''
@@ -409,9 +398,38 @@ export function CourseListPage({ courseMode }: { courseMode: CourseMode }) {
             )}
             {!!courses?.length && (
               <div>
-                {(!!categories?.length || hasQuery) && (
-                  <h3 className="mb-2 text-sm font-medium text-slate-500">Courses</h3>
-                )}
+                <h3 className="mb-2 text-xl font-semibold">Courses</h3>
+                <BulkActionBar
+                  bulkMode={bulkMode}
+                  onEnterBulkMode={() => setBulkMode(true)}
+                  onCancelBulkMode={exitBulkMode}
+                  selectedCount={selectedIds.length}
+                  barRef={bulkBarRef}
+                >
+                  <button
+                    type="button"
+                    onClick={() => openMovePicker(selectedIds, { anchorToBulkBar: true })}
+                    className="rounded border bg-white px-3 py-1 text-sm hover:bg-slate-50"
+                  >
+                    Move to collection…
+                  </button>
+                  {selectedInCollectionIds.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleRemoveSelected}
+                      className="rounded border bg-white px-3 py-1 text-sm hover:bg-slate-50"
+                    >
+                      Remove from collection
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleDeleteSelected}
+                    className="rounded border border-red-200 bg-white px-3 py-1 text-sm text-red-700 hover:bg-red-50"
+                  >
+                    Delete selected
+                  </button>
+                </BulkActionBar>
                 <ul className="grid gap-3 sm:grid-cols-2">
                   {courses.map((c) => (
                     <CourseListCard
@@ -486,8 +504,17 @@ export function CourseListPage({ courseMode }: { courseMode: CourseMode }) {
         <CollectionPickerModal
           courseMode={courseMode}
           title="Move to collection"
+          anchorRef={
+            pickerAnchorKind === 'bulk'
+              ? bulkBarRef
+              : pickerAnchorKind === 'menu'
+                ? menuAnchorRef
+                : undefined
+          }
           onClose={() => {
             setMoveToCollectionOpen(false);
+            setPickerAnchorKind(null);
+            menuAnchorRef.current = null;
             setPickerCourseIds(null);
           }}
           onPick={(target) => assignToCollection(pickerIds, target)}

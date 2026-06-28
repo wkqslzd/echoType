@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { CategoryDTO, CourseDTO, CourseListSort, CourseMode } from '@echotype/shared';
@@ -41,6 +41,8 @@ export function CollectionDetailPage({ courseMode }: CollectionDetailPageProps) 
   const [showAddCourses, setShowAddCourses] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const bulkBarRef = useRef<HTMLDivElement>(null);
+  const menuAnchorRef = useRef<HTMLButtonElement | null>(null);
 
   const {
     data: category,
@@ -208,7 +210,10 @@ export function CollectionDetailPage({ courseMode }: CollectionDetailPageProps) 
       },
       {
         label: 'Move to collection…',
-        onClick: () => setMoveOneCourseId(course.id),
+        onClick: (ctx) => {
+          menuAnchorRef.current = ctx?.trigger ?? null;
+          setMoveOneCourseId(course.id);
+        },
       },
       {
         label: 'Remove from collection',
@@ -336,6 +341,7 @@ export function CollectionDetailPage({ courseMode }: CollectionDetailPageProps) 
           onEnterBulkMode={() => setBulkMode(true)}
           onCancelBulkMode={exitBulkMode}
           selectedCount={selectedIds.length}
+          barRef={bulkBarRef}
         >
           <button
             type="button"
@@ -428,6 +434,7 @@ export function CollectionDetailPage({ courseMode }: CollectionDetailPageProps) 
           courseMode={courseMode}
           title="Move to collection"
           excludeCategoryId={collectionId}
+          anchorRef={bulkBarRef}
           onClose={() => setBatchMoveOpen(false)}
           onPick={(target) => handleMoveSelected(target)}
         />
@@ -438,10 +445,15 @@ export function CollectionDetailPage({ courseMode }: CollectionDetailPageProps) 
           courseMode={courseMode}
           title="Move to collection"
           excludeCategoryId={collectionId}
-          onClose={() => setMoveOneCourseId(null)}
+          anchorRef={menuAnchorRef}
+          onClose={() => {
+            setMoveOneCourseId(null);
+            menuAnchorRef.current = null;
+          }}
           onPick={(target) => {
             patchCategory.mutate({ courseIds: [moveOneCourseId], categoryId: target.id });
             setMoveOneCourseId(null);
+            menuAnchorRef.current = null;
           }}
         />
       )}

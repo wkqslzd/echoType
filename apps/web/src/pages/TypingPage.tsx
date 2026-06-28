@@ -172,6 +172,7 @@ function TypingSession({
   }>(null);
   const [immersiveMode, setImmersiveMode] = useState(readImmersiveModePreference);
   const [sessionTimerHidden, setSessionTimerHidden] = useState(readSessionTimerHiddenPreference);
+  const [statsHidden, setStatsHidden] = useState(false);
   const [leaveSaveError, setLeaveSaveError] = useState<string | null>(null);
 
   const [timerConfigOpen, setTimerConfigOpen] = useState(false);
@@ -191,6 +192,7 @@ function TypingSession({
   const activeMsRef = useRef(0);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const pendingScrollRestoreRef = useRef<{ x: number; y: number } | null>(null);
   const lastActivityAtRef = useRef<number | null>(null);
   const pasteMetaRef = useRef<{ start: number; end: number; clipLen: number } | null>(null);
   /** True between compositionstart and compositionend (IME in progress). */
@@ -436,19 +438,33 @@ function TypingSession({
   });
 
   function handleImmersiveModeChange(enabled: boolean) {
+    pendingScrollRestoreRef.current = { x: window.scrollX, y: window.scrollY };
     setImmersiveMode(enabled);
     try {
       localStorage.setItem(IMMERSIVE_MODE_STORAGE_KEY, enabled ? '1' : '0');
     } catch {
       /* ignore quota / private mode */
     }
-    queueMicrotask(() => textareaRef.current?.focus());
+    queueMicrotask(() => {
+      textareaRef.current?.focus({ preventScroll: true });
+    });
   }
 
   useLayoutEffect(() => {
-    if (immersiveMode) return;
+    const pending = pendingScrollRestoreRef.current;
+    if (pending) {
+      window.scrollTo(pending.x, pending.y);
+      pendingScrollRestoreRef.current = null;
+    }
+
     const el = textareaRef.current;
     if (!el) return;
+
+    if (immersiveMode) {
+      el.style.height = '';
+      return;
+    }
+
     el.style.height = 'auto';
     const maxPx = Math.floor(window.innerHeight * 0.4);
     el.style.height = `${Math.min(el.scrollHeight, maxPx)}px`;
@@ -661,7 +677,7 @@ function TypingSession({
         <h1 className="mt-1 text-xl font-semibold">{title}</h1>
       </div>
 
-      {description?.trim() && <CourseDescriptionPanel description={description} />}
+      {description?.trim() && <CourseDescriptionPanel description={description} hideable />}
 
       {!timerVisitDone && (
         <div className="flex justify-center">
@@ -694,7 +710,7 @@ function TypingSession({
           immersiveMode
             ? (e) => {
                 if ((e.target as HTMLElement).closest('[role="button"]')) return;
-                textareaRef.current?.focus();
+                textareaRef.current?.focus({ preventScroll: true });
               }
             : undefined
         }
@@ -707,7 +723,7 @@ function TypingSession({
         />
       </div>
 
-      <div className="space-y-2">
+      <div className="relative space-y-2">
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -726,13 +742,50 @@ function TypingSession({
               }`}
             />
           </button>
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-slate-700">Immersive mode</p>
-            <p className="text-xs text-slate-400">
-              Hides the typing box so you can focus on the passage. Works best when your keyboard
-              matches the passage language. Floating word suggestions may appear off-screen.
-            </p>
-          </div>
+          <span className="relative inline-block pr-3.5 text-sm font-medium leading-none text-slate-700">
+            Immersive mode
+            <span className="group/help absolute -right-0.5 -top-1.5">
+              <button
+                type="button"
+                aria-label="About immersive mode"
+                className="flex h-3.5 w-3.5 items-center justify-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+              >
+                <svg
+                  aria-hidden
+                  viewBox="0 0 12 12"
+                  className="h-[7px] w-[7px] shrink-0 text-slate-500"
+                >
+                  <circle
+                    cx="6"
+                    cy="6"
+                    r="5.25"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.25"
+                  />
+                  <text
+                    x="6"
+                    y="6"
+                    textAnchor="middle"
+                    dominantBaseline="central"
+                    fontSize="7"
+                    fontWeight="600"
+                    fill="currentColor"
+                    fontFamily="system-ui, -apple-system, sans-serif"
+                  >
+                    i
+                  </text>
+                </svg>
+              </button>
+              <span
+                role="tooltip"
+                className="pointer-events-none absolute left-1/2 top-full z-20 mt-1.5 hidden w-64 -translate-x-1/2 rounded-md border border-slate-200 bg-white p-2 text-xs font-normal leading-snug text-slate-500 shadow-md group-hover/help:block group-focus-within/help:block"
+              >
+                Hides the typing box so you can focus on the passage. Works best when your keyboard
+                matches the passage language. Floating word suggestions may appear off-screen.
+              </span>
+            </span>
+          </span>
         </div>
 
         <textarea
@@ -762,14 +815,40 @@ function TypingSession({
         )}
       </div>
 
-      <StatsBar
-        durationSec={elapsedSecWhole}
-        wpm={wpm}
-        accuracy={liveStats.accuracy}
-        progress={progress}
-        errors={liveStats.errors}
-        completedLoops={completedLoops}
-      />
+      {statsHidden ? (
+        <button
+          type="button"
+          data-testid="stats-show"
+          aria-label="Show session stats"
+          title="Show session stats"
+          onClick={() => setStatsHidden(false)}
+          className="group min-w-[1.25rem] text-sm text-slate-300 hover:text-slate-600"
+        >
+          <span className="group-hover:hidden" aria-hidden>
+            —
+          </span>
+          <span className="hidden group-hover:inline">Show stats</span>
+        </button>
+      ) : (
+        <div>
+          <StatsBar
+            durationSec={elapsedSecWhole}
+            wpm={wpm}
+            accuracy={liveStats.accuracy}
+            progress={progress}
+            errors={liveStats.errors}
+            completedLoops={completedLoops}
+          />
+          <button
+            type="button"
+            data-testid="stats-hide"
+            onClick={() => setStatsHidden(true)}
+            className="mt-1 text-xs text-slate-500 underline hover:text-slate-800"
+          >
+            Hide
+          </button>
+        </div>
+      )}
 
       <div className="space-y-2">
         <div className="flex gap-2">

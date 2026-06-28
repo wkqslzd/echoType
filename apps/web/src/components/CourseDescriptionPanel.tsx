@@ -3,12 +3,15 @@ import { linkifyPlainText } from '../lib/linkifyPlainText';
 
 type CourseDescriptionPanelProps = {
   description: string;
+  /** Typing page: allow collapsing the panel with a Hide control. */
+  hideable?: boolean;
 };
 
 /** Typing-page description: one line by default; expand only when text overflows. */
-export function CourseDescriptionPanel({ description }: CourseDescriptionPanelProps) {
+export function CourseDescriptionPanel({ description, hideable = false }: CourseDescriptionPanelProps) {
   const trimmed = description.trim();
   const [expanded, setExpanded] = useState(false);
+  const [hidden, setHidden] = useState(false);
   const clampRef = useRef<HTMLDivElement>(null);
   const [overflows, setOverflows] = useState(false);
 
@@ -19,6 +22,48 @@ export function CourseDescriptionPanel({ description }: CourseDescriptionPanelPr
   }, [trimmed, expanded]);
 
   if (!trimmed) return null;
+
+  if (hideable && hidden) {
+    return (
+      <button
+        type="button"
+        data-testid="description-show"
+        aria-label="Show description"
+        title="Show description"
+        onClick={() => setHidden(false)}
+        className="group min-w-[1.25rem] text-sm text-slate-300 hover:text-slate-600"
+      >
+        <span className="group-hover:hidden" aria-hidden>
+          —
+        </span>
+        <span className="hidden group-hover:inline">Show description</span>
+      </button>
+    );
+  }
+
+  const toggleRow = (overflows || hideable) && (
+    <div className="mt-1 flex flex-wrap items-center gap-3">
+      {overflows && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="text-xs text-slate-500 underline hover:text-slate-800"
+        >
+          {expanded ? 'Show less' : 'Show more'}
+        </button>
+      )}
+      {hideable && (
+        <button
+          type="button"
+          data-testid="description-hide"
+          onClick={() => setHidden(true)}
+          className="text-xs text-slate-500 underline hover:text-slate-800"
+        >
+          Hide
+        </button>
+      )}
+    </div>
+  );
 
   return (
     <div>
@@ -31,15 +76,7 @@ export function CourseDescriptionPanel({ description }: CourseDescriptionPanelPr
         <span className="text-slate-400">Description: </span>
         {linkifyPlainText(trimmed)}
       </div>
-      {overflows && (
-        <button
-          type="button"
-          onClick={() => setExpanded((v) => !v)}
-          className="mt-1 text-xs text-slate-500 underline hover:text-slate-800"
-        >
-          {expanded ? 'Show less' : 'Show more'}
-        </button>
-      )}
+      {toggleRow}
     </div>
   );
 }

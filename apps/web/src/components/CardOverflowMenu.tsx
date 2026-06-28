@@ -1,8 +1,10 @@
 import { useEffect, useId, useRef, useState } from 'react';
 
+export type OverflowMenuTrigger = HTMLButtonElement;
+
 export type OverflowMenuItem = {
   label: string;
-  onClick: () => void;
+  onClick: (ctx?: { trigger: OverflowMenuTrigger }) => void;
   variant?: 'default' | 'danger';
   disabled?: boolean;
 };
@@ -16,6 +18,7 @@ type CardOverflowMenuProps = {
 export function CardOverflowMenu({ items, ariaLabel, onOpenChange }: CardOverflowMenuProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const menuId = useId();
 
   useEffect(() => {
@@ -34,6 +37,7 @@ export function CardOverflowMenu({ items, ariaLabel, onOpenChange }: CardOverflo
   return (
     <div ref={rootRef} className="relative shrink-0">
       <button
+        ref={triggerRef}
         type="button"
         aria-label={ariaLabel}
         aria-expanded={open}
@@ -57,8 +61,9 @@ export function CardOverflowMenu({ items, ariaLabel, onOpenChange }: CardOverflo
               role="menuitem"
               disabled={item.disabled}
               onClick={() => {
+                const trigger = triggerRef.current;
                 setOpen(false);
-                item.onClick();
+                item.onClick(trigger ? { trigger } : undefined);
               }}
               className={`block w-full px-3 py-2 text-left text-sm disabled:cursor-not-allowed disabled:opacity-50 ${
                 item.variant === 'danger'

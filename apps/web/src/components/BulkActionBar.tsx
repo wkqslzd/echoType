@@ -1,10 +1,11 @@
-import type { ReactNode } from 'react';
+import type { ReactNode, Ref } from 'react';
 
 type BulkActionBarProps = {
   bulkMode: boolean;
   onEnterBulkMode: () => void;
   onCancelBulkMode: () => void;
   selectedCount: number;
+  barRef?: Ref<HTMLDivElement>;
   children?: ReactNode;
 };
 
@@ -14,6 +15,7 @@ export function BulkActionBar({
   onEnterBulkMode,
   onCancelBulkMode,
   selectedCount,
+  barRef,
   children,
 }: BulkActionBarProps) {
   if (!bulkMode) {
@@ -31,7 +33,10 @@ export function BulkActionBar({
   }
 
   return (
-    <div className="mb-3 flex flex-wrap items-center gap-2 rounded-md border bg-slate-50 px-3 py-2">
+    <div
+      ref={barRef}
+      className="mb-3 flex flex-wrap items-center gap-2 rounded-md border bg-slate-50 px-3 py-2"
+    >
       <button
         type="button"
         onClick={onCancelBulkMode}

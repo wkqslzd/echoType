@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@echotype/shared": "workspace:*",
+    "@fontsource/pacifico": "^5.2.7",
     "@tanstack/react-query": "^5.62.7",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
