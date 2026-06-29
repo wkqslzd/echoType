@@ -1,0 +1,94 @@
+---
+description: EchoType commit message format — Conventional Commits header (type, optional scope, subject)
+alwaysApply: true
+---
+
+# Commit Message Format (Conventional Commits)
+
+Applies to **new commits from now on**. Do not rewrite already-pushed history to retitle old commits.
+
+## Header (required shape)
+
+**One line only** for the commit title:
+
+```
+<type>(<scope>): <subject>
+```
+
+| Field | Required | Notes |
+|-------|----------|-------|
+| `type` | yes | What kind of change (see table below) |
+| `scope` | no | Where in the repo; omit when change spans many areas equally |
+| `subject` | yes | Imperative summary; English; no trailing period |
+
+**Examples**
+
+```
+feat(web): scroll to top on every route change
+fix(web): align Immersive info icon with WPM tooltip
+docs(state): ADR-0014 §12 and STATE for route scroll
+docs(adr): accept ADR-0015 session timer pause rules
+chore(web): add scroll navigation probe script
+```
+
+## Types (use one)
+
+| Type | Use when |
+|------|----------|
+| `feat` | User-visible capability or meaningful UX behavior |
+| `fix` | Bug fix or regression |
+| `docs` | `docs/STATE.md`, `docs/DECISIONS.md`, `docs/STATS.md`, or `.cursor/rules` only |
+| `refactor` | Internal restructure; no intended behavior change |
+| `test` | Tests or probe scripts whose main purpose is verification |
+| `chore` | Tooling, deps, CI, formatting; no product behavior change |
+
+**Don't** invent rare types (`style`, `perf`, …) unless the owner asks — pick the closest row above.
+
+## Scopes (EchoType)
+
+| Scope | Typical paths |
+|-------|----------------|
+| `web` | `apps/web/` |
+| `api` | `apps/api/` |
+| `shared` | `packages/shared/` |
+| `state` | `docs/STATE.md` (often with `docs` type) |
+| `adr` | `docs/DECISIONS.md` (often with `docs` type) |
+| `stats` | `docs/STATS.md` (often with `docs` type) |
+| `rules` | `.cursor/rules/` |
+| `deploy` | `deploy/`, `.github/workflows/` |
+
+Omit scope when a single commit fairly touches web + api + shared (rare); say so in the body if needed.
+
+## Subject rules
+
+**Do**
+
+- Imperative mood: `add`, `fix`, `remove`, `align` — not `added` / `fixes`
+- Lowercase first letter after the colon (proper nouns OK: `EchoType`, `WPM`, `ADR-0014`)
+- ~72 characters or fewer when practical
+- Focus on **what** changed; put **why** in the body
+
+**Don't**
+
+- End the subject with `.`
+- Use `Phase N` alone as the subject — put phase context in the body if helpful
+- Write Chinese in the header (`language-policy.mdc`)
+
+## Body and footers (optional)
+
+- Blank line after header, then body paragraphs are fine
+- Body: why the change matters (aligns with `git-commit-push.mdc`)
+- No `Co-authored-by` (`no-co-authored-by.mdc`)
+
+## Two-commit discipline
+
+When shipping a phased capability (`state-decisions-maintenance.mdc`):
+
+1. **Work commit** — `feat(web): …`, `fix(api): …`, etc.
+2. **Docs commit** — `docs(state): …` and/or `docs(adr): …` / `docs(stats): …` in a **separate** commit after the anchor sha exists
+
+**Don't** drop Conventional Commits for phase work; use type/scope in the header and phase detail in the body.
+
+## Agent workflow
+
+When drafting a commit message for user review, **always** show the full header in `type(scope): subject` form. If the change does not fit any type/scope cleanly, say so and propose the closest match before committing.

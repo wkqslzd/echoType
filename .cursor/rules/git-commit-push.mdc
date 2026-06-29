@@ -31,7 +31,7 @@ Implements the two-step git gate from `00-workflow-gates.mdc`. Git history is us
 
 ## Commit scope
 
-**Do** stage only files the user approved. Exclude secrets (`.env`, credentials). Draft the commit message in English; focus on why, not just what.
+**Do** stage only files the user approved. Exclude secrets (`.env`, credentials). Draft the commit message in English; focus on why, not just what. **Header format:** `type(scope): subject` per `commit-messages.mdc`.
 
 **Don't** commit unrelated changes, empty commits, or files the user did not review.
 
@@ -47,4 +47,4 @@ Implements the two-step git gate from `00-workflow-gates.mdc`. Git history is us
 
 ## Co-authored-by and hooks
 
-Commit execution details (including `git commit-tree` and post-commit verification) live in `no-co-authored-by.mdc`. This file governs **when** to commit; that file governs **how**.
+Commit execution details (including `git commit-tree` and post-commit verification) live in `no-co-authored-by.mdc`. Header format lives in `commit-messages.mdc`. This file governs **when** to commit; those govern **how** and **what shape**.
