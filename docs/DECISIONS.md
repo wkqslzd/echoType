@@ -635,7 +635,7 @@
 
 ## ADR-0015 — Auth: Cognito email/password, sub-as-PK, six phases
 - Status: Accepted (2026-06-30)
-- Commit/PR anchor: b2a226a (Phase 1 pool + SSM); `0018106` (EC2 AMI lifecycle ignore — ops, not auth); `43ae465` (Phase 2 user model + seed split)
+- Commit/PR anchor: b2a226a (Phase 1 pool + SSM); `0018106` (EC2 AMI lifecycle ignore — ops, not auth); `43ae465` (Phase 2 user model + seed split); `962d2a4` (Phase 3 API JWT)
 - Plain summary (owner reads this): EchoType replaces the demo-user shim with **AWS Cognito**
   email+password auth. `users.id` stores Cognito **sub** (UUID). Register collects email,
   password, and **nickname in one form**; email must be verified before login. Access token
@@ -680,6 +680,13 @@
       in `devQaCourses.ts`; `SEED_ENV=dev` local seed only; prod compose skips seed.
       Local dev user `00000000-0000-4000-8000-000000000001`. **First prod deploy** waits
       until Auth Phase 4 (bundle Phases 2–4 migration + JWT + Web login).
+  14. **Phase 3 shipped** (`962d2a4`, Accepted 2026-07-01): `aws-jwt-verify` access-token
+      middleware on all `/api/*` except `GET /api/health` and `OPTIONS`; demo-user shim
+      removed. `ensureUser` upserts by `sub`; `403 profile_incomplete` on first create when
+      email+name cannot be resolved; Cognito `GetUser(AccessToken)` enriches profile when the
+      access token omits `name`. `deploy/remote-deploy.sh` injects Cognito SSM into API env.
+      Probe `apps/api/scripts/auth-phase3-jwt-probe.mjs` (Part A 401 matrix + optional Part B
+      with `TEST_ACCESS_TOKEN` or `PROBE_COGNITO_AUTH=1`).
 - Rejected alternatives:
   - email as `users` PK — blocks future Google account linking.
   - Post-login nickname modal — extra “verified but incomplete profile” state complicates
@@ -689,7 +696,7 @@
     replacement during Phase 1 apply; addressed by `lifecycle { ignore_changes = [ami] }`
     (`0018106`); OS updates are deliberate maintainer actions.
 - Consequences:
-  - Auth capability active; Phase 3 next (API JWT; remove shim).
+  - Auth capability active; Phase 4 next (Web auth core; SPA Bearer + route guards).
   - Phase 6 blocked on owner onboarding seed content (STATE reminder); catalog data in
     `prisma/fixtures/courseCatalog.ts`.
   - Do not deploy Phases 2–3 to prod without Phase 4 Web auth (401 wall for browser).
