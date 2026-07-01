@@ -635,7 +635,7 @@
 
 ## ADR-0015 — Auth: Cognito email/password, sub-as-PK, six phases
 - Status: Accepted (2026-06-30)
-- Commit/PR anchor: b2a226a (Phase 1 pool + SSM); `0018106` (EC2 AMI lifecycle ignore — ops, not auth)
+- Commit/PR anchor: b2a226a (Phase 1 pool + SSM); `0018106` (EC2 AMI lifecycle ignore — ops, not auth); `43ae465` (Phase 2 user model + seed split)
 - Plain summary (owner reads this): EchoType replaces the demo-user shim with **AWS Cognito**
   email+password auth. `users.id` stores Cognito **sub** (UUID). Register collects email,
   password, and **nickname in one form**; email must be verified before login. Access token
@@ -673,6 +673,13 @@
   12. **Phase 1 shipped** (`b2a226a`): `infra/cognito.tf` User Pool + public SPA client;
       SSM `/echotype/COGNITO_USER_POOL_ID`, `COGNITO_CLIENT_ID`, `COGNITO_REGION`; app
       code still uses demo-user shim until Phase 3.
+  13. **Phase 2 shipped** (`43ae465`): `User.id` no default (Cognito `sub`); `email`/`name`
+      NOT NULL; migration deletes `demo-user` + cascade. `prisma/fixtures/courseCatalog.ts`
+      (`ONBOARDING_COURSES`: Deer Enclosure → Samples; Stray Birds - 49 and What I Have
+      Lived For standalone) + `materializeCoursesForUser` for Phase 6 reuse; `DEV_QA_COURSES`
+      in `devQaCourses.ts`; `SEED_ENV=dev` local seed only; prod compose skips seed.
+      Local dev user `00000000-0000-4000-8000-000000000001`. **First prod deploy** waits
+      until Auth Phase 4 (bundle Phases 2–4 migration + JWT + Web login).
 - Rejected alternatives:
   - email as `users` PK — blocks future Google account linking.
   - Post-login nickname modal — extra “verified but incomplete profile” state complicates
@@ -682,8 +689,10 @@
     replacement during Phase 1 apply; addressed by `lifecycle { ignore_changes = [ami] }`
     (`0018106`); OS updates are deliberate maintainer actions.
 - Consequences:
-  - Auth capability active; Phase 2 next (schema + seed split).
-  - Phase 6 blocked on owner onboarding seed content (STATE reminder).
+  - Auth capability active; Phase 3 next (API JWT; remove shim).
+  - Phase 6 blocked on owner onboarding seed content (STATE reminder); catalog data in
+    `prisma/fixtures/courseCatalog.ts`.
+  - Do not deploy Phases 2–3 to prod without Phase 4 Web auth (401 wall for browser).
   - Unrelated `terraform apply` should use `-target` for Cognito-only changes until AMI
     lock is on all environments, or rely on `0018106` lifecycle on `aws_instance.app`.
 - Supersedes / superseded-by: none

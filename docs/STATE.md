@@ -25,7 +25,7 @@
 ## Phase Roadmap (active capability only)
 Active capability: Auth
 - [x] Phase 1 — Cognito pool + SSM (email/password pool; email verification required; access 1h / refresh 30d; callback/logout URLs from WEB_ORIGIN / env — no hardcoded cloudfront.net)
-- [ ] Phase 2 — User model + seed split (users.id = Cognito sub UUID; nickname required; purge demo-user from prod; clear monolithic seed.ts; local-only dev seed, prod deploy skips seed)
+- [x] Phase 2 — User model + seed split (users.id = Cognito sub UUID; nickname required; purge demo-user from prod; clear monolithic seed.ts; local-only dev seed, prod deploy skips seed)
 - [ ] Phase 3 — API JWT auth (replace demo-user shim; verify tokens; upsert User by sub; 401 without valid session)
 - [ ] Phase 4 — Web auth core (register form: email + password + nickname all required; email verification gate before login; login/logout/refresh; route guards; Cognito config from env)
 - [ ] Phase 5 — Account management (forgot password; change password; delete account — email re-registerable; email change only if zero new cloud cost, else Known debt; all Cognito email links/callbacks from WEB_ORIGIN / env — no hardcoded domain)
@@ -36,10 +36,11 @@ Active capability: Auth
 > new capability's phases and move YOU ARE HERE above.
 
 ## Now working on (describe ONLY the in-progress item)
-- Goal (one line): Auth Phase 2 — User model + seed split (sub-as-PK; purge demo-user from prod).
-- Sub-steps done: Phase 1 Cognito pool + SSM (`b2a226a`; owner apply +验收); AMI drift lock (`0018106`)
-- Next step: Phase 2 design / Prisma migration + prod seed removal
+- Goal (one line): Auth Phase 3 — API JWT auth (replace demo-user shim; upsert User by sub).
+- Sub-steps done: Phase 2 user model + seed split (`43ae465`; local验收); Phase 1 (`b2a226a`); AMI lock (`0018106`)
+- Next step: Phase 3 design / Cognito JWT middleware
 - Related decisions: ADR-0015
+- Deploy gate: first prod deploy after Auth Phase 4 (Phases 2–4 bundle)
 
 ## Contract pointers (don't memorize, go read the source)
 - Stats metrics (definitions/formulas only): docs/STATS.md
@@ -59,6 +60,7 @@ Active capability: Auth
 - Annotation rendering: apps/web/src/components/AnnotatedText.tsx + apps/web/src/components/annotated-text/useTextMeasurement.ts
 - Editor + review: apps/web/src/components/editor/useCourseEditor.ts, reviewUtils.ts, AnnotatedTextEditor.tsx
 - Deploy: deploy/README.md, .github/workflows/deploy.yml, .github/workflows/deploy-web.yml
+- Onboarding course catalog (fixtures): apps/api/prisma/fixtures/courseCatalog.ts, materializeCourse.ts
 
 ## Do NOT touch (unless explicitly opening a new phase)
 - annotation measurement hook (charEdges per-glyph measurement) — ADR-0002
