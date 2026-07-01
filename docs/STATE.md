@@ -27,7 +27,7 @@ Active capability: Auth
 - [x] Phase 1 — Cognito pool + SSM (email/password pool; email verification required; access 1h / refresh 30d; callback/logout URLs from WEB_ORIGIN / env — no hardcoded cloudfront.net)
 - [x] Phase 2 — User model + seed split (users.id = Cognito sub UUID; nickname required; purge demo-user from prod; clear monolithic seed.ts; local-only dev seed, prod deploy skips seed)
 - [x] Phase 3 — API JWT auth (replace demo-user shim; verify tokens; upsert User by sub; 401 without valid session)
-- [x] Phase 4 — Web auth + guest browse (Cognito SRP register/login/verify-email; guest localStorage catalog + onboarding samples; open browse routes; Bearer + 401 refresh; guest save disabled; post-login next guard for guest temp courses; probe)
+- [x] Phase 4 — Web auth + guest browse (Cognito SRP register/login/verify-email; guest localStorage catalog + onboarding samples; open browse routes — no AppLayout RequireAuth; account-only writes via useRequireAuthAction; Bearer + 401 refresh; guest save disabled; post-login next guard for guest temp courses; probe)
 - [ ] Phase 5 — Account management (forgot password; change password; delete account — email re-registerable; email change only if zero new cloud cost, else Known debt; all Cognito email links/callbacks from WEB_ORIGIN / env — no hardcoded domain)
 - [ ] Phase 6 — Onboarding seed hook (courseCount===0 triggers seed call; framework + empty stub — **owner must supply course/collection seed content before this phase ships**)
 
@@ -63,6 +63,7 @@ Active capability: Auth
 - API JWT auth: apps/api/src/auth/, probe `apps/api/scripts/auth-phase3-jwt-probe.mjs`
 - Web auth (Cognito SPA): apps/web/src/auth/, apps/web/.env.example, probe `apps/web/scripts/auth-phase4-probe.mjs`
 - Guest course catalog (local): apps/web/src/guest/guestCoursesStore.ts, apps/web/src/guest/useCourseCatalog.ts
+- Guest vs authed data + write guard: apps/web/src/guest/useCourseCatalog.ts, apps/web/src/auth/useRequireAuthAction.ts
 - Onboarding catalog (shared): packages/shared/src/onboardingCatalog.ts (re-exported in apps/api/prisma/fixtures/courseCatalog.ts)
 - Onboarding course catalog (fixtures): apps/api/prisma/fixtures/courseCatalog.ts, materializeCourse.ts
 

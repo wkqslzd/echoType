@@ -725,7 +725,9 @@
     replacement during Phase 1 apply; addressed by `lifecycle { ignore_changes = [ami] }`
     (`0018106`); OS updates are deliberate maintainer actions.
 - Consequences:
-  - Auth capability active; Phase 4 next (Web auth core; SPA Bearer + route guards).
+  - Auth capability active; Phase 5 next (account management). Web: open browse under
+    AppLayout; account-only writes via `useRequireAuthAction` (not full-site
+    `RequireAuth`).
   - Phase 6 blocked on owner onboarding seed content (STATE reminder); catalog data in
     `prisma/fixtures/courseCatalog.ts`.
   - Do not deploy Phases 2–3 to prod without Phase 4 Web auth (401 wall for browser).
