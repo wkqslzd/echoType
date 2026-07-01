@@ -691,8 +691,10 @@
       (`amazon-cognito-identity-js`); `AuthProvider` + `localStorage` session; register
       (email + password + nickname), verify-email gate, login/logout; Bearer on API
       calls with 401 refresh retry. **Guest browse** replaces pre-Phase-4 full-site
-      `RequireAuth` (see §16). Routes under `AppLayout` are public; write actions that
-      need an account call `useRequireAuthAction` or header **Log in**. Deploy:
+      `RequireAuth` (see §16). Routes under `AppLayout` are public. Account-only
+      **collection** and **session** writes: guest UI hidden (`!isGuest`),
+      `useRequireAuthAction` on explicit CTAs (e.g. New collection), Save disabled
+      on typing. Header **Log in** is sign-in entry only (not a write guard). Deploy:
       `VITE_COGNITO_*` from SSM in `deploy-web.yml`; `vite.config.ts` `global:
       globalThis` for cognito SDK. Probe `apps/web/scripts/auth-phase4-probe.mjs`
       (Part C unit tests + Part A guest browse + optional Part B Cognito login).
@@ -726,8 +728,8 @@
     (`0018106`); OS updates are deliberate maintainer actions.
 - Consequences:
   - Auth capability active; Phase 5 next (account management). Web: open browse under
-    AppLayout; account-only writes via `useRequireAuthAction` (not full-site
-    `RequireAuth`).
+    AppLayout; account collection/session writes gated (!isGuest UI,
+    useRequireAuthAction, disabled Save) — not full-site `RequireAuth`.
   - Phase 6 blocked on owner onboarding seed content (STATE reminder); catalog data in
     `prisma/fixtures/courseCatalog.ts`.
   - Do not deploy Phases 2–3 to prod without Phase 4 Web auth (401 wall for browser).
