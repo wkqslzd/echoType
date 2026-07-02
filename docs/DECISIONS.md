@@ -635,7 +635,7 @@
 
 ## ADR-0015 — Auth: Cognito email/password, sub-as-PK, six phases
 - Status: Accepted (2026-06-30)
-- Commit/PR anchor: b2a226a (Phase 1 pool + SSM); `0018106` (EC2 AMI lifecycle ignore — ops, not auth); `43ae465` (Phase 2 user model + seed split); `962d2a4` (Phase 3 API JWT)
+- Commit/PR anchor: b2a226a (Phase 1 pool + SSM); `0018106` (EC2 AMI lifecycle ignore — ops, not auth); `43ae465` (Phase 2 user model + seed split); `962d2a4` (Phase 3 API JWT); `272f222` (Phase 5.3 delete account)
 - Plain summary (owner reads this): EchoType replaces the demo-user shim with **AWS Cognito**
   email+password auth. `users.id` stores Cognito **sub** (UUID). Register collects email,
   password, and **nickname in one form**; email must be verified before login. Access token
@@ -743,6 +743,23 @@
         `DELETE` confirm.
       - Probe `auth-phase5-probe.mjs` Part A guest `/account` guard; Part D optional
         nickname save when `PROBE_COGNITO_AUTH=1`.
+  19. **Phase 5.3 shipped** (`272f222`, Accepted 2026-07-02): Account deletion on
+      `/account` danger zone (replaces §18 placeholder).
+      - **Confirm UX**: current password + type `DELETE` (`DELETE_CONFIRMATION_TEXT` in
+        shared); submit disabled until both valid.
+      - **Order**: `signIn(email, password)` primarily to verify password; side effect
+        refreshes Cognito session for `deleteUser`. Then `DELETE /api/account`
+        (`deleteMany` by `req.userId`, **204 idempotent** if row already gone). Then
+        Cognito `deleteUser` via access token. Then `logout()`.
+      - **Success**: redirect `/` with flash
+        `Account deleted. Browse or sign up anytime.`; HomePage shows flash + register
+        link. Email immediately re-registerable (no cooldown).
+      - **Cognito fail after DB delete**: `logout()` + `AccountDeleteCognitoError`;
+        account page shows retry message; user may sign in and run delete again (API
+        `deleteMany` still 204). Probe Part F simulates via
+        `window.__echotypeSimulateCognitoDeleteFailOnce` (local smoke only).
+      - Probe `auth-phase5-probe.mjs`: Part D delete UI guards; Part E full delete;
+        Part F Cognito-fail retry (destructive; dedicated test user).
 - Rejected alternatives:
   - email as `users` PK — blocks future Google account linking.
   - Post-login nickname modal — extra “verified but incomplete profile” state complicates

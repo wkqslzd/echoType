@@ -28,19 +28,19 @@ Active capability: Auth
 - [x] Phase 2 — User model + seed split (users.id = Cognito sub UUID; nickname required; purge demo-user from prod; clear monolithic seed.ts; local-only dev seed, prod deploy skips seed)
 - [x] Phase 3 — API JWT auth (replace demo-user shim; verify tokens; upsert User by sub; 401 without valid session)
 - [x] Phase 4 — Web auth + guest browse (Cognito SRP register/login/verify-email; guest localStorage catalog + onboarding samples; open browse routes — no AppLayout RequireAuth; account collection/session writes gated (!isGuest UI, useRequireAuthAction on CTAs, disabled Save); guest temp course CRUD in localStorage; Bearer + 401 refresh; post-login next guard for guest temp courses; probe)
-- [~] Phase 5 — Account management (5.1–5.2 shipped: forgot password, /account change password + nickname; 5.3 delete account pending; email-change remains Known debt; Cognito links from WEB_ORIGIN / env)
-- [ ] Phase 6 — Onboarding seed hook (courseCount===0 triggers seed call; framework + empty stub — **owner must supply course/collection seed content before this phase ships**)
+- [x] Phase 5 — Account management (5.1–5.3 shipped: forgot password, /account change password + nickname + delete account; email-change remains Known debt; Cognito links from WEB_ORIGIN / env)
+- [ ] Phase 6 — Onboarding seed hook (courseCount===0 triggers seed call; framework + empty stub — **owner must supply course/collection seed content before this phase ships**)    <-- YOU ARE HERE
 
 > Legend: [x] done  [~] in progress  [ ] todo  (blocked) noted inline
 > When the active capability changes, replace this entire Phase Roadmap with the
 > new capability's phases and move YOU ARE HERE above.
 
 ## Now working on (describe ONLY the in-progress item)
-- Goal (one line): Auth Phase 5.3 — delete account (DB cascade + Cognito deleteUser; password + type DELETE confirm).
-- Sub-steps done: Phase 5.2 account page (`80ddb79`; owner 验收); Phase 5.1 forgot password (`cea3a62`); Phase 4 (`7786f03`); Phase 3 (`962d2a4`); Phase 2 (`43ae465`); Phase 1 (`b2a226a`)
-- Next step: Phase 5.3 — `DELETE /api/account` + web delete flow + re-register acceptance
-- Related decisions: ADR-0015 §15–18
-- Deploy gate: Phases 2–5.2 on main; API + web deploy together for `/api/account`
+- Goal (one line): Auth Phase 6 — onboarding seed hook (`courseCount === 0` → seed call; owner must supply catalog content first).
+- Sub-steps done: Phase 5.3 delete account (`272f222`; probe + owner 验收); Phase 5.2 account page (`80ddb79`); Phase 5.1 forgot password (`cea3a62`); Phase 4 (`7786f03`); Phase 3 (`962d2a4`); Phase 2 (`43ae465`); Phase 1 (`b2a226a`)
+- Next step: Phase 6 — owner supplies onboarding seed content; implement `courseCount===0` hook + API seed path
+- Related decisions: ADR-0015 §15–19
+- Deploy gate: Phases 2–5.3 on main; API + web deploy together for `/api/account` DELETE
 
 ## Contract pointers (don't memorize, go read the source)
 - Stats metrics (definitions/formulas only): docs/STATS.md
