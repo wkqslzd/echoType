@@ -1,3 +1,4 @@
+import type { AccountDTO } from '@echotype/shared';
 import type {
   AnnotationIssue,
   ContentIssue,
@@ -194,4 +195,7 @@ export const api = {
     request<CreateSessionResponse>('/sessions', { method: 'POST', body: JSON.stringify(input) }),
   listSessions: (courseId?: string) =>
     request<SessionDTO[]>(`/sessions${courseId ? `?courseId=${courseId}` : ''}`),
+  getAccount: () => request<AccountDTO>('/account'),
+  updateAccount: (input: { name: string }) =>
+    request<AccountDTO>('/account', { method: 'PUT', body: JSON.stringify(input) }),
 };

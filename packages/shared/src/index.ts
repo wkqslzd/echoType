@@ -5,3 +5,4 @@ export * from './categoryRollup.js';
 export * from './practiceDisplay.js';
 export * from './session.js';
 export * from './onboardingCatalog.js';
+export * from './account.js';

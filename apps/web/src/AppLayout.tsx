@@ -57,9 +57,13 @@ export function AppLayout() {
             {status === 'authed' ? (
               <>
                 {displayName && (
-                  <span className="text-sm text-slate-600" data-testid="auth-display-name">
+                  <Link
+                    to="/account"
+                    className="text-sm text-slate-600 underline hover:text-slate-900"
+                    data-testid="auth-display-name"
+                  >
                     {displayName}
-                  </span>
+                  </Link>
                 )}
                 <button
                   type="button"

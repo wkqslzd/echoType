@@ -13,7 +13,7 @@
     "prisma:reset": "prisma migrate reset --force",
     "prisma:studio": "prisma studio",
     "seed": "tsx prisma/seed.ts",
-    "test:auth": "node --import tsx --test src/auth/ensureUser.test.ts",
+    "test:auth": "node --import tsx --test src/auth/ensureUser.test.ts src/routes/account.test.ts",
     "probe:auth": "node scripts/auth-phase3-jwt-probe.mjs"
   },
   "dependencies": {

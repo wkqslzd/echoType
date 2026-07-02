@@ -10,6 +10,8 @@ import { LoginPage } from './pages/auth/LoginPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
 import { ResetPasswordPage } from './pages/auth/ResetPasswordPage';
 import { VerifyEmailPage } from './pages/auth/VerifyEmailPage';
+import { RequireAuth } from './auth/RequireAuth';
+import { AccountPage } from './pages/AccountPage';
 
 export const router = [
   {
@@ -64,6 +66,14 @@ export const router = [
       { path: '/courses/short', element: <CourseListPage courseMode="SHORT" /> },
       { path: '/courses/article', element: <CourseListPage courseMode="ARTICLE" /> },
       { path: '/courses/:id/type', element: <TypingPage /> },
+      {
+        path: '/account',
+        element: (
+          <RequireAuth>
+            <AccountPage />
+          </RequireAuth>
+        ),
+      },
     ],
   },
 ];

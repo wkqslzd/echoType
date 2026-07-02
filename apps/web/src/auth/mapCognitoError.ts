@@ -45,3 +45,11 @@ export function isUserNotConfirmed(err: unknown): boolean {
 export function isUserNotFound(err: unknown): boolean {
   return errorCode(err) === 'UserNotFoundException';
 }
+
+/** changePassword uses NotAuthorizedException for a wrong current password. */
+export function mapChangePasswordError(err: unknown): string {
+  if (errorCode(err) === 'NotAuthorizedException') {
+    return 'Current password is incorrect.';
+  }
+  return mapCognitoError(err);
+}

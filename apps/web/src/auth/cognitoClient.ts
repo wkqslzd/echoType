@@ -1,12 +1,15 @@
 import {
   AuthenticationDetails,
+  CognitoAccessToken,
+  CognitoIdToken,
   CognitoRefreshToken,
   CognitoUser,
   CognitoUserAttribute,
   CognitoUserPool,
-  type CognitoUserSession,
+  CognitoUserSession,
 } from 'amazon-cognito-identity-js';
 import { assertCognitoConfig } from './cognitoConfig.js';
+import type { StoredAuthSession } from './authSession.js';
 
 let pool: CognitoUserPool | null = null;
 
@@ -20,6 +23,18 @@ function getPool(): CognitoUserPool {
 
 export function createCognitoUser(email: string): CognitoUser {
   return new CognitoUser({ Username: email.trim(), Pool: getPool() });
+}
+
+/** Rehydrate CognitoUser from persisted SPA tokens (changePassword / updateAttributes). */
+export function cognitoUserWithStoredSession(session: StoredAuthSession): CognitoUser {
+  const user = createCognitoUser(session.username);
+  const cognitoSession = new CognitoUserSession({
+    IdToken: new CognitoIdToken({ IdToken: session.idToken }),
+    AccessToken: new CognitoAccessToken({ AccessToken: session.accessToken }),
+    RefreshToken: new CognitoRefreshToken({ RefreshToken: session.refreshToken }),
+  });
+  user.setSignInUserSession(cognitoSession);
+  return user;
 }
 
 export function signUp(email: string, password: string, nickname: string): Promise<void> {
@@ -101,6 +116,29 @@ export function confirmForgotPassword(
     createCognitoUser(email).confirmPassword(code.trim(), newPassword, {
       onSuccess: () => resolve(),
       onFailure: (err) => reject(err),
+    });
+  });
+}
+
+export function changePassword(
+  session: StoredAuthSession,
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    cognitoUserWithStoredSession(session).changePassword(currentPassword, newPassword, (err) => {
+      if (err) reject(err);
+      else resolve();
+    });
+  });
+}
+
+export function updateUserName(session: StoredAuthSession, name: string): Promise<void> {
+  const attributeList = [new CognitoUserAttribute({ Name: 'name', Value: name })];
+  return new Promise((resolve, reject) => {
+    cognitoUserWithStoredSession(session).updateAttributes(attributeList, (err) => {
+      if (err) reject(err);
+      else resolve();
     });
   });
 }

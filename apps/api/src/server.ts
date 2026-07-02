@@ -7,6 +7,7 @@ import { prisma } from './prisma.js';
 import { registerCourseRoutes } from './routes/courses.js';
 import { registerCategoryRoutes } from './routes/categories.js';
 import { registerSessionRoutes } from './routes/sessions.js';
+import { registerAccountRoutes } from './routes/account.js';
 
 assertCognitoConfig();
 
@@ -50,6 +51,7 @@ await app.register(
     await registerCourseRoutes(api);
     await registerCategoryRoutes(api);
     await registerSessionRoutes(api);
+    await registerAccountRoutes(api);
   },
   { prefix: '/api' },
 );

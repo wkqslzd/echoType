@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { isUserNotConfirmed, isUserNotFound, mapCognitoError } from './mapCognitoError.js';
+import { isUserNotConfirmed, isUserNotFound, mapChangePasswordError, mapCognitoError } from './mapCognitoError.js';
 
 describe('mapCognitoError', () => {
   it('maps UserNotConfirmedException', () => {
@@ -39,5 +39,11 @@ describe('isUserNotFound', () => {
   it('detects missing user', () => {
     assert.equal(isUserNotFound({ code: 'UserNotFoundException' }), true);
     assert.equal(isUserNotFound({ code: 'NotAuthorizedException' }), false);
+  });
+});
+
+describe('mapChangePasswordError', () => {
+  it('maps NotAuthorizedException to current-password message', () => {
+    assert.match(mapChangePasswordError({ code: 'NotAuthorizedException' }), /Current password/);
   });
 });
