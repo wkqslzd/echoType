@@ -1,8 +1,8 @@
 # Auth Phase 1: Cognito User Pool + SPA app client.
 # Callback path /auth/callback is a placeholder until Auth Phase 4; adjust here + re-apply if routes change.
 # Email: COGNITO_DEFAULT (50/day AWS cap) — sufficient for MVP; switch to SES if volume hits the limit.
-# prevent_user_existence_errors DISABLED (Phase 5.1): ForgotPassword returns UserNotFoundException
-# so the app can tell users when no account exists for an email.
+# prevent_user_existence_errors LEGACY (Phase 5.1): client returns UserNotFoundException
+# so the app can tell users when no account exists for an email (ENABLED masks it).
 
 locals {
   web_origin = "https://${aws_cloudfront_distribution.web.domain_name}"
@@ -83,7 +83,7 @@ resource "aws_cognito_user_pool_client" "web" {
 
   supported_identity_providers = ["COGNITO"]
 
-  prevent_user_existence_errors = "DISABLED"
+  prevent_user_existence_errors = "LEGACY"
 
   read_attributes = [
     "email",
