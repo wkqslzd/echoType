@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { NICKNAME_MAX, UpdateAccountInput } from '@echotype/shared';
+import { NICKNAME_MAX, UpdateAccountInput, isDeleteConfirmationValid } from '@echotype/shared';
 
 describe('UpdateAccountInput', () => {
   it('accepts a trimmed nickname within max length', () => {
@@ -17,5 +17,12 @@ describe('UpdateAccountInput', () => {
   it('rejects nickname over max length', () => {
     const result = UpdateAccountInput.safeParse({ name: 'a'.repeat(NICKNAME_MAX + 1) });
     assert.equal(result.success, false);
+  });
+});
+
+describe('isDeleteConfirmationValid', () => {
+  it('requires exact DELETE after trim', () => {
+    assert.equal(isDeleteConfirmationValid('DELETE'), true);
+    assert.equal(isDeleteConfirmationValid('delete'), false);
   });
 });

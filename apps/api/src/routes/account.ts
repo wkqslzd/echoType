@@ -29,4 +29,10 @@ export async function registerAccountRoutes(api: FastifyInstance) {
       name: user.name,
     };
   });
+
+  api.delete('/account', async (req, reply) => {
+    // Idempotent: user row may already be gone if a prior attempt deleted DB but Cognito failed.
+    await prisma.user.deleteMany({ where: { id: req.userId } });
+    return reply.status(204).send();
+  });
 }

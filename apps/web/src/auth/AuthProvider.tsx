@@ -1,7 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { AccountDTO } from '@echotype/shared';
+import { isDeleteConfirmationValid } from '@echotype/shared';
 import { api } from '../lib/api.js';
+import { AccountDeleteCognitoError } from './accountDelete.js';
 import {
   clearAuthSession,
   getDisplayName,
@@ -14,6 +16,7 @@ import {
   changePassword as cognitoChangePassword,
   confirmSignUp,
   confirmForgotPassword,
+  deleteCognitoAccount,
   forgotPassword,
   resendConfirmationCode,
   signIn,
@@ -41,6 +44,7 @@ export type AuthContextValue = {
   confirmPasswordReset: (email: string, code: string, newPassword: string) => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   updateNickname: (name: string) => Promise<AccountDTO>;
+  deleteAccount: (password: string, confirmation: string) => Promise<void>;
   applyDisplayName: (name: string) => void;
   mapError: (err: unknown) => string;
   isUserNotConfirmed: (err: unknown) => boolean;
@@ -184,6 +188,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [applyDisplayName],
   );
 
+  /**
+   * Postgres user row first (idempotent DELETE), then Cognito deleteUser.
+   *
+   * signIn is used here primarily to verify the password; a side effect is a
+   * refreshed session, which the subsequent deleteUser call relies on.
+   */
+  const deleteAccount = useCallback(
+    async (password: string, confirmation: string) => {
+      if (!isDeleteConfirmationValid(confirmation)) {
+        throw new Error('Type DELETE to confirm account deletion.');
+      }
+      if (!password) {
+        throw new Error('Password is required.');
+      }
+
+      const session = loadAuthSession();
+      if (!session) {
+        throw new Error('not_authed');
+      }
+
+      const loginEmail = getSessionEmail(session) ?? session.username;
+      const refreshed = await signIn(loginEmail, password);
+      persistCognitoSession(loginEmail.trim(), sessionToTokens(refreshed));
+
+      await api.deleteAccount();
+
+      const sessionForDelete = loadAuthSession();
+      if (!sessionForDelete) {
+        throw new Error('not_authed');
+      }
+
+      try {
+        await deleteCognitoAccount(sessionForDelete);
+      } catch {
+        logout();
+        throw new AccountDeleteCognitoError();
+      }
+
+      logout();
+    },
+    [logout],
+  );
+
   const value = useMemo<AuthContextValue>(
     () => ({
       status,
@@ -198,6 +245,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       confirmPasswordReset,
       changePassword,
       updateNickname,
+      deleteAccount,
       applyDisplayName,
       mapError: mapCognitoError,
       isUserNotConfirmed,
@@ -215,6 +263,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       confirmPasswordReset,
       changePassword,
       updateNickname,
+      deleteAccount,
       applyDisplayName,
     ],
   );

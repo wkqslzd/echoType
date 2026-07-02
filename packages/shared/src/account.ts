@@ -13,3 +13,9 @@ export type AccountDTO = {
   email: string;
   name: string;
 };
+
+export const DELETE_CONFIRMATION_TEXT = 'DELETE' as const;
+
+export function isDeleteConfirmationValid(input: string): boolean {
+  return input.trim() === DELETE_CONFIRMATION_TEXT;
+}

@@ -143,6 +143,21 @@ export function updateUserName(session: StoredAuthSession, name: string): Promis
   });
 }
 
+export function deleteCognitoAccount(session: StoredAuthSession): Promise<void> {
+  // Probe-only: Playwright sets window.__echotypeSimulateCognitoDeleteFailOnce before submit.
+  if (typeof window !== 'undefined' && window.__echotypeSimulateCognitoDeleteFailOnce) {
+    window.__echotypeSimulateCognitoDeleteFailOnce = false;
+    return Promise.reject(new Error('simulated_cognito_delete_failure'));
+  }
+
+  return new Promise((resolve, reject) => {
+    cognitoUserWithStoredSession(session).deleteUser((err) => {
+      if (err) reject(err);
+      else resolve();
+    });
+  });
+}
+
 export function sessionToTokens(session: CognitoUserSession) {
   return {
     accessToken: session.getAccessToken().getJwtToken(),

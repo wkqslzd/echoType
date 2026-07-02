@@ -1,6 +1,17 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ACCOUNT_DELETED_FLASH } from '../auth/accountDelete';
 
 export function HomePage() {
+  const [flash, setFlash] = useState<string | null>(null);
+
+  useEffect(() => {
+    const message = sessionStorage.getItem('echotype.auth.flash');
+    if (!message) return;
+    sessionStorage.removeItem('echotype.auth.flash');
+    setFlash(message);
+  }, []);
+
   return (
     <div className="space-y-6">
       <div>
@@ -8,6 +19,18 @@ export function HomePage() {
         <p className="mt-2 text-slate-600">
           Repeat, type, and remember meaningful texts with your own annotated notes.
         </p>
+        {flash && (
+          <p className="mt-3 text-sm text-green-700" data-testid="home-auth-flash">
+            {flash}
+          </p>
+        )}
+        {flash === ACCOUNT_DELETED_FLASH && (
+          <p className="mt-2 text-sm text-slate-600">
+            <Link to="/register" className="text-slate-900 underline">
+              Create a new account
+            </Link>
+          </p>
+        )}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">

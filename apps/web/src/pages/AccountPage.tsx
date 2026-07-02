@@ -1,7 +1,12 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { NICKNAME_MAX } from '@echotype/shared';
+import { isDeleteConfirmationValid, NICKNAME_MAX } from '@echotype/shared';
 import { useAuth } from '../auth/AuthProvider';
+import {
+  ACCOUNT_DELETED_FLASH,
+  ACCOUNT_DELETE_COGNITO_FAILED_MESSAGE,
+  AccountDeleteCognitoError,
+} from '../auth/accountDelete';
 import { mapChangePasswordError, mapCognitoError } from '../auth/mapCognitoError';
 import { validateNickname } from '../auth/nicknamePolicy';
 import { validatePassword } from '../auth/passwordPolicy';
@@ -9,7 +14,8 @@ import { api } from '../lib/api';
 
 export function AccountPage() {
   const navigate = useNavigate();
-  const { status, applyDisplayName, changePassword, updateNickname, logout } = useAuth();
+  const { status, applyDisplayName, changePassword, updateNickname, deleteAccount, logout } =
+    useAuth();
 
   const [email, setEmail] = useState('');
   const [nickname, setNickname] = useState('');
@@ -25,6 +31,14 @@ export function AccountPage() {
   const [passwordSubmitting, setPasswordSubmitting] = useState(false);
 
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState('');
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+
+  const deleteReady =
+    deletePassword.length > 0 && isDeleteConfirmationValid(deleteConfirm) && !deleteSubmitting;
 
   useEffect(() => {
     if (status !== 'authed') return;
@@ -100,6 +114,35 @@ export function AccountPage() {
       setPasswordError(mapChangePasswordError(err));
     } finally {
       setPasswordSubmitting(false);
+    }
+  }
+
+  async function onDeleteSubmit(e: FormEvent) {
+    e.preventDefault();
+    setDeleteError(null);
+
+    if (!isDeleteConfirmationValid(deleteConfirm)) {
+      setDeleteError('Type DELETE to confirm account deletion.');
+      return;
+    }
+
+    setDeleteSubmitting(true);
+    try {
+      await deleteAccount(deletePassword, deleteConfirm);
+      sessionStorage.setItem('echotype.auth.flash', ACCOUNT_DELETED_FLASH);
+      navigate('/', { replace: true });
+    } catch (err) {
+      if (err instanceof AccountDeleteCognitoError) {
+        setDeleteError(ACCOUNT_DELETE_COGNITO_FAILED_MESSAGE);
+        return;
+      }
+      if (err instanceof Error && err.message !== 'not_authed') {
+        setDeleteError(err.message);
+        return;
+      }
+      setDeleteError(mapChangePasswordError(err));
+    } finally {
+      setDeleteSubmitting(false);
     }
   }
 
@@ -200,17 +243,43 @@ export function AccountPage() {
       <section className="rounded-md border border-red-200 bg-red-50 p-4">
         <h2 className="text-sm font-medium text-red-900">Danger zone</h2>
         <p className="mt-2 text-sm text-red-800">
-          Delete account will be available in Phase 5.3. This will permanently remove your
-          courses, collections, and practice history.
+          Permanently delete your account, courses, collections, and practice history. This
+          cannot be undone.
         </p>
-        <button
-          type="button"
-          disabled
-          className="mt-3 rounded-md border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 opacity-60"
-          data-testid="account-delete-disabled"
-        >
-          Delete account
-        </button>
+        <form className="mt-4 space-y-3" onSubmit={onDeleteSubmit}>
+          <label className="block text-sm">
+            <span className="text-slate-700">Current password</span>
+            <input
+              type="password"
+              required
+              autoComplete="current-password"
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
+              className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="block text-sm">
+            <span className="text-slate-700">Type DELETE to confirm</span>
+            <input
+              type="text"
+              required
+              autoComplete="off"
+              value={deleteConfirm}
+              onChange={(e) => setDeleteConfirm(e.target.value)}
+              className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+              data-testid="account-delete-confirm"
+            />
+          </label>
+          {deleteError && <p className="text-sm text-red-600">{deleteError}</p>}
+          <button
+            type="submit"
+            disabled={!deleteReady}
+            className="rounded-md border border-red-600 bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60"
+            data-testid="account-delete-submit"
+          >
+            {deleteSubmitting ? 'Deleting…' : 'Delete account'}
+          </button>
+        </form>
       </section>
     </div>
   );

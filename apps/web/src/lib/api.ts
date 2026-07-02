@@ -198,4 +198,5 @@ export const api = {
   getAccount: () => request<AccountDTO>('/account'),
   updateAccount: (input: { name: string }) =>
     request<AccountDTO>('/account', { method: 'PUT', body: JSON.stringify(input) }),
+  deleteAccount: () => request<void>('/account', { method: 'DELETE' }),
 };
