@@ -28,7 +28,7 @@ Active capability: Auth
 - [x] Phase 2 — User model + seed split (users.id = Cognito sub UUID; nickname required; purge demo-user from prod; clear monolithic seed.ts; local-only dev seed, prod deploy skips seed)
 - [x] Phase 3 — API JWT auth (replace demo-user shim; verify tokens; upsert User by sub; 401 without valid session)
 - [x] Phase 4 — Web auth + guest browse (Cognito SRP register/login/verify-email; guest localStorage catalog + onboarding samples; open browse routes — no AppLayout RequireAuth; account collection/session writes gated (!isGuest UI, useRequireAuthAction on CTAs, disabled Save); guest temp course CRUD in localStorage; Bearer + 401 refresh; post-login next guard for guest temp courses; probe)
-- [x] Phase 5 — Account management (5.1 shipped: forgot password with explicit UserNotFound UX + login sign-up guidance; email-change remains Known debt; all Cognito email links/callbacks from WEB_ORIGIN / env — no hardcoded domain)
+- [~] Phase 5 — Account management (5.1–5.2 shipped: forgot password, /account change password + nickname; 5.3 delete account pending; email-change remains Known debt; Cognito links from WEB_ORIGIN / env)
 - [ ] Phase 6 — Onboarding seed hook (courseCount===0 triggers seed call; framework + empty stub — **owner must supply course/collection seed content before this phase ships**)
 
 > Legend: [x] done  [~] in progress  [ ] todo  (blocked) noted inline
@@ -36,11 +36,11 @@ Active capability: Auth
 > new capability's phases and move YOU ARE HERE above.
 
 ## Now working on (describe ONLY the in-progress item)
-- Goal (one line): Auth Phase 5 — Account management (forgot/change password; delete account).
-- Sub-steps done: Phase 4 web auth + guest browse (`7786f03`; probe Part A+C + owner 验收); Phase 3 (`962d2a4`); Phase 2 (`43ae465`); Phase 1 (`b2a226a`)
-- Next step: Phase 5.2 — `/account` page (change password + nickname update + delete-account danger zone)
-- Related decisions: ADR-0015 §15–17
-- Deploy gate: Phases 2–5.1 shipped on main; apply Cognito LEGACY policy completed for explicit UserNotFound UX
+- Goal (one line): Auth Phase 5.3 — delete account (DB cascade + Cognito deleteUser; password + type DELETE confirm).
+- Sub-steps done: Phase 5.2 account page (`80ddb79`; owner 验收); Phase 5.1 forgot password (`cea3a62`); Phase 4 (`7786f03`); Phase 3 (`962d2a4`); Phase 2 (`43ae465`); Phase 1 (`b2a226a`)
+- Next step: Phase 5.3 — `DELETE /api/account` + web delete flow + re-register acceptance
+- Related decisions: ADR-0015 §15–18
+- Deploy gate: Phases 2–5.2 on main; API + web deploy together for `/api/account`
 
 ## Contract pointers (don't memorize, go read the source)
 - Stats metrics (definitions/formulas only): docs/STATS.md
@@ -61,7 +61,8 @@ Active capability: Auth
 - Editor + review: apps/web/src/components/editor/useCourseEditor.ts, reviewUtils.ts, AnnotatedTextEditor.tsx
 - Deploy: deploy/README.md, .github/workflows/deploy.yml, .github/workflows/deploy-web.yml
 - API JWT auth: apps/api/src/auth/, probe `apps/api/scripts/auth-phase3-jwt-probe.mjs`
-- Web auth (Cognito SPA): apps/web/src/auth/, apps/web/.env.example, probe `apps/web/scripts/auth-phase4-probe.mjs`
+- Web auth (Cognito SPA): apps/web/src/auth/, apps/web/.env.example, probe `apps/web/scripts/auth-phase4-probe.mjs`, `auth-phase5-probe.mjs`
+- Account API + page: packages/shared/src/account.ts, apps/api/src/routes/account.ts, apps/web/src/pages/AccountPage.tsx
 - Guest course catalog (local): apps/web/src/guest/guestCoursesStore.ts, apps/web/src/guest/useCourseCatalog.ts
 - Account vs guest writes: useCourseCatalog (data); collection !isGuest UI (CourseListPage, CollectionDetailPage); useRequireAuthAction (e.g. New collection); TypingPage disabled Save
 - Onboarding catalog (shared): packages/shared/src/onboardingCatalog.ts (re-exported in apps/api/prisma/fixtures/courseCatalog.ts)

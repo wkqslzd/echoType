@@ -729,6 +729,20 @@
         `No account found for this email. Sign up instead?` plus register link.
       - Product trade-off accepted: UX clarity over anti-enumeration hardening under
         EchoType's current threat model.
+  18. **Phase 5.2 shipped** (`80ddb79`, Accepted 2026-07-02): `/account` page
+      (`RequireAuth`) for signed-in users. Header display name links to `/account`.
+      - **Nickname**: Cognito `updateAttributes({ name })` then best-effort session
+        refresh, then `PUT /api/account` (`NICKNAME_MAX` 64 in shared). If refresh
+        fails, still PUT and set header `displayName` from API response (Cognito+DB
+        consistency over fresh JWT). Account page mount also syncs display name from
+        `GET /api/account`.
+      - **Change password**: Cognito `changePassword` (client-side); on success
+        **logout** and redirect to `/login?reset=1` (sign in with new password).
+      - **Delete account**: danger-zone UI placeholder only (disabled); Phase 5.3
+        ships `DELETE /api/account` + Cognito `deleteUser` with password + type
+        `DELETE` confirm.
+      - Probe `auth-phase5-probe.mjs` Part A guest `/account` guard; Part D optional
+        nickname save when `PROBE_COGNITO_AUTH=1`.
 - Rejected alternatives:
   - email as `users` PK — blocks future Google account linking.
   - Post-login nickname modal — extra “verified but incomplete profile” state complicates
