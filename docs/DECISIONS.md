@@ -635,7 +635,7 @@
 
 ## ADR-0015 — Auth: Cognito email/password, sub-as-PK, six phases
 - Status: Accepted (2026-06-30)
-- Commit/PR anchor: b2a226a (Phase 1 pool + SSM); `0018106` (EC2 AMI lifecycle ignore — ops, not auth); `43ae465` (Phase 2 user model + seed split); `962d2a4` (Phase 3 API JWT); `272f222` (Phase 5.3 delete account)
+- Commit/PR anchor: b2a226a (Phase 1 pool + SSM); `0018106` (EC2 AMI lifecycle ignore — ops, not auth); `43ae465` (Phase 2 user model + seed split); `962d2a4` (Phase 3 API JWT); `272f222` (Phase 5.3 delete account); `354c1b7` (Phase 6 onboarding seed)
 - Plain summary (owner reads this): EchoType replaces the demo-user shim with **AWS Cognito**
   email+password auth. `users.id` stores Cognito **sub** (UUID). Register collects email,
   password, and **nickname in one form**; email must be verified before login. Access token
@@ -760,6 +760,27 @@
         `window.__echotypeSimulateCognitoDeleteFailOnce` (local smoke only).
       - Probe `auth-phase5-probe.mjs`: Part D delete UI guards; Part E full delete;
         Part F Cognito-fail retry (destructive; dedicated test user).
+  20. **Phase 6 shipped** (`354c1b7`, Accepted 2026-07-05): Onboarding seed hook for
+      new authed users with zero courses.
+      - **Catalog**: `OnboardingCatalog` in `packages/shared/src/onboardingCatalog.ts`
+        (versioned; collections with optional `description` + standalone courses;
+        stable IDs namespace `8001`; `validateOnboardingCatalog` at import). Guest store
+        reconciles against current catalog on load (`mergeOnboarding`).
+      - **Schema**: `User.onboardingSeededAt DateTime?` — means the seed **hook resolved**
+        (materialized OR waived), not strictly "rows were inserted". Comment on field +
+        `decideOnboardingSeed` document the four-step order.
+      - **POST `/api/onboarding/seed`** (JWT required): (1) `onboardingSeededAt !== null`
+        → 204; (2) catalog empty → 204 no write; (3) `courseCount > 0` → set
+        `onboardingSeededAt` (waive) → 204; (4) `courseCount === 0` + non-empty catalog
+        → `materializeOnboardingForUser` + set `onboardingSeededAt` → 204. Transaction
+        re-checks under lock for idempotency.
+      - **Web**: `useOnboardingSeed` in `AppLayout` after `auth status === 'authenticated'`;
+        calls `api.seedOnboarding()` once per session when hook not yet resolved.
+        `GET /api/account` returns `onboardingSeededAt`.
+      - **Owner content (6.2)**: Beyond English → Deer Enclosure; Great Speeches →
+        Gettysburg Address; standalone Stray Birds 49, Sonnet 18, Russell, Gibran On Love.
+      - Probe `auth-phase6-probe.mjs` (guest catalog reconcile + optional Cognito seed).
+      - **Auth capability complete**; Custom domain capability next (STATE).
 - Rejected alternatives:
   - email as `users` PK — blocks future Google account linking.
   - Post-login nickname modal — extra “verified but incomplete profile” state complicates

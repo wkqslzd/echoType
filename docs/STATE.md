@@ -12,8 +12,8 @@
 - [x] Typing experience (auto-loop, newline skip, session flow, IME composition; ADR-0006/0007/0008)
 - [x] Course management (mode routes, card list, DELETE, description, search/sort, collections; ADR-0009–0013)
 - [x] Course stats (per-session + cumulative; STATS.md contract; ADR-0014 phases 1–7)
-- [ ] Auth (Cognito; replaces demo-user shim; required before sharing externally)    <-- YOU ARE HERE
-- [ ] Custom domain (purchase + ACM cert + CloudFront alias; deferred until self-testing settles)
+- [x] Auth (Cognito; replaces demo-user shim; required before sharing externally)
+- [ ] Custom domain (purchase + ACM cert + CloudFront alias; deferred until self-testing settles)    <-- YOU ARE HERE
 - [ ] Ops & safety (Sentry, CloudWatch, rate limiting, disclaimer, error/empty states)
 
 
@@ -23,24 +23,19 @@
 > Top-to-bottom = current execution order. Reorder if priorities change; never leave it unordered.
 
 ## Phase Roadmap (active capability only)
-Active capability: Auth
-- [x] Phase 1 — Cognito pool + SSM (email/password pool; email verification required; access 1h / refresh 30d; callback/logout URLs from WEB_ORIGIN / env — no hardcoded cloudfront.net)
-- [x] Phase 2 — User model + seed split (users.id = Cognito sub UUID; nickname required; purge demo-user from prod; clear monolithic seed.ts; local-only dev seed, prod deploy skips seed)
-- [x] Phase 3 — API JWT auth (replace demo-user shim; verify tokens; upsert User by sub; 401 without valid session)
-- [x] Phase 4 — Web auth + guest browse (Cognito SRP register/login/verify-email; guest localStorage catalog + onboarding samples; open browse routes — no AppLayout RequireAuth; account collection/session writes gated (!isGuest UI, useRequireAuthAction on CTAs, disabled Save); guest temp course CRUD in localStorage; Bearer + 401 refresh; post-login next guard for guest temp courses; probe)
-- [x] Phase 5 — Account management (5.1–5.3 shipped: forgot password, /account change password + nickname + delete account; email-change remains Known debt; Cognito links from WEB_ORIGIN / env)
-- [ ] Phase 6 — Onboarding seed hook (courseCount===0 triggers seed call; framework + empty stub — **owner must supply course/collection seed content before this phase ships**)    <-- YOU ARE HERE
+Active capability: Custom domain
+- [ ] Phase 1 — Purchase domain + ACM certificate + CloudFront alternate domain name (update WEB_ORIGIN SSM; Cognito callback/logout URLs)    <-- YOU ARE HERE
 
 > Legend: [x] done  [~] in progress  [ ] todo  (blocked) noted inline
 > When the active capability changes, replace this entire Phase Roadmap with the
 > new capability's phases and move YOU ARE HERE above.
 
 ## Now working on (describe ONLY the in-progress item)
-- Goal (one line): Auth Phase 6 — onboarding seed hook (`courseCount === 0` → seed call; owner must supply catalog content first).
-- Sub-steps done: Phase 5.3 delete account (`272f222`; probe + owner 验收); Phase 5.2 account page (`80ddb79`); Phase 5.1 forgot password (`cea3a62`); Phase 4 (`7786f03`); Phase 3 (`962d2a4`); Phase 2 (`43ae465`); Phase 1 (`b2a226a`)
-- Next step: Phase 6 — owner supplies onboarding seed content; implement `courseCount===0` hook + API seed path
-- Related decisions: ADR-0015 §15–19
-- Deploy gate: Phases 2–5.3 on main; API + web deploy together for `/api/account` DELETE
+- Goal (one line): Custom domain — public hostname + ACM + CloudFront alias; unblock Google sign-in prep.
+- Sub-steps done: Auth complete through Phase 6 onboarding seed (`354c1b7`; probe + owner 验收); Phase 5.3 (`272f222`); Phase 5.2 (`80ddb79`); Phase 5.1 (`cea3a62`); Phase 4 (`7786f03`); Phase 3 (`962d2a4`); Phase 2 (`43ae465`); Phase 1 (`b2a226a`)
+- Next step: Custom domain Phase 1 — purchase domain, ACM cert, CloudFront alias, SSM WEB_ORIGIN update
+- Related decisions: ADR-0015 §20; Custom domain ADR TBD
+- Deploy gate: Auth Phases 2–6 on `feature/auth-phase-6` pending merge + deploy to prod
 
 ## Contract pointers (don't memorize, go read the source)
 - Stats metrics (definitions/formulas only): docs/STATS.md
@@ -61,12 +56,13 @@ Active capability: Auth
 - Editor + review: apps/web/src/components/editor/useCourseEditor.ts, reviewUtils.ts, AnnotatedTextEditor.tsx
 - Deploy: deploy/README.md, .github/workflows/deploy.yml, .github/workflows/deploy-web.yml
 - API JWT auth: apps/api/src/auth/, probe `apps/api/scripts/auth-phase3-jwt-probe.mjs`
-- Web auth (Cognito SPA): apps/web/src/auth/, apps/web/.env.example, probe `apps/web/scripts/auth-phase4-probe.mjs`, `auth-phase5-probe.mjs`
+- Web auth (Cognito SPA): apps/web/src/auth/, apps/web/.env.example, probe `apps/web/scripts/auth-phase4-probe.mjs`, `auth-phase5-probe.mjs`, `auth-phase6-probe.mjs`
 - Account API + page: packages/shared/src/account.ts, apps/api/src/routes/account.ts, apps/web/src/pages/AccountPage.tsx
 - Guest course catalog (local): apps/web/src/guest/guestCoursesStore.ts, apps/web/src/guest/useCourseCatalog.ts
 - Account vs guest writes: useCourseCatalog (data); collection !isGuest UI (CourseListPage, CollectionDetailPage); useRequireAuthAction (e.g. New collection); TypingPage disabled Save
 - Onboarding catalog (shared): packages/shared/src/onboardingCatalog.ts (re-exported in apps/api/prisma/fixtures/courseCatalog.ts)
-- Onboarding course catalog (fixtures): apps/api/prisma/fixtures/courseCatalog.ts, materializeCourse.ts
+- Onboarding seed API: POST apps/api/src/routes/onboarding.ts (`/api/onboarding/seed`); hook apps/web/src/auth/useOnboardingSeed.ts
+- Onboarding materialize: apps/api/prisma/fixtures/materializeCourse.ts (`materializeOnboardingForUser`)
 
 ## Do NOT touch (unless explicitly opening a new phase)
 - annotation measurement hook (charEdges per-glyph measurement) — ADR-0002
@@ -85,6 +81,5 @@ Active capability: Auth
 | Annotation | false-green (duplicate substring, no index shift) | MVP skips index shift | user reanchor | — |
 | Annotation | Overlay measurement = mirror offsetTop (lines) + per-glyph getBoundingClientRect (charEdges); NOT Range.getClientRects() | Phase 2 deliberate | do not revert without ADR | ADR-0002 |
 | Auth | Guest typing progress not restored after login | In-memory session only; sign in before starting a session you intend to save | intentional (ADR-0015 §16) | ADR-0015 |
-| Auth | Onboarding sample courses missing from API until Phase 6 seed | Guest reads shared onboarding catalog in localStorage; authed `GET /courses/:onboardingId` 404 until DB seed | Auth Phase 6 | ADR-0015 |
 | Auth | Google sign-in | Needs custom domain capability first; account linking prep via sub-as-PK | Custom domain capability, then Auth follow-up | ADR-0015 |
 | Auth | Email change | Deferred if implementation requires extra SES/Lambda cost beyond existing Cognito verify path | Auth Phase 5 cost check, or post-MVP | ADR-0015 |
