@@ -199,4 +199,5 @@ export const api = {
   updateAccount: (input: { name: string }) =>
     request<AccountDTO>('/account', { method: 'PUT', body: JSON.stringify(input) }),
   deleteAccount: () => request<void>('/account', { method: 'DELETE' }),
+  seedOnboarding: () => request<void>('/onboarding/seed', { method: 'POST' }),
 };

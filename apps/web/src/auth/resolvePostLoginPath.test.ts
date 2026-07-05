@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it, beforeEach } from 'node:test';
-import { GUEST_ONBOARDING_DEER_ID } from '@echotype/shared';
+import { ONBOARDING_GUEST_STABLE_COURSE_ID_EXAMPLE } from '@echotype/shared';
 import { resolvePostLoginPath } from './resolvePostLoginPath.js';
 import {
   _clearGuestStoreForTests,
@@ -32,7 +32,7 @@ describe('resolvePostLoginPath', () => {
   });
 
   it('keeps onboarding typing next paths unchanged', () => {
-    const next = `/courses/${GUEST_ONBOARDING_DEER_ID}/type`;
+    const next = `/courses/${ONBOARDING_GUEST_STABLE_COURSE_ID_EXAMPLE}/type`;
     assert.equal(resolvePostLoginPath(next), next);
   });
 

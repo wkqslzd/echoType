@@ -34,6 +34,7 @@ describe('ensureUser', () => {
     name: 'Ann',
     createdAt: new Date(),
     updatedAt: new Date(),
+    onboardingSeededAt: null,
   };
 
   it('creates user when profile complete', async () => {

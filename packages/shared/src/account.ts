@@ -12,6 +12,8 @@ export type AccountDTO = {
   id: string;
   email: string;
   name: string;
+  /** null = onboarding hook not yet handled; see User.onboardingSeededAt / ADR-0015 §20. */
+  onboardingSeededAt: string | null;
 };
 
 export const DELETE_CONFIRMATION_TEXT = 'DELETE' as const;

@@ -1,5 +1,10 @@
-import type { CourseMode, PrismaClient } from '@prisma/client';
-import type { CatalogAnnotationSpec, CatalogCourseDef } from './types.js';
+import type { CourseMode, Prisma, PrismaClient } from '@prisma/client';
+import type {
+  CatalogAnnotationSpec,
+  CatalogCourseDef,
+  OnboardingCatalog,
+} from '@echotype/shared';
+import type { CatalogCourseDef as LegacyCatalogCourseDef } from './types.js';
 
 export type BuiltAnnotation = {
   startIndex: number;
@@ -28,6 +33,14 @@ export function buildAnnotations(
   });
 }
 
+type MaterializableCourse = {
+  mode: CourseMode;
+  title: string;
+  content: string;
+  description?: string | null;
+  annotations: CatalogAnnotationSpec[];
+};
+
 async function resolveCategoryId(
   prisma: PrismaClient,
   userId: string,
@@ -45,11 +58,11 @@ async function resolveCategoryId(
   return category.id;
 }
 
-async function upsertCatalogCourse(
-  prisma: PrismaClient,
+async function upsertMaterializableCourse(
+  prisma: DbClient,
   userId: string,
   categoryId: string | null,
-  def: CatalogCourseDef,
+  def: MaterializableCourse,
 ) {
   const annotations = buildAnnotations(def.content, def.annotations);
   const existing = await prisma.course.findFirst({
@@ -69,31 +82,93 @@ async function upsertCatalogCourse(
     });
     return;
   }
-  await prisma.$transaction([
-    prisma.course.update({
-      where: { id: existing.id },
-      data: {
-        content: def.content,
-        mode: def.mode,
-        categoryId,
-        description: def.description ?? null,
+  if ('$transaction' in prisma) {
+    await prisma.$transaction([
+      prisma.course.update({
+        where: { id: existing.id },
+        data: {
+          content: def.content,
+          mode: def.mode,
+          categoryId,
+          description: def.description ?? null,
+        },
+      }),
+      prisma.annotation.deleteMany({ where: { courseId: existing.id } }),
+      prisma.annotation.createMany({
+        data: annotations.map((a) => ({ ...a, courseId: existing.id })),
+      }),
+    ]);
+    return;
+  }
+
+  await prisma.course.update({
+    where: { id: existing.id },
+    data: {
+      content: def.content,
+      mode: def.mode,
+      categoryId,
+      description: def.description ?? null,
+    },
+  });
+  await prisma.annotation.deleteMany({ where: { courseId: existing.id } });
+  await prisma.annotation.createMany({
+    data: annotations.map((a) => ({ ...a, courseId: existing.id })),
+  });
+}
+
+async function upsertCatalogCourse(
+  prisma: DbClient,
+  userId: string,
+  categoryId: string | null,
+  def: CatalogCourseDef,
+) {
+  await upsertMaterializableCourse(prisma, userId, categoryId, def);
+}
+
+type DbClient = PrismaClient | Prisma.TransactionClient;
+
+export async function materializeOnboardingForUser(
+  prisma: DbClient,
+  userId: string,
+  catalog: OnboardingCatalog,
+) {
+  const categoryIdByStableId = new Map<string, string>();
+
+  for (const collection of catalog.collections) {
+    const row = await prisma.category.upsert({
+      where: {
+        userId_mode_name: { userId, mode: collection.mode, name: collection.name },
       },
-    }),
-    prisma.annotation.deleteMany({ where: { courseId: existing.id } }),
-    prisma.annotation.createMany({
-      data: annotations.map((a) => ({ ...a, courseId: existing.id })),
-    }),
-  ]);
+      update: { description: collection.description },
+      create: {
+        userId,
+        mode: collection.mode,
+        name: collection.name,
+        description: collection.description,
+      },
+    });
+    categoryIdByStableId.set(collection.stableId, row.id);
+  }
+
+  for (const def of catalog.courses) {
+    const categoryId = def.collectionStableId
+      ? (categoryIdByStableId.get(def.collectionStableId) ?? null)
+      : null;
+    if (def.collectionStableId && !categoryId) {
+      throw new Error(`catalog: unknown collectionStableId ${def.collectionStableId}`);
+    }
+    await upsertCatalogCourse(prisma, userId, categoryId, def);
+  }
 }
 
 export async function materializeCoursesForUser(
   prisma: PrismaClient,
   userId: string,
-  defs: CatalogCourseDef[],
+  defs: LegacyCatalogCourseDef[],
 ) {
   for (const def of defs) {
     const categoryId = await resolveCategoryId(prisma, userId, def.mode, def.collectionName);
-    await upsertCatalogCourse(prisma, userId, categoryId, def);
+    await upsertMaterializableCourse(prisma, userId, categoryId, def);
   }
 }
 

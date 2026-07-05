@@ -50,40 +50,33 @@ function writeStorage(storage: GuestCoursesStorageV1) {
   localStorage.setItem(GUEST_COURSES_STORAGE_KEY, JSON.stringify(storage));
 }
 
-function mergeOnboarding(storage: GuestCoursesStorageV1): GuestCoursesStorageV1 {
+function reconcileWithCatalog(storage: GuestCoursesStorageV1 | null): GuestCoursesStorageV1 {
   const seed = materializeOnboardingGuestRecords();
-  const guestCourses = storage.courses.filter((c) => c.source === 'guest');
-  const byId = new Map(storage.courses.map((c) => [c.id, c]));
-  for (const c of seed.courses) {
-    byId.set(c.id, c);
-  }
-  for (const c of guestCourses) {
-    byId.set(c.id, c);
-  }
+  const guestCourses = storage?.courses.filter((c) => c.source === 'guest') ?? [];
   return {
     version: 1,
     catalogVersion: ONBOARDING_CATALOG_VERSION,
     categories: seed.categories,
-    courses: [...byId.values()],
+    courses: [...seed.courses, ...guestCourses],
   };
 }
 
+function onboardingMatchesCatalog(storage: GuestCoursesStorageV1): boolean {
+  const seed = materializeOnboardingGuestRecords();
+  const storedOnboarding = storage.courses.filter((c) => c.source === 'onboarding');
+  if (storage.catalogVersion !== ONBOARDING_CATALOG_VERSION) return false;
+  if (storage.categories.length !== seed.categories.length) return false;
+  if (storedOnboarding.length !== seed.courses.length) return false;
+  const seedIds = new Set(seed.courses.map((c) => c.id));
+  return storedOnboarding.every((c) => seedIds.has(c.id));
+}
+
 export function ensureGuestStoreSeeded(): GuestCoursesStorageV1 {
-  let storage = readStorage();
-  if (!storage) {
-    const seed = materializeOnboardingGuestRecords();
-    storage = {
-      version: 1,
-      catalogVersion: ONBOARDING_CATALOG_VERSION,
-      categories: seed.categories,
-      courses: seed.courses,
-    };
-    writeStorage(storage);
-    return storage;
-  }
-  if (storage.catalogVersion !== ONBOARDING_CATALOG_VERSION) {
-    storage = mergeOnboarding(storage);
-    writeStorage(storage);
+  const storage = readStorage();
+  if (!storage || !onboardingMatchesCatalog(storage)) {
+    const reconciled = reconcileWithCatalog(storage);
+    writeStorage(reconciled);
+    return reconciled;
   }
   return storage;
 }
