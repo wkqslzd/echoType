@@ -5,13 +5,19 @@ type CourseDescriptionPanelProps = {
   description: string;
   /** Typing page: allow collapsing the panel with a Hide control. */
   hideable?: boolean;
+  /** Typing page: start fully collapsed (Show description). */
+  defaultHidden?: boolean;
 };
 
 /** Typing-page description: one line by default; expand only when text overflows. */
-export function CourseDescriptionPanel({ description, hideable = false }: CourseDescriptionPanelProps) {
+export function CourseDescriptionPanel({
+  description,
+  hideable = false,
+  defaultHidden = false,
+}: CourseDescriptionPanelProps) {
   const trimmed = description.trim();
   const [expanded, setExpanded] = useState(false);
-  const [hidden, setHidden] = useState(false);
+  const [hidden, setHidden] = useState(defaultHidden);
   const clampRef = useRef<HTMLDivElement>(null);
   const [overflows, setOverflows] = useState(false);
 

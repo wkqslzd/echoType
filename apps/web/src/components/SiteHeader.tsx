@@ -2,12 +2,13 @@ import { Link } from 'react-router-dom';
 
 type SiteHeaderProps = {
   trailing?: React.ReactNode;
+  className?: string;
 };
 
 /** EchoType / Short / Article — shared across AppLayout and auth pages. */
-export function SiteHeader({ trailing }: SiteHeaderProps) {
+export function SiteHeader({ trailing, className }: SiteHeaderProps) {
   return (
-    <header className="border-b bg-white">
+    <header className={`border-b bg-white${className ? ` ${className}` : ''}`}>
       <nav className="mx-auto flex max-w-4xl items-center gap-4 px-4 py-3">
         <Link to="/" className="text-lg font-semibold">
           EchoType

@@ -32,6 +32,7 @@ import {
   TYPING_TEXTAREA_IMMERSIVE_CLASS,
   formatTypingDuration,
 } from '../lib/typingSurface';
+import { scrollPassageToTypingCursor, scrollTextareaToCaret } from '../lib/typingScroll';
 
 const IDLE_MS = 5000;
 const TICK_MS = 100;
@@ -191,6 +192,7 @@ function TypingSession({
   const activeMsRef = useRef(0);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const passageScrollRef = useRef<HTMLDivElement>(null);
   const pendingScrollRestoreRef = useRef<{ x: number; y: number } | null>(null);
   const lastActivityAtRef = useRef<number | null>(null);
   const pasteMetaRef = useRef<{ start: number; end: number; clipLen: number } | null>(null);
@@ -455,18 +457,18 @@ function TypingSession({
       window.scrollTo(pending.x, pending.y);
       pendingScrollRestoreRef.current = null;
     }
+  }, [immersiveMode]);
 
+  useLayoutEffect(() => {
+    const passage = passageScrollRef.current;
+    if (!passage) return;
+    scrollPassageToTypingCursor(passage);
+  }, [typed, typingStatuses]);
+
+  useLayoutEffect(() => {
     const el = textareaRef.current;
-    if (!el) return;
-
-    if (immersiveMode) {
-      el.style.height = '';
-      return;
-    }
-
-    el.style.height = 'auto';
-    const maxPx = Math.floor(window.innerHeight * 0.4);
-    el.style.height = `${Math.min(el.scrollHeight, maxPx)}px`;
+    if (!el || immersiveMode) return;
+    scrollTextareaToCaret(el);
   }, [draft, immersiveMode]);
 
   /** Commit a settled (non-composing) textarea value into the aligned `typed` buffer + stats. */
@@ -642,7 +644,7 @@ function TypingSession({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
       {showLeaveDialog && (
         <TypingLeaveDialog
           saving={submitMutation.isPending}
@@ -665,7 +667,7 @@ function TypingSession({
         />
       )}
 
-      <div>
+      <div className="shrink-0">
         {timerEndOpen ? (
           <span className="text-sm text-slate-300" aria-disabled="true">
             ← Back
@@ -678,10 +680,14 @@ function TypingSession({
         <h1 className="mt-1 text-xl font-semibold">{title}</h1>
       </div>
 
-      {description?.trim() && <CourseDescriptionPanel description={description} hideable />}
+      {description?.trim() && (
+        <div className="shrink-0">
+          <CourseDescriptionPanel description={description} hideable defaultHidden />
+        </div>
+      )}
 
       {!timerVisitDone && (
-        <div className="flex justify-center">
+        <div className="flex shrink-0 justify-center">
           <SessionTimerStrip
             phase={timerStripPhase}
             idleHidden={sessionTimerHidden}
@@ -705,26 +711,31 @@ function TypingSession({
         </div>
       )}
 
-      <div
-        className={immersiveMode ? 'cursor-text' : undefined}
-        onMouseDown={
-          immersiveMode
-            ? (e) => {
-                if ((e.target as HTMLElement).closest('[role="button"]')) return;
-                textareaRef.current?.focus({ preventScroll: true });
-              }
-            : undefined
-        }
-      >
-        <AnnotatedText
-          content={target}
-          annotations={annotations}
-          typingStatuses={typingStatuses}
-          clickableNotes={!showLeaveDialog && !timerEndOpen}
-        />
-      </div>
+      <div className="flex min-h-0 flex-1 flex-col gap-2">
+        <div
+          ref={passageScrollRef}
+          data-testid="typing-passage-scroll"
+          className={`min-h-0 flex-1 overflow-y-auto overscroll-y-contain ${
+            immersiveMode ? 'cursor-text' : ''
+          }`}
+          onMouseDown={
+            immersiveMode
+              ? (e) => {
+                  if ((e.target as HTMLElement).closest('[role="button"]')) return;
+                  textareaRef.current?.focus({ preventScroll: true });
+                }
+              : undefined
+          }
+        >
+          <AnnotatedText
+            content={target}
+            annotations={annotations}
+            typingStatuses={typingStatuses}
+            clickableNotes={!showLeaveDialog && !timerEndOpen}
+          />
+        </div>
 
-      <div className="relative space-y-2">
+        <div className="shrink-0 space-y-2">
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -768,7 +779,7 @@ function TypingSession({
           ref={textareaRef}
           data-testid="typing-input"
           autoFocus
-          rows={1}
+          rows={2}
           value={draft}
           disabled={timerEndOpen}
           onChange={handleChange}
@@ -789,9 +800,11 @@ function TypingSession({
             or copy your input.
           </p>
         )}
+        </div>
       </div>
 
-      {statsHidden ? (
+      <div className="shrink-0 space-y-3">
+        {statsHidden ? (
         <button
           type="button"
           data-testid="stats-show"
@@ -864,9 +877,9 @@ function TypingSession({
         <p className="text-sm text-slate-500">
           Course statistics update only when you save this session.
         </p>
-      </div>
+        </div>
 
-      {lastSaved && (
+        {lastSaved && (
         <div className="relative rounded-md border border-emerald-200 bg-emerald-50 p-4 pr-10 text-sm text-emerald-900">
           <button
             type="button"
@@ -883,10 +896,11 @@ function TypingSession({
             {lastSaved.errorCount} · chars {lastSaved.charCount} · loops {lastSaved.loopCount}
           </p>
         </div>
-      )}
-      {submitMutation.isError && !showLeaveDialog && !timerEndOpen && (
-        <p className="text-sm text-red-600">Failed to save: {(submitMutation.error as Error).message}</p>
-      )}
+        )}
+        {submitMutation.isError && !showLeaveDialog && !timerEndOpen && (
+          <p className="text-sm text-red-600">Failed to save: {(submitMutation.error as Error).message}</p>
+        )}
+      </div>
     </div>
   );
 }

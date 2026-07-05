@@ -113,7 +113,10 @@ function renderTypingChar(ch: string, status: TargetCharStatus) {
     return <span className="relative z-[1]" aria-hidden />;
   }
   return (
-    <span className={`relative z-[1] ${typingStatusClassName(status)}`}>
+    <span
+      className={`relative z-[1] ${typingStatusClassName(status)}`}
+      data-typing-cursor={status === 'cursor' ? 'true' : undefined}
+    >
       {ch === '\n' ? '' : ch}
     </span>
   );
