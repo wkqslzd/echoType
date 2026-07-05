@@ -1,15 +1,21 @@
 import type { FastifyInstance } from 'fastify';
-import { UpdateAccountInput } from '@echotype/shared';
+import type { User } from '@prisma/client';
+import { UpdateAccountInput, type AccountDTO } from '@echotype/shared';
 import { prisma } from '../prisma.js';
+
+function toAccountDTO(user: User): AccountDTO {
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    onboardingSeededAt: user.onboardingSeededAt?.toISOString() ?? null,
+  };
+}
 
 export async function registerAccountRoutes(api: FastifyInstance) {
   api.get('/account', async (req) => {
     const user = await prisma.user.findUniqueOrThrow({ where: { id: req.userId } });
-    return {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-    };
+    return toAccountDTO(user);
   });
 
   api.put('/account', async (req, reply) => {
@@ -23,11 +29,7 @@ export async function registerAccountRoutes(api: FastifyInstance) {
       data: { name: parsed.data.name },
     });
 
-    return {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-    };
+    return toAccountDTO(user);
   });
 
   api.delete('/account', async (req, reply) => {

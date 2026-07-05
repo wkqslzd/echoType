@@ -8,6 +8,7 @@ import { registerCourseRoutes } from './routes/courses.js';
 import { registerCategoryRoutes } from './routes/categories.js';
 import { registerSessionRoutes } from './routes/sessions.js';
 import { registerAccountRoutes } from './routes/account.js';
+import { registerOnboardingRoutes } from './routes/onboarding.js';
 
 assertCognitoConfig();
 
@@ -52,6 +53,7 @@ await app.register(
     await registerCategoryRoutes(api);
     await registerSessionRoutes(api);
     await registerAccountRoutes(api);
+    await registerOnboardingRoutes(api);
   },
   { prefix: '/api' },
 );

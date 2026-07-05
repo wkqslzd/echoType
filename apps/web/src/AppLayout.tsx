@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './auth/AuthProvider';
+import { useOnboardingSeed } from './auth/useOnboardingSeed';
 import { loginPathWithNext } from './auth/publicPaths';
 import { logRouteScrollMonitor, scrollRouteToTop } from './lib/routeScroll';
 
@@ -8,6 +9,8 @@ export function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { displayName, logout, status } = useAuth();
+
+  useOnboardingSeed();
 
   useLayoutEffect(() => {
     scrollRouteToTop();

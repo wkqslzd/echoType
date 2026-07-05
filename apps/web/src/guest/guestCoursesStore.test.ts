@@ -1,19 +1,18 @@
 import assert from 'node:assert/strict';
 import { describe, it, beforeEach } from 'node:test';
 import {
-  GUEST_ONBOARDING_DEER_ID,
-  GUEST_SAMPLES_CATEGORY_ID,
+  GUEST_SHORT_COLLECTION_ID,
+  ONBOARDING_GUEST_STABLE_COURSE_ID_EXAMPLE,
 } from '@echotype/shared';
 import {
+  GUEST_COURSES_STORAGE_KEY,
   _clearGuestStoreForTests,
   createGuestCourse,
-  deleteGuestCourse,
   ensureGuestStoreSeeded,
   isGuestReadOnlyCourse,
   isGuestTempCourseId,
   listGuestCategories,
   listGuestCourses,
-  updateGuestCourse,
 } from './guestCoursesStore.js';
 
 const storage = new Map<string, string>();
@@ -33,21 +32,23 @@ beforeEach(() => {
 });
 
 describe('guestCoursesStore', () => {
-  it('seeds onboarding courses and Samples collection', () => {
+  it('seeds onboarding collections and courses from catalog', () => {
     ensureGuestStoreSeeded();
     const cats = listGuestCategories('SHORT');
-    assert.ok(cats.some((c) => c.id === GUEST_SAMPLES_CATEGORY_ID));
-    const deer = listGuestCourses('SHORT').find((c) => c.id === GUEST_ONBOARDING_DEER_ID);
+    assert.ok(cats.some((c) => c.id === GUEST_SHORT_COLLECTION_ID));
+    assert.ok(cats.some((c) => c.name === 'Beyond English'));
+    const deer = listGuestCourses('SHORT').find(
+      (c) => c.id === ONBOARDING_GUEST_STABLE_COURSE_ID_EXAMPLE,
+    );
     assert.ok(deer);
-    assert.equal(isGuestReadOnlyCourse(GUEST_ONBOARDING_DEER_ID), true);
-    assert.equal(isGuestTempCourseId(GUEST_ONBOARDING_DEER_ID), false);
+    assert.equal(isGuestReadOnlyCourse(ONBOARDING_GUEST_STABLE_COURSE_ID_EXAMPLE), true);
   });
 
   it('creates guest temp courses with categoryId null', () => {
     ensureGuestStoreSeeded();
     const course = createGuestCourse({
       title: 'My draft',
-      content: 'abc',
+      content: 'abcde',
       mode: 'SHORT',
     });
     assert.equal(course.categoryId, null);
@@ -55,15 +56,77 @@ describe('guestCoursesStore', () => {
     assert.equal(isGuestReadOnlyCourse(course.id), false);
   });
 
-  it('blocks update/delete on read-only onboarding courses', () => {
+  it('does not treat stable onboarding id shape as a guest temp course', () => {
     ensureGuestStoreSeeded();
-    assert.throws(() =>
-      updateGuestCourse(GUEST_ONBOARDING_DEER_ID, {
-        title: 'x',
-        content: 'y',
-        mode: 'SHORT',
+    assert.equal(isGuestTempCourseId(ONBOARDING_GUEST_STABLE_COURSE_ID_EXAMPLE), false);
+  });
+
+  it('drops stale onboarding courses when catalog version bumps', () => {
+    storage.set(
+      GUEST_COURSES_STORAGE_KEY,
+      JSON.stringify({
+        version: 1,
+        catalogVersion: 1,
+        categories: [
+          {
+            id: '00000000-0000-4000-8001-000000000001',
+            name: 'Samples',
+            mode: 'SHORT',
+            description: null,
+            isReadOnly: true,
+            createdAt: '2026-01-01T00:00:00.000Z',
+            updatedAt: '2026-01-01T00:00:00.000Z',
+          },
+        ],
+        courses: [
+          {
+            id: '00000000-0000-4000-8001-000000000102',
+            title: 'Stray Birds - 49',
+            content: 'thank you',
+            mode: 'SHORT',
+            categoryId: null,
+            description: null,
+            annotations: [],
+            createdAt: '2026-01-01T00:00:00.000Z',
+            updatedAt: '2026-01-01T00:00:00.000Z',
+            isReadOnly: true,
+            source: 'onboarding',
+          },
+        ],
       }),
     );
-    assert.throws(() => deleteGuestCourse(GUEST_ONBOARDING_DEER_ID));
+
+    ensureGuestStoreSeeded();
+    assert.ok(listGuestCategories('SHORT').some((c) => c.name === 'Beyond English'));
+    assert.equal(listGuestCourses('SHORT').length, 3);
+  });
+
+  it('replaces stale onboarding when catalogVersion matches but rows differ', () => {
+    storage.set(
+      GUEST_COURSES_STORAGE_KEY,
+      JSON.stringify({
+        version: 1,
+        catalogVersion: 3,
+        categories: [],
+        courses: [
+          {
+            id: '00000000-0000-4000-8001-000000000102',
+            title: 'Stray Birds - 49',
+            content: 'thank you',
+            mode: 'SHORT',
+            categoryId: null,
+            description: null,
+            annotations: [],
+            createdAt: '2026-01-01T00:00:00.000Z',
+            updatedAt: '2026-01-01T00:00:00.000Z',
+            isReadOnly: true,
+            source: 'onboarding',
+          },
+        ],
+      }),
+    );
+
+    ensureGuestStoreSeeded();
+    assert.equal(listGuestCourses('SHORT').length, 3);
   });
 });

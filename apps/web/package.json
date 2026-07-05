@@ -10,7 +10,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test:auth": "node --import tsx --test src/auth/*.test.ts src/guest/*.test.ts",
     "probe:auth": "node scripts/auth-phase4-probe.mjs",
-    "probe:auth5": "node scripts/auth-phase5-probe.mjs"
+    "probe:auth5": "node scripts/auth-phase5-probe.mjs",
+    "probe:auth6": "node scripts/auth-phase6-probe.mjs"
   },
   "dependencies": {
     "@echotype/shared": "workspace:*",

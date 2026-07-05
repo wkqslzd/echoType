@@ -18,6 +18,11 @@ model User {
   name      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  /// Onboarding hook resolution time — NOT strictly "seed happened".
+  /// null = hook has not run for this user yet (client may POST /api/onboarding/seed).
+  /// non-null = hook completed: either catalog was materialized (courseCount was 0),
+  /// or seed was waived (courseCount > 0, user already had courses). See ADR-0015 §20.
+  onboardingSeededAt DateTime?
 
   categories Category[]
   courses    Course[]
