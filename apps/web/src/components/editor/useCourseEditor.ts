@@ -8,6 +8,7 @@ import {
   normalizeLineEndings,
   remapAnnotationIndexAfterLineEndingNormalization,
   validateContentCharacters,
+  type AnnotationInput,
   type AnnotationIssue,
   type CourseDTO,
   type CourseMode,
@@ -96,6 +97,8 @@ export interface UseCourseEditor {
   skipAnnotationChoice: boolean;
 
   annotations: DraftAnnotation[];
+  /** Replace content + annotations from a parsed .txt import (see parseAnnotatedTxt). */
+  importParsed: (content: string, annotations: AnnotationInput[]) => void;
   addAnnotation: (a: Omit<DraftAnnotation, 'localId' | 'anchoredText'> & { anchoredText?: string }) => void;
   updateAnnotation: (localId: number, patch: Partial<Omit<DraftAnnotation, 'localId'>>) => void;
   deleteAnnotation: (localId: number) => void;
@@ -235,6 +238,28 @@ export function useCourseEditor(
     [clearSubmitFeedback],
   );
 
+  const importParsed = useCallback(
+    (newContent: string, imported: AnnotationInput[]) => {
+      clearSubmitFeedback();
+      const normalized = normalizeLineEndings(newContent);
+      setContentState(normalized);
+      // Imported annotations are derived from this exact content, so advance the
+      // baseline too — a fresh import must not trigger the Phase 4 review flow.
+      contentBaseline.current = normalized;
+      setReviewActive(false);
+      const drafts: DraftAnnotation[] = imported.map((a) => ({
+        localId: nextLocalId.current++,
+        startIndex: a.startIndex,
+        endIndex: a.endIndex,
+        noteText: a.noteText,
+        anchoredText: sliceAt(normalized, a.startIndex, a.endIndex),
+      }));
+      setAnnotations(drafts);
+      if (drafts.length > 0) setNeedAnnotationState(true);
+    },
+    [clearSubmitFeedback],
+  );
+
   const setNeedAnnotation = useCallback((v: boolean) => {
     setNeedAnnotationState(v);
     if (!v) setAnnotations([]);
@@ -367,6 +392,7 @@ export function useCourseEditor(
     setNeedAnnotation,
     skipAnnotationChoice,
     annotations,
+    importParsed,
     addAnnotation,
     updateAnnotation,
     deleteAnnotation,

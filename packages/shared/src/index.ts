@@ -5,5 +5,6 @@ export * from './categoryRollup.js';
 export * from './practiceDisplay.js';
 export * from './session.js';
 export * from './onboardingCatalog.js';
+export * from './parseTxtImport.js';
 export * from './onboardingSeed.js';
 export * from './account.js';

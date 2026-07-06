@@ -2,6 +2,8 @@ type InfoTooltipProps = {
   ariaLabel: string;
   /** `top` opens above the icon (e.g. stats bar near viewport bottom). */
   placement: 'top' | 'bottom';
+  /** `end` right-aligns the panel to the icon (for icons near the right edge). */
+  align?: 'center' | 'end';
   panelClassName?: string;
   children: React.ReactNode;
 };
@@ -30,10 +32,12 @@ function CircleInfoIcon({ className }: { className?: string }) {
 export function InfoTooltip({
   ariaLabel,
   placement,
+  align = 'center',
   panelClassName = 'w-64',
   children,
 }: InfoTooltipProps) {
   const placementClass = placement === 'top' ? 'bottom-full mb-1.5' : 'top-full mt-1.5';
+  const alignClass = align === 'end' ? 'right-0' : 'left-1/2 -translate-x-1/2';
 
   return (
     <span className="group/info-tooltip relative inline-flex">
@@ -46,7 +50,7 @@ export function InfoTooltip({
       </button>
       <span
         role="tooltip"
-        className={`pointer-events-none absolute left-1/2 z-20 hidden -translate-x-1/2 rounded-md border border-slate-200 bg-white p-2 text-xs font-normal leading-snug text-slate-500 shadow-md group-hover/info-tooltip:block group-focus-within/info-tooltip:block ${placementClass} ${panelClassName}`}
+        className={`pointer-events-none absolute z-20 hidden rounded-md border border-slate-200 bg-white p-2 text-xs font-normal leading-snug text-slate-500 shadow-md group-hover/info-tooltip:block group-focus-within/info-tooltip:block ${alignClass} ${placementClass} ${panelClassName}`}
       >
         {children}
       </span>

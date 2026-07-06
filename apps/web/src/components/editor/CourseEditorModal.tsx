@@ -1,10 +1,19 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ARTICLE_MAX, ARTICLE_MIN, SHORT_MAX, SHORT_MIN, type CourseDTO, type CourseMode } from '@echotype/shared';
+import {
+  ARTICLE_MAX,
+  ARTICLE_MIN,
+  SHORT_MAX,
+  SHORT_MIN,
+  parseAnnotatedTxt,
+  type CourseDTO,
+  type CourseMode,
+} from '@echotype/shared';
 import { ApiError } from '../../lib/api';
 import { useCheckTitleAvailable, useSaveCourse } from '../../guest/useCourseCatalog';
 import { modeCoursesLabel } from '../../lib/modeCoursesLabel';
 import { AnnotatedText } from '../AnnotatedText';
+import { InfoTooltip } from '../InfoTooltip';
 import { OptionalDescriptionField } from '../OptionalDescriptionField';
 import { AnnotatedTextEditor, confirmAbandonPick } from './AnnotatedTextEditor';
 import {
@@ -344,6 +353,9 @@ export function CourseEditorModal({
   );
 }
 
+const MSG_IMPORT_OVERWRITE_CONFIRM =
+  'Importing will replace the current text and annotations. Continue?';
+
 function Step1({
   ed,
   titleAvailabilityError,
@@ -351,6 +363,36 @@ function Step1({
   ed: ReturnType<typeof useCourseEditor>;
   titleAvailabilityError: string | null;
 }) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+
+  async function handleImportFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-selecting the same file after a fix
+    if (!file) return;
+
+    let raw: string;
+    try {
+      raw = await file.text();
+    } catch {
+      setImportError('Could not read the file. Please try again.');
+      return;
+    }
+
+    const result = parseAnnotatedTxt(raw, ed.courseMode);
+    if (!result.ok) {
+      // Keep existing content untouched on failure.
+      setImportError(result.error);
+      return;
+    }
+
+    const hasExisting = ed.content.trim() !== '' || ed.annotations.length > 0;
+    if (hasExisting && !window.confirm(MSG_IMPORT_OVERWRITE_CONFIRM)) return;
+
+    setImportError(null);
+    ed.importParsed(result.content, result.annotations);
+  }
+
   const len = ed.content.length;
   const modeLabel = ed.courseMode === 'SHORT' ? 'Short mode' : 'Article mode';
   const modeRange =
@@ -386,18 +428,75 @@ function Step1({
         </p>
       </div>
 
-      <label className="block">
-        <span className="text-sm text-slate-600">
-          Text content ({len} characters, incl. spaces and line breaks)
-        </span>
+      <div>
+        <div className="flex items-end justify-between gap-2">
+          <label htmlFor="step1-content" className="text-sm text-slate-600">
+            Text content ({len} characters, incl. spaces and line breaks)
+          </label>
+          <span className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="rounded border bg-white px-2 py-1 text-xs text-slate-700 hover:bg-slate-50"
+              data-testid="txt-import-button"
+            >
+              Import from .txt
+            </button>
+            <InfoTooltip
+              ariaLabel="About importing from .txt"
+              placement="bottom"
+              align="end"
+              panelClassName="w-80"
+            >
+              <span className="block text-left">
+                <span className="block">
+                  Imports text from a .txt file. Plain text works as-is — use the format below
+                  only if you want to add annotations in one step.
+                </span>
+                <span className="mt-1.5 block font-medium">Format: {'{phrase}{annotation}'}</span>
+                <span className="mt-1 block">
+                  Example: the undiscovered country, from whose {'{bourn}{boundary; limit}'} no
+                  traveller returns.
+                </span>
+                <span className="mt-1 block">Rules:</span>
+                <span className="block">
+                  • Each {'{phrase}'} must be immediately followed by {'{annotation}'}
+                </span>
+                <span className="block">
+                  • Curly braces {'{ }'} cannot appear in plain text
+                </span>
+              </span>
+            </InfoTooltip>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".txt,text/plain"
+              className="hidden"
+              onChange={handleImportFile}
+              data-testid="txt-import-input"
+            />
+          </span>
+        </div>
         <textarea
+          id="step1-content"
           className="mt-1 h-44 w-full rounded border px-3 py-2 font-mono text-sm"
           value={ed.content}
-          onChange={(e) => ed.setContent(e.target.value)}
+          onChange={(e) => {
+            setImportError(null);
+            ed.setContent(e.target.value);
+          }}
           placeholder="Enter the English text to practice…"
         />
-      </label>
+      </div>
 
+      {importError && (
+        <p
+          className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800"
+          data-testid="txt-import-error"
+        >
+          Import failed — {importError}
+        </p>
+      )}
       {ed.showContentWarning && (
         <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
           {MSG_CONTENT_REVIEW_WARNING}
@@ -419,7 +518,9 @@ function Step2({ ed }: { ed: ReturnType<typeof useCourseEditor> }) {
         <AnnotatedText content={ed.content} annotations={[]} />
       </div>
 
-      {!ed.skipAnnotationChoice && (
+      {/* The Yes/No question only makes sense when nothing is staged yet — a .txt
+          import with valid markers already answered it (needAnnotation = true). */}
+      {!ed.skipAnnotationChoice && ed.annotations.length === 0 && (
         <fieldset className="space-y-2">
           <legend className="text-sm text-slate-600">Do you want to add annotations?</legend>
           <div className="flex gap-3">
