@@ -914,3 +914,56 @@
   - Very short viewports still clamp at `min 120px` passage height; edge layouts
     may need minor scroll.
 - Supersedes / superseded-by: none (refines interim `7ad406c` layout approach in code only; no prior ADR flipped)
+
+---
+
+## ADR-0018 — Course editor: client-side .txt import with `{phrase}{annotation}` markers
+- Status: Accepted (2026-07-06)
+- Commit/PR anchor: aa65d7d
+- Plain summary: Users can load course text from a local .txt file in the editor;
+  plain text fills the content field only, while an optional `{phrase}{annotation}`
+  marker format can pre-fill annotations in one step — all parsing stays in the
+  browser with no file upload.
+- Context: Authors preparing longer passages with many annotations need a faster
+  path than picking each span in Step 3. Uploading files to the server would add
+  API surface, storage, and cost for a create-time convenience that only needs
+  the parsed `content` + `AnnotationInput[]` the editor already sends on save.
+- Decision:
+  1. **Pure client import** — Step 1 "Import from .txt" uses a hidden file input
+     and `FileReader`; no new API route or cloud storage.
+  2. **Shared parser** — `parseAnnotatedTxt(raw, mode)` lives in
+     `packages/shared/src/parseTxtImport.ts` as a pure function (guest + authed,
+     unit-tested via `pnpm --filter @echotype/shared test`).
+  3. **Marker syntax (v1)** — Adjacent `{phrase}{annotation}` pairs only; phrase
+     text is written into `content` at scan position; the second brace pair is
+     the annotation text. No escape syntax; `{` / `}` cannot appear in plain text
+     (stray `}` is an error). Output indices are UTF-16 code units with inclusive
+     `endIndex`, matching `CreateCourseInput` / `buildPayload()` — no schema or
+     API change.
+  4. **Parse-time prechecks** — Syntax errors and shared business rules
+     (`NOTE_TEXT_MAX`, `MAX_ANNOTATIONS`, mode length, control characters,
+     whitespace anchors) fail at import with line-numbered messages, reusing
+     shared constants and validators — not deferred to Step 4 save.
+  5. **Editor integration** — `importParsed` replaces content + staged annotations,
+     advances `contentBaseline` (import must not trigger Phase 4 review), sets
+     `needAnnotation` when markers produced annotations; Step 2 hides the
+     Yes/No choice when annotations are already staged; overwrite confirm when
+     existing content/annotations would be replaced.
+- Rejected alternatives:
+  - Server upload + parse endpoint — unnecessary cost and API surface for a
+    create-time convenience.
+  - Parser only in `apps/web` — duplicates contract risk; guest catalog editor
+    needs the same path.
+  - Defer business-rule checks to save — errors lose line-number mapping to the
+    source `.txt`.
+  - v1 escape syntax for literal `{` in plain text — deferred; unclosed `{`
+    covers pasted mistakes.
+- Consequences:
+  - Implementation: `parseTxtImport.ts`, `useCourseEditor.importParsed`,
+     `CourseEditorModal` Step 1 UI + `InfoTooltip` `align="end"` for right-edge
+     tooltips.
+  - Future v2 (escape, multi-line markers, other formats) must extend or
+     supersede this ADR; do not silently change marker pairing rules.
+  - Plain-text import still runs mode-length validation; authors cannot import
+    text that violates the locked course mode without fixing the file or mode.
+- Supersedes / superseded-by: none
