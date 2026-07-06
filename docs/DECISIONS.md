@@ -802,3 +802,61 @@
     ready for prod when owner chooses (STATE recommends after Phase 5 for complete auth
     UX). Phase 5 next. Phase 6 still blocked on owner seed content.
 - Supersedes / superseded-by: none
+
+---
+
+## ADR-0016 — Typing-page note bubble width extension (post-layout, pixel caps)
+- Status: Accepted (2026-07-06)
+- Commit/PR anchor: b2b6ea3
+- Plain summary: On the typing page, annotation note bubbles may widen to the
+  right into free line space so more note text fits within two lines; extension
+  runs after charEdges layout, never moves bubble `left`, and stays gated off
+  elsewhere (editor preview unchanged).
+- Context: Note bubbles default to the annotated phrase width from ADR-0002
+  charEdges. Long note text is truncated by the existing two-line line-clamp
+  even when empty pixels remain to the right on the same visual line. Mixed
+  English/CJK note text needs word-aware wrap simulation, not character-count
+  heuristics, to decide how wide a bubble must be.
+- Decision:
+  1. **Post-layout pass** — After `buildLineData`, invoke `extendNoteWidths` once
+     per visual line on the notes already placed on that line. Input positions
+     come from charEdges; this pass only adjusts `width`, never `left` or line
+     assignment (cross-line host selection stays in `buildLineData`).
+  2. **Trigger** — Extend only when the note text does not already fit within
+     `NOTE_MAX_LINES` (2) at the current phrase width **and** either (a) there is
+     no next bubble on the line, or (b) the gap to the next bubble exceeds
+     **24px** (`extendThresholdPx`, overridable via opts). Adjacent annotated
+     phrases (gap ≈ 0) therefore stay at phrase width with no forced spacing.
+  3. **hardCap (priority caps)** — Maximum extension is the lesser of:
+     container content width minus bubble `left` (line right edge = container
+     width, not last glyph edge), and — when a next bubble exists — next bubble
+     `left` minus **4px** (`minGapPx`). Priority is enforced by this cap, not by
+     a separate desired-width formula: stay inside the line > keep 4px before
+     the next bubble > show as much text as possible.
+  4. **Width search** — Binary search integer widths in `[currentWidth, hardCap]`
+     for the smallest width where a greedy wrap simulation fits within
+     `NOTE_MAX_LINES`. English breaks at spaces; CJK breaks per character.
+     Canvas `measureText` (note font from container `getComputedStyle`) supplies
+     pixel widths without DOM reflow. Add **2px** slack (`wrapSlackPx`) to the
+     found width, capped at `hardCap`. If text still does not fit at `hardCap`,
+     extend to `hardCap` and rely on the renderer's native line-clamp ellipsis.
+  5. **Scope gate** — `AnnotatedText` exposes `extendNotes` (default `false`);
+     only `TypingPage` passes `true`. `CourseEditorModal` preview and
+     `AnnotatedTextEditor` are unchanged.
+  6. **Tests** — Pure-function unit tests in `noteExtension.test.ts`; npm script
+     `test:layout`.
+- Rejected alternatives:
+  - `fullTextPx / maxLines` as desired width — underestimates English because
+    words cannot break mid-token; caused false truncation (e.g. Gibran On Love).
+  - Extension inside charEdges / `useTextMeasurement` — would alter the ADR-0002
+    measurement path re-measured on layout change.
+  - Unconditional extension in `AnnotatedText` — would change editor preview
+    without an explicit product decision.
+- Consequences:
+  - Typing-page overlays use more horizontal space; charEdges measurement and
+    per-keystroke performance profile unchanged (extension runs in `lineData`
+    memo, not in the measurement hook).
+  - Thresholds and slack are opts on `extendNoteWidths` for tuning without
+    algorithm changes.
+  - Future editor parity requires an explicit opt-in (same prop or separate ADR).
+- Supersedes / superseded-by: none
