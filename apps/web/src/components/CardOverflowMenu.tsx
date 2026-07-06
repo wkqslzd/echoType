@@ -34,6 +34,10 @@ export function CardOverflowMenu({ items, ariaLabel, onOpenChange }: CardOverflo
     return () => document.removeEventListener('mousedown', onDoc);
   }, [open]);
 
+  if (items.length === 0) {
+    return null;
+  }
+
   return (
     <div ref={rootRef} className="relative shrink-0">
       <button
