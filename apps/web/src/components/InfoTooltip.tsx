@@ -4,6 +4,8 @@ type InfoTooltipProps = {
   placement: 'top' | 'bottom';
   /** `end` right-aligns the panel to the icon (for icons near the right edge). */
   align?: 'center' | 'end';
+  /** `sm` shrinks the trigger for inline use beside text links. */
+  size?: 'default' | 'sm';
   panelClassName?: string;
   children: React.ReactNode;
 };
@@ -33,20 +35,27 @@ export function InfoTooltip({
   ariaLabel,
   placement,
   align = 'center',
+  size = 'default',
   panelClassName = 'w-64',
   children,
 }: InfoTooltipProps) {
   const placementClass = placement === 'top' ? 'bottom-full mb-1.5' : 'top-full mt-1.5';
   const alignClass = align === 'end' ? 'right-0' : 'left-1/2 -translate-x-1/2';
+  const triggerSizeClass =
+    size === 'sm' ? 'h-3 w-3 min-h-0 min-w-0' : 'h-[1em] w-[1em] min-h-[14px] min-w-[14px]';
+  const iconSizeClass =
+    size === 'sm'
+      ? 'h-2.5 w-2.5 shrink-0 text-slate-500'
+      : 'h-[0.85em] w-[0.85em] shrink-0 text-slate-500';
 
   return (
     <span className="group/info-tooltip relative inline-flex">
       <button
         type="button"
         aria-label={ariaLabel}
-        className="inline-flex h-[1em] w-[1em] min-h-[14px] min-w-[14px] items-center justify-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+        className={`inline-flex items-center justify-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 ${triggerSizeClass}`}
       >
-        <CircleInfoIcon className="h-[0.85em] w-[0.85em] shrink-0 text-slate-500" />
+        <CircleInfoIcon className={iconSizeClass} />
       </button>
       <span
         role="tooltip"

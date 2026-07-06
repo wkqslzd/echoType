@@ -6,5 +6,6 @@ export * from './practiceDisplay.js';
 export * from './session.js';
 export * from './onboardingCatalog.js';
 export * from './parseTxtImport.js';
+export * from './serializeTxtExport.js';
 export * from './onboardingSeed.js';
 export * from './account.js';

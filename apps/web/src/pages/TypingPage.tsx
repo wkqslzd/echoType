@@ -1,7 +1,15 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link, useBlocker, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { AnnotationDTO, CourseDTO, CourseMode, CreateSessionInput, PasteRange } from '@echotype/shared';
+import {
+  sanitizeTxtFilename,
+  serializeAnnotatedTxt,
+  type AnnotationDTO,
+  type CourseDTO,
+  type CourseMode,
+  type CreateSessionInput,
+  type PasteRange,
+} from '@echotype/shared';
 import { api, isCourseNotFoundError } from '../lib/api';
 import { useAuth } from '../auth/AuthProvider';
 import { useCourseById } from '../guest/useCourseCatalog';
@@ -654,6 +662,20 @@ function TypingSession({
     textareaRef.current?.focus();
   }
 
+  /** Local backup download; pure client-side, no API call (ADR-0018 family). */
+  function handleExportTxt() {
+    const text = serializeAnnotatedTxt({ title, description, content: target, annotations });
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = sanitizeTxtFilename(title);
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div ref={layoutRootRef} className="flex flex-col gap-3">
       {showLeaveDialog && (
@@ -679,15 +701,50 @@ function TypingSession({
       )}
 
       <div className="shrink-0">
-        {timerEndOpen ? (
-          <span className="text-sm text-slate-300" aria-disabled="true">
-            ← Back
+        <div className="flex items-start justify-between">
+          {timerEndOpen ? (
+            <span className="text-sm text-slate-300" aria-disabled="true">
+              ← Back
+            </span>
+          ) : (
+            <Link to={typingBackPath(courseMode, categoryId)} className="text-sm text-slate-500 hover:text-slate-800">
+              ← Back
+            </Link>
+          )}
+          <span className="inline-flex items-center gap-1 text-sm leading-none">
+            <InfoTooltip
+              ariaLabel="About exporting to .txt"
+              placement="bottom"
+              align="end"
+              size="sm"
+              panelClassName="w-72"
+            >
+              <span className="block text-left">
+                <span className="block">
+                  Downloads a local backup. Annotated phrases are written as{' '}
+                  {'{phrase}{annotation}'} pairs in the file body.
+                </span>
+                <span className="mt-1.5 block">
+                  To re-import in the course editor, use Import from .txt and delete the
+                  first two lines (title and description) from the file first.
+                </span>
+              </span>
+            </InfoTooltip>
+            <button
+              type="button"
+              disabled={timerEndOpen}
+              onClick={handleExportTxt}
+              className={`underline underline-offset-2 ${
+                timerEndOpen
+                  ? 'cursor-not-allowed text-slate-300'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+              data-testid="txt-export-button"
+            >
+              Export .txt
+            </button>
           </span>
-        ) : (
-          <Link to={typingBackPath(courseMode, categoryId)} className="text-sm text-slate-500 hover:text-slate-800">
-            ← Back
-          </Link>
-        )}
+        </div>
         <h1 className="mt-1 text-xl font-semibold">{title}</h1>
       </div>
 
