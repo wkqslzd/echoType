@@ -127,6 +127,9 @@ export function findNoteHost(
   return { lineIdx: host.lineIdx, left: host.left, width: host.width };
 }
 
+/** Visual gap carved out of a band whose phrase is index-adjacent to the next one. */
+export const ADJACENT_BAND_GAP_PX = 3;
+
 export function buildLineData(
   lines: VisualLine[],
   annotations: LayoutAnnotation[],
@@ -138,6 +141,16 @@ export function buildLineData(
   void charHeight;
   const data: LineDatum[] = lines.map(([start, end]) => ({ start, end, bands: [], notes: [] }));
 
+  // Phrases whose next phrase starts at endIndex + 1 (indices inclusive, no
+  // chars in between). Their tail band fragment gets a 3px visual gap so two
+  // touching highlights don't fuse into one block.
+  const hasAdjacentNext = new Set<string>();
+  for (const a of annotations) {
+    if (annotations.some((b) => b !== a && b.startIndex === a.endIndex + 1)) {
+      hasAdjacentNext.add(a.id);
+    }
+  }
+
   for (const a of annotations) {
     const fullCount = a.endIndex - a.startIndex + 1;
     const frags = rangeFragments(lines, a.startIndex, a.endIndex, charWidth, charEdges);
@@ -145,7 +158,14 @@ export function buildLineData(
 
     const variant = bandVariants?.[a.id] ?? 'committed';
     for (const f of frags) {
-      data[f.lineIdx]!.bands.push({ id: a.id, left: f.left, width: f.width, variant });
+      // Shrink only the fragment holding the phrase tail, and only when the
+      // adjacent next phrase begins on the same visual line (cross-line
+      // adjacency never fuses, so it never shrinks). Bubble left/width are
+      // untouched — the gap applies to highlight bands only.
+      const lineEnd = lines[f.lineIdx]![1];
+      const shrink = hasAdjacentNext.has(a.id) && a.endIndex + 1 <= lineEnd;
+      const width = shrink ? Math.max(0, f.width - ADJACENT_BAND_GAP_PX) : f.width;
+      data[f.lineIdx]!.bands.push({ id: a.id, left: f.left, width, variant });
     }
 
     let host = frags[0]!;
