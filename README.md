@@ -19,7 +19,7 @@ Since I am a Chinese native speaker, I can also pin native-language annotations 
 - **Choose your own meaningful text** — Courses are passages and short articles you pick and keep (e.g. *Stray Birds*, favorite quotes). No random word lists; the text itself is the point.
 - **Quiet repetition over WPM** — The session is for low-pressure review and muscle memory, not speed leaderboards. Auto-loop restarts the passage on completion; a session timer with pause supports timeboxed practice.
 - **Low-pressure modes** — *Immersive mode* hides the input box so you type against the passage itself. *Forgiving mode* relaxes accuracy grading: spaces, punctuation, and Latin letter case are ignored, while letters and numbers still must match.
-- **Native-language annotation overlay** — Optional notes in your own language float above anchored English characters while you type, so glosses stay in context instead of a separate glossary.
+- **Native-language annotation overlay** — Optional notes in your own language float above anchored English characters while you type, so glosses stay in context instead of a separate glossary. On the typing page, long notes can widen into unused line space on the same row (without covering the next note).
 - **Notes survive edits** — If you change the source text later, your notes are not silently wiped. The app shows you which notes still align and which need your attention before saving.
 - **Your courses are portable plain text** — Import a `.txt` with inline `{phrase}{annotation}` markers to create a fully annotated course in one step (parse errors point at the offending line); export any course back to the same format for local backup. The parser and serializer are shared, round-trip-tested pure functions that run entirely in the browser — no upload, no extra cloud cost.
 - **Honest practice stats** — Manual saves write per-session rows (WPM, accuracy, loops, active time); courses keep materialized cumulative stats and collections roll them up. One written contract (`docs/STATS.md`) defines every formula.
@@ -36,7 +36,7 @@ The stack is conventional React/Node/Postgres. The interesting choices are aroun
 | Contracts | **Zod in a shared package** | Same course and annotation payload parsing on client and server; mode-length rules live next to the types the editor imports. |
 | API + DB | **Fastify 5 + Prisma + PostgreSQL** | Small REST surface; courses own annotations replaced atomically inside one database transaction on update. |
 | Anchor snapshots | **Server-derived only** | Clients send character indices and note text; the API derives the anchored substring at save time so stored snapshots cannot be spoofed. |
-| Overlay layout | **Mirror measurement + global indices** | A hidden mirror measures per-character `offsetTop` for visual-line breaks and per-glyph `getBoundingClientRect` for horizontal edges (charEdges); annotations are stored as global indices. Supports cross-line spans and mixed CJK/Latin widths (not index × average width). |
+| Overlay layout | **Mirror measurement + global indices** | A hidden mirror measures per-character `offsetTop` for visual-line breaks and per-glyph `getBoundingClientRect` for horizontal edges (charEdges); annotations are stored as global indices. Post-layout width rules widen note labels and separate touching highlight bands without re-measuring on each keystroke. |
 | Frontend | **React 18 + Vite + Tailwind** | Component model fits a measurement-heavy overlay; utilities keep the typing surface simple without a heavy design system. |
 | State | **Zustand + TanStack Query** | Local typing UI state vs server-backed course list and mutations. |
 | Auth | **AWS Cognito (SRP) + JWT verification in Fastify** | SPA signs in against a Cognito user pool; the API verifies access tokens per request. Cognito `sub` is the user primary key; new accounts get a seeded onboarding catalog. Guests can browse and type sample courses locally without an account. |
@@ -49,7 +49,12 @@ The stack is conventional React/Node/Postgres. The interesting choices are aroun
 
 The product loop is intentionally simple: pick a text, type it, repeat. The engineering depth is in making annotations stay aligned with that text — even as the user edits the source, even across line breaks and CJK/Latin glyph widths.
 
-**Rendering:** I store annotations as global string indices, not row/column coordinates. At render time, a hidden mirror uses per-character `offsetTop` for visual-line breaks and per-glyph `getBoundingClientRect` for horizontal edges. Highlight bands and note labels are positioned from those measurements, including cross-line spans and mixed-width glyphs.
+**Rendering:** I store annotations as global string indices, not row/column coordinates. At render time, a hidden mirror uses per-character `offsetTop` for visual-line breaks and per-glyph `getBoundingClientRect` for horizontal edges. Highlight bands and note labels are positioned from those measurements, including cross-line spans and mixed-width glyphs (CJK/Latin punctuation included — not `index × average width`).
+
+**Post-measurement rendering passes:** charEdges answer *where* each anchor sits; separate passes adjust *how wide* labels and highlight bands draw. They never move anchor positions and never run inside the measurement hook, so typing stays performant.
+
+- **Note width extension (typing page):** When a gloss is longer than its anchored phrase, the bubble may extend rightward into empty pixels on the same visual line. Extension uses pixel gaps and word-aware wrap simulation (English breaks at spaces; CJK per character), capped so it does not cross line boundaries or crowd the next note (minimum 4px). If space still is not enough, the native two-line clamp shows an ellipsis; truncated notes remain clickable for the full text.
+- **Adjacent bands:** Touching phrases on the same visual line get a 3px gap in the leading highlight band so they do not fuse (note positions unchanged).
 
 **Editing:** When the user changes the source text on an annotated course, blindly keeping old indices would point notes at the wrong words. Phase 4 replaced an earlier "content change clears all annotations" rule with a review flow:
 
@@ -69,7 +74,7 @@ A subtle UX bug: yellow bands reused Phase 3's "click to edit note text" behavio
 
 ![Frontend architecture](docs/architecture.png)
 
-One shared overlay component and one measurement hook (mirror spans → `offsetTop` line breaks → per-glyph `getBoundingClientRect` / charEdges) power both the typing page and the four-step course editor. The editor adds a staged state machine; Phase 4's review layer (green/yellow status, review panel, review-state click routing) sits on top without forking the renderer.
+One shared overlay component and one measurement hook (mirror spans → `offsetTop` line breaks → per-glyph `getBoundingClientRect` / charEdges) power both the typing page and the four-step course editor. Post-layout rules in `buildLineData` / `noteExtension.ts` handle note widening (typing page) and adjacent-band seams. The editor adds a staged state machine; Phase 4's review layer (green/yellow status, review panel, review-state click routing) sits on top without forking the renderer.
 
 ### Deployment
 
@@ -99,6 +104,7 @@ Open `http://localhost:5173`. Guest mode lets you browse and type the sample cat
 ```bash
 pnpm run typecheck
 pnpm --filter @echotype/web test:typing    # alignment / forgiving-mode unit tests
+pnpm --filter @echotype/web test:layout    # annotation overlay layout (extend + band gaps)
 pnpm --filter @echotype/shared test        # shared contract unit tests
 node apps/web/scripts/phase2-probe.mjs     # needs dev servers; expect SUMMARY PASS
 ```
@@ -113,7 +119,7 @@ I ship in phases with manual gates (`docs/STATE.md`); after overlay changes I ru
 
 | Status | Capability |
 |--------|------------|
-| ✅ | **Annotation feature** — Shared Zod contracts, overlay rendering, four-step editor, edit-time review (re-anchor / delete) |
+| ✅ | **Annotation feature** — Shared Zod contracts, overlay rendering (charEdges + post-layout width rules), four-step editor, edit-time review (re-anchor / delete) |
 | ✅ | **Cloud deploy** — Terraform-provisioned EC2/RDS/S3/CloudFront; OIDC + SSM deploys; live on CloudFront |
 | ✅ | **Typing experience** — Auto-loop, newline auto-skip, IME composition, session timer with pause, immersive & forgiving modes, .txt import/export |
 | ✅ | **Course management** — Short/Article mode routes, search/sort, descriptions, collections with batch add and stats rollup |
