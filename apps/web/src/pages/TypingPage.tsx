@@ -232,6 +232,7 @@ function TypingSession({
     loopCount: number;
   }>(null);
   const [immersiveMode, setImmersiveMode] = useState(readImmersiveModePreference);
+  const [typingInputFocused, setTypingInputFocused] = useState(true);
   const [forgivingMode, setForgivingMode] = useState(readForgivingModePreference);
   const alignMode: AlignMode = forgivingMode ? 'forgiving' : 'strict';
   const [sessionTimerHidden, setSessionTimerHidden] = useState(readSessionTimerHiddenPreference);
@@ -856,18 +857,28 @@ function TypingSession({
             immersiveMode
               ? (e) => {
                   if ((e.target as HTMLElement).closest('[role="button"]')) return;
+                  e.preventDefault();
                   textareaRef.current?.focus({ preventScroll: true });
                 }
               : undefined
           }
         >
-          <AnnotatedText
-            content={target}
-            annotations={annotations}
-            typingStatuses={typingStatuses}
-            clickableNotes={!showLeaveDialog && !timerEndOpen}
-            extendNotes
-          />
+          <div className="relative">
+            <AnnotatedText
+              content={target}
+              annotations={annotations}
+              typingStatuses={typingStatuses}
+              clickableNotes={!showLeaveDialog && !timerEndOpen}
+              extendNotes
+            />
+            {immersiveMode && !typingInputFocused && (
+              <div
+                className="pointer-events-none absolute inset-0 z-10 rounded-md bg-amber-50/70"
+                aria-hidden
+                data-testid="immersive-passage-unfocused"
+              />
+            )}
+          </div>
         </div>
 
         <div ref={inputPanelRef} className="shrink-0 space-y-2">
@@ -915,6 +926,8 @@ function TypingSession({
           onCompositionEnd={handleCompositionEnd}
           onPaste={handlePaste}
           onKeyDown={handleKeyDown}
+          onFocus={() => setTypingInputFocused(true)}
+          onBlur={() => setTypingInputFocused(false)}
           className={immersiveMode ? TYPING_TEXTAREA_IMMERSIVE_CLASS : TYPING_TEXTAREA_CLASS}
           placeholder={immersiveMode ? undefined : 'Type here…'}
           spellCheck={false}
@@ -924,8 +937,8 @@ function TypingSession({
 
         {immersiveMode && (
           <p className="text-sm text-slate-500">
-            Typing box hidden — click the passage or start typing. Turn off immersive mode to view
-            or copy your input.
+            Typing box hidden — click the passage to type. Turn off immersive mode to see your
+            input.
           </p>
         )}
         </div>
