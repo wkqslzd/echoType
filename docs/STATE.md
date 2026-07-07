@@ -77,6 +77,7 @@ Active capability: Custom domain
 | Course mgmt | Collection detail in-page search | MVP: sort only on detail; mode list has global search | future polish | ADR-0013 |
 | Course mgmt | Full markdown in description (headings, `[text](url)` syntax) | Phase 3 plain text + URL linkify on typing/collection detail only; no markdown renderer | future polish if users paste rich notes | ADR-0011 |
 | Typing | English course + accidental IME shows red diff only, no explicit "switch to English" guidance | Phase 3 chose IME-as-valid-input (ADR-0008) over kickoff #7 banner/pause; red diff implies the error | future polish / real-usage feedback | ADR-0008 |
+| Typing | Immersive mode: no keydown refocus after textarea blur — user must click passage | MVP: amber overlay + passage mousedown refocus (`3d0f3e9`); global keydown refocus deferred | future polish if self-testing reports friction | ADR-0021 |
 | Annotation | false-green (duplicate substring, no index shift) | MVP skips index shift | user reanchor | — |
 | Annotation | Overlay measurement = mirror offsetTop (lines) + per-glyph getBoundingClientRect (charEdges); NOT Range.getClientRects() | Phase 2 deliberate | do not revert without ADR | ADR-0002 |
 | Auth | Guest typing progress not restored after login | In-memory session only; sign in before starting a session you intend to save | intentional (ADR-0015 §16) | ADR-0015 |
