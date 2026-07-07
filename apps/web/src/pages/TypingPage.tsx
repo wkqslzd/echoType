@@ -820,32 +820,32 @@ function TypingSession({
         </div>
       )}
 
-      {!timerVisitDone && (
-        <div className="flex shrink-0 justify-center">
-          <SessionTimerStrip
-            phase={timerStripPhase}
-            idleHidden={sessionTimerHidden}
-            presetMinutes={presetMinutes}
-            customMinutesInput={customMinutesInput}
-            durationError={durationError}
-            armedMinutes={armedMinutes}
-            remainingSec={remainingSec}
-            paused={paused}
-            onOpenConfig={handleTimerOpenConfig}
-            onHideIdle={handleTimerHideIdle}
-            onShowIdle={handleTimerShowIdle}
-            onCancelConfig={handleTimerCancelConfig}
-            onConfirm={handleTimerConfirm}
-            onPresetChange={handlePresetChange}
-            onCustomChange={(value) => {
-              setCustomMinutesInput(value);
-              setDurationError(null);
-            }}
-          />
-        </div>
-      )}
-
       <div className="flex shrink-0 flex-col gap-2">
+        {!timerVisitDone && (
+          <div className="flex shrink-0 justify-end">
+            <SessionTimerStrip
+              phase={timerStripPhase}
+              idleHidden={sessionTimerHidden}
+              presetMinutes={presetMinutes}
+              customMinutesInput={customMinutesInput}
+              durationError={durationError}
+              armedMinutes={armedMinutes}
+              remainingSec={remainingSec}
+              paused={paused}
+              onOpenConfig={handleTimerOpenConfig}
+              onHideIdle={handleTimerHideIdle}
+              onShowIdle={handleTimerShowIdle}
+              onCancelConfig={handleTimerCancelConfig}
+              onConfirm={handleTimerConfirm}
+              onPresetChange={handlePresetChange}
+              onCustomChange={(value) => {
+                setCustomMinutesInput(value);
+                setDurationError(null);
+              }}
+            />
+          </div>
+        )}
+
         <div
           ref={passageScrollRef}
           data-testid="typing-passage-scroll"

@@ -29,7 +29,7 @@ const HELP_TEXT =
 
 function ExitCountdownHint() {
   return (
-    <p className="mt-1 text-center text-xs text-slate-400">
+    <p className="mt-1 text-right text-xs text-slate-400">
       Click Start over to cancel the countdown and clear your current session.
     </p>
   );
@@ -85,7 +85,7 @@ export function SessionTimerStrip({
           type="button"
           data-testid="session-timer-set"
           onClick={onOpenConfig}
-          className="rounded-full border border-slate-200 bg-white px-8 py-2.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+          className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
         >
           Set session timer
         </button>
@@ -94,13 +94,10 @@ export function SessionTimerStrip({
   }
 
   return (
-    <div
-      data-testid="session-timer-strip"
-      className="w-full max-w-4xl px-3 py-2 text-sm"
-    >
+    <div data-testid="session-timer-strip" className="max-w-full px-1 py-1 text-right text-sm">
       {phase === 'running' && remainingSec != null && (
         <>
-          <p className="text-center text-slate-600" aria-live="polite">
+          <p className="text-slate-600" aria-live="polite">
             <span aria-hidden>⏱ </span>
             <span className="font-mono">{formatCountdown(remainingSec)}</span> left
             {paused && (
@@ -116,7 +113,7 @@ export function SessionTimerStrip({
 
       {phase === 'armed' && armedMinutes != null && (
         <>
-          <p className="text-center text-slate-600">
+          <p className="text-slate-600">
             <span className="font-medium text-slate-800">{presetLabel(armedMinutes)}</span>
             <span className="text-slate-400"> · </span>
             Start typing to begin
@@ -127,7 +124,7 @@ export function SessionTimerStrip({
 
       {phase === 'configuring' && (
         <>
-          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          <div className="flex flex-wrap items-center justify-end gap-2 pb-1">
             <span className="shrink-0 text-xs text-slate-500">Preset</span>
             {TIMER_PRESET_MINUTES.map((m) => (
               <button
@@ -155,10 +152,10 @@ export function SessionTimerStrip({
             />
           </div>
           {durationError && (
-            <p className="mt-1 text-center text-xs text-red-600">{durationError}</p>
+            <p className="mt-1 text-right text-xs text-red-600">{durationError}</p>
           )}
-          <div className="relative mt-1 flex items-center">
-            <div className="relative z-10 flex shrink-0 gap-2">
+          <div className="mt-1 flex flex-col items-end gap-1">
+            <div className="flex shrink-0 gap-2">
               <button
                 type="button"
                 data-testid="session-timer-confirm"
@@ -175,9 +172,7 @@ export function SessionTimerStrip({
                 Cancel
               </button>
             </div>
-            <p className="pointer-events-none absolute inset-0 flex items-center justify-center text-center text-xs leading-normal text-slate-400">
-              {HELP_TEXT}
-            </p>
+            <p className="max-w-md text-right text-xs leading-normal text-slate-400">{HELP_TEXT}</p>
           </div>
         </>
       )}
