@@ -134,7 +134,7 @@ I ship in phases with manual gates (`docs/STATE.md`); after overlay changes I ru
 ## Further reading
 
 - **`docs/STATE.md`** — Current engineering snapshot and roadmap.
-- **`docs/DECISIONS.md`** — Decision log (20 ADRs: anchoring, measurement, stats, auth, layout, import/export, forgiving mode).
+- **`docs/DECISIONS.md`** — Decision log (21 ADRs: anchoring, measurement, stats, auth, layout, import/export, forgiving mode, immersive refocus).
 - **`docs/STATS.md`** — Stats field definitions and formulas (the contract).
 - **`deploy/README.md`** — Terraform, SSM access, cloud deploy.
 
