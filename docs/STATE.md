@@ -15,6 +15,7 @@
 - [x] Auth (Cognito; replaces demo-user shim; required before sharing externally)
 - [x] Custom domain (echotype.ink — ACM + CloudFront alias + Cognito URLs; unblocks Google sign-in → Auth follow-up; ADR-0022)
 - [ ] Ops & safety (Sentry, CloudWatch, rate limiting, disclaimer, error/empty states)    <-- YOU ARE HERE
+- [ ] Google sign-in (Cognito Google IdP + account linking; requires privacy policy page first)
 
 
 > Each line is a capability, not a sub-step. Completed capabilities stay one line
@@ -25,18 +26,17 @@
 ## Phase Roadmap (active capability only)
 Active capability: Ops & safety
 - [ ] Phase 1 — Sentry (frontend + API error reporting)    <-- YOU ARE HERE
-- [ ] Phase 2 — CloudWatch (structured logging / alarms)
-- [ ] Phase 3 — API rate limiting
-- [ ] Phase 4 — Disclaimer + error/empty states polish
+- [ ] Phase 2 — Disclaimer + error/empty states polish
+  > CloudWatch and rate limiting deferred — revisit when user volume warrants
 
 > Legend: [x] done  [~] in progress  [ ] todo  (blocked) noted inline
 > When the active capability changes, replace this entire Phase Roadmap with the
 > new capability's phases and move YOU ARE HERE above.
 
 ## Now working on (describe ONLY the in-progress item)
-- Goal (one line): Ops & safety — prioritize Phase 1 scope (Sentry vs CloudWatch vs rate limiting).
+- Goal (one line): Ops & safety Phase 1 — Sentry error reporting (frontend + API)
 - Sub-steps done: Custom domain Phase 1 complete (`8cca01c`); prod verified at https://echotype.ink (login/logout, /api/health)
-- Next step: owner picks Ops Phase 1 entry point; no implementation started
+- Next step: Phase 1 design — Sentry project setup + SDK integration
 - Related decisions: ADR-0022 (custom domain); Ops ADR TBD
 
 ## Contract pointers (don't memorize, go read the source)
@@ -85,6 +85,6 @@ Active capability: Ops & safety
 | Annotation | false-green (duplicate substring, no index shift) | MVP skips index shift | user reanchor | — |
 | Annotation | Overlay measurement = mirror offsetTop (lines) + per-glyph getBoundingClientRect (charEdges); NOT Range.getClientRects() | Phase 2 deliberate | do not revert without ADR | ADR-0002 |
 | Auth | Guest typing progress not restored after login | In-memory session only; sign in before starting a session you intend to save | intentional (ADR-0015 §16) | ADR-0015 |
-| Auth | Google sign-in | Custom domain shipped; Cognito Hosted UI / Google IdP not wired yet | Auth follow-up | ADR-0015, ADR-0022 |
+| Auth | Google sign-in | Custom domain shipped; Cognito Hosted UI / Google IdP not wired yet | Google sign-in capability | ADR-0015, ADR-0022 |
 | Auth | Email change | Deferred if implementation requires extra SES/Lambda cost beyond existing Cognito verify path | Auth Phase 5 cost check, or post-MVP | ADR-0015 |
 | Custom domain | Wildcard `*.echotype.ink` CNAME still points to Porkbun parking | MVP canonical host is apex only (ADR-0022); ACM cert covers wildcard for future subdomains | future if www or subdomain needed | ADR-0022 |
