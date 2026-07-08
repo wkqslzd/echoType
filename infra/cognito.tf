@@ -5,7 +5,7 @@
 # so the app can tell users when no account exists for an email (ENABLED masks it).
 
 locals {
-  web_origin = "https://${aws_cloudfront_distribution.web.domain_name}"
+  web_origin = "https://${var.custom_domain}"
 
   cognito_callback_urls = [
     "${local.web_origin}/auth/callback",

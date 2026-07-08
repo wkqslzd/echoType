@@ -87,3 +87,9 @@ variable "dev_web_origin" {
   default     = "http://localhost:5173"
   description = "Local Vite dev origin; included in Cognito callback/logout URLs alongside WEB_ORIGIN."
 }
+
+variable "custom_domain" {
+  type        = string
+  default     = "echotype.ink"
+  description = "Canonical public hostname (apex). ACM cert + CloudFront alternate domain name."
+}

@@ -29,6 +29,9 @@ resource "aws_cloudfront_distribution" "web" {
   comment             = "${var.project} frontend + /api proxy"
   default_root_object = "index.html"
   price_class         = "PriceClass_100"
+  aliases             = [var.custom_domain]
+
+  depends_on = [aws_acm_certificate_validation.web]
 
   # Origin A: private S3 bucket (frontend), read via OAC.
   origin {
@@ -92,9 +95,11 @@ resource "aws_cloudfront_distribution" "web" {
     }
   }
 
-  # Free HTTPS on the default *.cloudfront.net domain (no custom domain / ACM needed).
+  # Custom domain HTTPS (ACM us-east-1). Default *.cloudfront.net still works with the AWS cert.
   viewer_certificate {
-    cloudfront_default_certificate = true
+    acm_certificate_arn      = aws_acm_certificate.web.arn
+    ssl_support_method       = "sni-only"
+    minimum_protocol_version = "TLSv1.2_2021"
   }
 
   tags = {

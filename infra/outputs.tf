@@ -25,7 +25,12 @@ output "ssm_session_command" {
 
 output "cloudfront_url" {
   value       = "https://${aws_cloudfront_distribution.web.domain_name}"
-  description = "Public site URL (frontend + /api). Open this in the browser."
+  description = "CloudFront default domain (still valid after custom domain; useful for transition/debug)."
+}
+
+output "site_url" {
+  value       = local.web_origin
+  description = "Canonical public site URL (frontend + /api)."
 }
 
 output "cloudfront_domain_name" {
@@ -72,4 +77,20 @@ output "cognito_client_id" {
 output "cognito_region" {
   value       = var.region
   description = "Region of the Cognito User Pool (also in SSM /echotype/COGNITO_REGION)."
+}
+
+output "acm_certificate_arn" {
+  value       = aws_acm_certificate.web.arn
+  description = "ACM certificate ARN (us-east-1) attached to CloudFront."
+}
+
+output "acm_validation_records" {
+  value = {
+    for dvo in aws_acm_certificate.web.domain_validation_options : dvo.domain_name => {
+      name  = dvo.resource_record_name
+      type  = dvo.resource_record_type
+      value = dvo.resource_record_value
+    }
+  }
+  description = "DNS validation CNAMEs to add in Porkbun (Phase 1.1). Not the apex ALIAS traffic record."
 }
