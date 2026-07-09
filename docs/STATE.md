@@ -25,8 +25,8 @@
 
 ## Phase Roadmap (active capability only)
 Active capability: Ops & safety
-- [ ] Phase 1 — Sentry (frontend + API error reporting)    <-- YOU ARE HERE
-- [ ] Phase 2 — Disclaimer + error/empty states polish
+- [x] Phase 1 — Sentry (frontend + API error reporting)
+- [ ] Phase 2 — Disclaimer + error/empty states polish    <-- YOU ARE HERE
   > CloudWatch and rate limiting deferred — revisit when user volume warrants
 
 > Legend: [x] done  [~] in progress  [ ] todo  (blocked) noted inline
@@ -34,10 +34,10 @@ Active capability: Ops & safety
 > new capability's phases and move YOU ARE HERE above.
 
 ## Now working on (describe ONLY the in-progress item)
-- Goal (one line): Ops & safety Phase 1 — Sentry error reporting (frontend + API)
-- Sub-steps done: Custom domain Phase 1 complete (`8cca01c`); prod verified at https://echotype.ink (login/logout, /api/health)
-- Next step: Phase 1 design — Sentry project setup + SDK integration
-- Related decisions: ADR-0022 (custom domain); Ops ADR TBD
+- Goal (one line): Ops & safety Phase 2 — disclaimer + error/empty states polish
+- Sub-steps done: Phase 1 Sentry complete (`f2fb0d5`); prod verified at https://echotype.ink (web `?sentry_test=1` → echotype-web; API debug probe → echotype-api; source maps on web release)
+- Next step: Phase 2 design — disclaimer copy + error/empty state scope
+- Related decisions: ADR-0023 (Sentry); CloudWatch/rate limiting deferred per Phase Roadmap note
 
 ## Contract pointers (don't memorize, go read the source)
 - Stats metrics (definitions/formulas only): docs/STATS.md
@@ -57,6 +57,8 @@ Active capability: Ops & safety
 - Annotation rendering: apps/web/src/components/AnnotatedText.tsx + apps/web/src/components/annotated-text/useTextMeasurement.ts
 - Editor + review: apps/web/src/components/editor/useCourseEditor.ts, reviewUtils.ts, AnnotatedTextEditor.tsx
 - Deploy: deploy/README.md, .github/workflows/deploy.yml, .github/workflows/deploy-web.yml
+- Sentry (web): apps/web/src/lib/sentry.ts, vite.config.ts (`@sentry/vite-plugin`); probe `apps/web/scripts/ops-sentry-probe.mjs`; SSM `/echotype/SENTRY_DSN_WEB`
+- Sentry (API): apps/api/src/sentry.ts, `apps/api/src/routes/debug.ts` (`SENTRY_DEBUG=1` only); probe `apps/api/scripts/ops-sentry-probe.mjs`; SSM `/echotype/SENTRY_DSN_API`
 - Custom domain (Terraform): infra/acm.tf, infra/cloudfront.tf, `custom_domain` variable; outputs `site_url`, `acm_validation_records`
 - API JWT auth: apps/api/src/auth/, probe `apps/api/scripts/auth-phase3-jwt-probe.mjs`
 - Web auth (Cognito SPA): apps/web/src/auth/, apps/web/.env.example, probe `apps/web/scripts/auth-phase4-probe.mjs`, `auth-phase5-probe.mjs`, `auth-phase6-probe.mjs`

@@ -1167,3 +1167,46 @@
   - Infra: `infra/acm.tf`, provider alias `aws.us_east_1` in `infra/versions.tf`.
 - Supersedes / superseded-by: none (extends ADR-0003 hostname; fulfills ADR-0015 §7
   prod URL path)
+
+---
+
+## ADR-0023 — Ops Phase 1: Sentry error reporting (web + API)
+- Status: Accepted (2026-07-09)
+- Commit/PR anchor: f2fb0d5
+- Plain summary: Production errors from the React SPA and Fastify API are reported to
+  Sentry (`echotype-web` + `echotype-api`). DSNs live in SSM; CI uploads web source maps
+  via GitHub Secret `SENTRY_AUTH_TOKEN`. CloudWatch and API rate limiting stay deferred.
+- Context: Ops & safety capability (STATE); custom domain at https://echotype.ink
+  (ADR-0022). Owner needed client/server visibility before external sharing and
+  disclaimer work (Phase 2).
+- Decision:
+  1. **Projects** — two Sentry projects: `echotype-web`, `echotype-api` (org `echotype`).
+  2. **SDKs** — `@sentry/react` (Vite build + router error boundary) and `@sentry/node`
+     (Fastify `setErrorHandler`; Zod validation 400 not reported).
+  3. **Secrets** — `SENTRY_DSN_WEB` (SSM String, CI → `VITE_SENTRY_DSN`);
+     `SENTRY_DSN_API` (SSM SecureString, EC2 `deploy/.env` → `SENTRY_DSN`);
+     `SENTRY_AUTH_TOKEN` (GitHub Secret only, source-map upload).
+  4. **Releases** — `SENTRY_RELEASE` = deploy git sha (`github.sha` web;
+     `git rev-parse HEAD` on EC2 for API).
+  5. **Sampling** — `tracesSampleRate: 0` (errors only in Phase 1).
+  6. **Web source maps** — `@sentry/vite-plugin` when `SENTRY_AUTH_TOKEN` set;
+     `filesToDeleteAfterUpload` + `s3 sync --exclude "*.map"`; no maps published.
+  7. **API runtime** — keep `tsx src/server.ts` in cloud compose; no API source-map
+     upload in Phase 1.
+  8. **Acceptance probes** — web: `?sentry_test=1` (prod + DSN); API:
+     `GET /api/debug/sentry` only when `SENTRY_DEBUG=1` on the instance (removed after
+     probe); `ops-sentry-probe.mjs` scripts for local/CI smoke.
+  9. **Scrubbing** — `beforeSend` strips `Authorization` / `Cookie` headers.
+  10. **Deferred** — CloudWatch structured logging/alarms and API rate limiting
+      (STATE Phase 2 note; revisit when user volume warrants).
+- Rejected alternatives:
+  - Single combined Sentry project — split for alert/release clarity.
+  - Browser tracing in Phase 1 — errors-only MVP.
+  - API `node dist/` + source maps in Phase 1 — scope; tsx stacks sufficient.
+  - Permanent public debug route — env-gated only.
+- Consequences:
+  - Terraform: `infra/ssm.tf` DSN parameters; `github_deploy` IAM reads
+    `SENTRY_DSN_WEB`.
+  - Prod verified: web and API probe issues in Sentry; web release artifacts include
+    source files.
+- Supersedes / superseded-by: none
