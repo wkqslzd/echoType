@@ -50,7 +50,7 @@ If the marker is missing, wait a bit and re-check (cloud-init still running).
 ## 2. Clone the repo on EC2
 
 ```bash
-git clone https://github.com/wkqslzd/echoType.git
+git clone https://github.com/dennycgan/echoType.git
 cd echoType
 ```
 
@@ -200,4 +200,4 @@ Run these **in order** the first time (and any time CloudFront/S3 are recreated)
   push to GitHub Container Registry (GHCR), and have EC2 pull the prebuilt image
   instead of building on the t4g.micro. Removes build load from the instance.
 - **Tighten OIDC trust**: scope the role's `sub` condition from `repo:…:*` to a
-  specific branch/environment (e.g. `repo:wkqslzd/echoType:ref:refs/heads/main`).
+  specific branch/environment (e.g. `repo:dennycgan/echoType:ref:refs/heads/main`).

@@ -36,7 +36,7 @@ variable "my_ip_cidr" {
 
 variable "github_repo" {
   type        = string
-  default     = "wkqslzd/echoType"
+  default     = "dennycgan/echoType"
   description = "GitHub repo (owner/name) allowed to assume the deploy role via OIDC."
 }
 

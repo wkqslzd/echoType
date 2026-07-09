@@ -56,7 +56,7 @@ jobs:
               "set -e",
               "export HOME=/root",
               "REPO_DIR=/opt/echotype",
-              "if [ ! -d \"$REPO_DIR/.git\" ]; then rm -rf \"$REPO_DIR\"; git clone https://github.com/wkqslzd/echoType.git \"$REPO_DIR\"; fi",
+              "if [ ! -d \"$REPO_DIR/.git\" ]; then rm -rf \"$REPO_DIR\"; git clone https://github.com/dennycgan/echoType.git \"$REPO_DIR\"; fi",
               "git config --global --add safe.directory \"$REPO_DIR\"",
               "cd \"$REPO_DIR\"",
               "git fetch --all --prune",
