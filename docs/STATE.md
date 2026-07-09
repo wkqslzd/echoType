@@ -25,17 +25,18 @@
 
 ## Phase Roadmap (active capability only)
 Active capability: Google sign-in
-- [ ] Phase 1 — Cognito Google IdP + web sign-in UX    <-- YOU ARE HERE
-- [ ] Phase 2 — Account linking (email/password ↔ Google)
+- [ ] Phase 1 — GCP OAuth config + Cognito Google IdP    <-- YOU ARE HERE
+- [ ] Phase 2 — Web sign-in button + account linking
+- [ ] Phase 3 — privacy.ts Google data disclosure + Google verification submission
 
 > Legend: [x] done  [~] in progress  [ ] todo  (blocked) noted inline
 > When the active capability changes, replace this entire Phase Roadmap with the
 > new capability's phases and move YOU ARE HERE above.
 
 ## Now working on (describe ONLY the in-progress item)
-- Goal (one line): Google sign-in Phase 1 — Cognito Google IdP + web sign-in UX
+- Goal (one line): Google sign-in capability
 - Sub-steps done: Ops & safety complete (`fec3519`); `/privacy` prod-verified at https://echotype.ink/privacy
-- Next step: Google sign-in Phase 1 design (IdP config, sign-in button, privacy Google-data copy)
+- Next step: Google sign-in Phase 1 design — GCP OAuth + Cognito Google IdP
 - Related decisions: ADR-0015, ADR-0022, ADR-0024
 
 ## Contract pointers (don't memorize, go read the source)
@@ -88,6 +89,6 @@ Active capability: Google sign-in
 | Annotation | Overlay measurement = mirror offsetTop (lines) + per-glyph getBoundingClientRect (charEdges); NOT Range.getClientRects() | Phase 2 deliberate | do not revert without ADR | ADR-0002 |
 | Auth | Guest typing progress not restored after login | In-memory session only; sign in before starting a session you intend to save | intentional (ADR-0015 §16) | ADR-0015 |
 | Auth | Email change | Deferred if implementation requires extra SES/Lambda cost beyond existing Cognito verify path | Auth Phase 5 cost check, or post-MVP | ADR-0015 |
-| Ops & safety | CloudWatch structured logging/alarms | Deferred from Ops Phase 1; revisit when user volume warrants | future ops or when volume warrants | ADR-0023, ADR-0024 |
-| Ops & safety | API rate limiting | Deferred from Ops; revisit when user volume warrants | future ops or when volume warrants | ADR-0023, ADR-0024 |
+| Ops & safety | CloudWatch structured logging/alarms (planned Ops Phase 2; never shipped) | Current user volume does not warrant | Revisit when user volume warrants | ADR-0023, ADR-0024 |
+| Ops & safety | API rate limiting (planned Ops Phase 3; never shipped) | Same | Same | ADR-0023, ADR-0024 |
 | Custom domain | Wildcard `*.echotype.ink` CNAME still points to Porkbun parking | MVP canonical host is apex only (ADR-0022); ACM cert covers wildcard for future subdomains | future if www or subdomain needed | ADR-0022 |
