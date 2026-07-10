@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { AuthLayout } from '../../auth/AuthLayout';
 import {
   completeOAuthCallbackOnce,
+  redirectToHostedUiLogout,
+  shouldClearHostedUiAfterCallbackError,
   startGoogleSignIn,
 } from '../../auth/cognitoOAuthExchange';
 import { GUEST_LOGIN_TOAST } from '../../auth/resolvePostLoginPath';
@@ -14,26 +16,40 @@ export function AuthCallbackPage() {
   const [params] = useSearchParams();
   const [phase, setPhase] = useState<CallbackPhase>('completing');
   const [error, setError] = useState<string | null>(null);
+  const reauthStartedRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
+    const oauthError = params.get('error');
+    const code = params.get('code');
+    const state = params.get('state');
+
+    if (code || oauthError) {
+      window.history.replaceState({}, document.title, '/auth/callback');
+    }
 
     void completeOAuthCallbackOnce({
-      oauthError: params.get('error'),
-      code: params.get('code'),
-      state: params.get('state'),
+      oauthError,
+      code,
+      state,
     }).then((outcome) => {
       if (cancelled) return;
 
       if (outcome.kind === 'error') {
+        if (shouldClearHostedUiAfterCallbackError(outcome.message)) {
+          redirectToHostedUiLogout('/login');
+          return;
+        }
         setError(outcome.message);
         setPhase('error');
         return;
       }
 
       if (outcome.kind === 'reauth') {
+        if (reauthStartedRef.current) return;
+        reauthStartedRef.current = true;
         setPhase('reauth');
-        void startGoogleSignIn(outcome.nextPath);
+        void startGoogleSignIn(outcome.nextPath, outcome.hintEmail);
         return;
       }
 

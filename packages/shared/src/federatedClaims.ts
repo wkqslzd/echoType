@@ -92,8 +92,9 @@ export function parseFederatedTokenClaims(
   if (!googleSub && orphanGoogle) {
     googleSub = cognitoUsername.slice('Google_'.length) || null;
   }
-  // Linked native profile: pool username is email (not Google_*), even if identities is absent.
-  const googleLinked = cognitoUsername === email && !orphanGoogle;
+  const hasGoogle = hasGoogleIdentity(identities);
+  // Linked native: UUID or email pool username + Google identity (not an orphan Google_* session).
+  const googleLinked = !orphanGoogle && hasGoogle;
 
   return {
     sub,

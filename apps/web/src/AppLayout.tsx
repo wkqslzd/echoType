@@ -1,16 +1,26 @@
 import { useEffect, useLayoutEffect } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from './auth/AuthProvider';
 import { useOnboardingSeed } from './auth/useOnboardingSeed';
 import { loginPathWithNext } from './auth/publicPaths';
 import { SiteFooter } from './components/SiteFooter';
 import { SiteHeader } from './components/SiteHeader';
 import { logRouteScrollMonitor, scrollRouteToTop } from './lib/routeScroll';
+import { NicknameSetupModal } from './components/auth/NicknameSetupModal';
+import { api } from './lib/api';
 
 export function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { displayName, logout, status } = useAuth();
+
+  const { data: account } = useQuery({
+    queryKey: ['account'],
+    queryFn: () => api.getAccount(),
+    enabled: status === 'authed',
+    staleTime: 30_000,
+  });
 
   useOnboardingSeed();
 
@@ -41,14 +51,18 @@ export function AppLayout() {
   }, [location.key, location.pathname]);
 
   function onLogout() {
-    logout();
-    navigate('/login', { replace: true });
+    if (!logout()) {
+      navigate('/login', { replace: true });
+    }
   }
 
   const isTypingPage = /\/type$/.test(location.pathname);
 
+  const showNicknameSetup = status === 'authed' && account?.needsNicknameSetup;
+
   return (
     <div className="flex min-h-dvh flex-col">
+      {showNicknameSetup && <NicknameSetupModal />}
       <SiteHeader className="shrink-0" trailing={
           status === 'authed' ? (
             <>

@@ -2,34 +2,43 @@ import type { FederatedLinkResult, FederatedTokenClaims } from '@echotype/shared
 import { parseFederatedTokenClaims } from '@echotype/shared';
 import {
   adminDeleteCognitoUser,
+  adminGetUserPoolUsername,
   adminLinkGoogleToNativeUser,
   isAliasExistsError,
   isMisleadingLinkedInvalidParameterError,
+  isUserNotFoundError,
 } from './cognitoAdmin.js';
 import { loadCognitoConfig } from './cognitoConfig.js';
 import { prisma } from '../prisma.js';
 
 export type CognitoAdminPort = {
+  adminGetUserPoolUsername: typeof adminGetUserPoolUsername;
   adminLinkGoogleToNativeUser: typeof adminLinkGoogleToNativeUser;
   adminDeleteCognitoUser: typeof adminDeleteCognitoUser;
 };
 
+export type NativeUserRecord = {
+  id: string;
+  name: string;
+};
+
 export type UserLookupPort = {
-  findNativeUserIdByEmail: (email: string) => Promise<string | null>;
+  findNativeUserByEmail: (email: string) => Promise<NativeUserRecord | null>;
 };
 
 const defaultCognitoAdmin: CognitoAdminPort = {
+  adminGetUserPoolUsername,
   adminLinkGoogleToNativeUser,
   adminDeleteCognitoUser,
 };
 
 const defaultUserLookup: UserLookupPort = {
-  findNativeUserIdByEmail: async (email) => {
+  findNativeUserByEmail: async (email) => {
     const user = await prisma.user.findUnique({
       where: { email },
-      select: { id: true },
+      select: { id: true, name: true },
     });
-    return user?.id ?? null;
+    return user;
   },
 };
 
@@ -62,13 +71,42 @@ async function attemptLink(
   });
 }
 
+async function nativeCognitoUserExists(
+  nativeUsername: string,
+  admin: CognitoAdminPort,
+): Promise<boolean> {
+  const { userPoolId } = loadCognitoConfig();
+  try {
+    await admin.adminGetUserPoolUsername({ userPoolId, usernameOrAlias: nativeUsername });
+    return true;
+  } catch (err) {
+    if (isUserNotFoundError(err)) return false;
+    throw err;
+  }
+}
+
 async function deleteOrphanIfPresent(
   orphanUsername: string,
   admin: CognitoAdminPort,
 ): Promise<void> {
   if (!orphanUsername.startsWith('Google_')) return;
   const { userPoolId } = loadCognitoConfig();
-  await admin.adminDeleteCognitoUser({ userPoolId, username: orphanUsername });
+  try {
+    await admin.adminDeleteCognitoUser({ userPoolId, username: orphanUsername });
+  } catch (err) {
+    if (isUserNotFoundError(err)) return;
+    throw err;
+  }
+}
+
+async function linkThenDeleteOrphan(
+  nativeUserId: string,
+  googleSub: string,
+  orphanUsername: string,
+  admin: CognitoAdminPort,
+): Promise<void> {
+  await attemptLink(nativeUserId, googleSub, admin);
+  await deleteOrphanIfPresent(orphanUsername, admin);
 }
 
 /**
@@ -97,16 +135,19 @@ export async function linkGoogleFederatedUser(
     throw new Error('google_sub_missing');
   }
 
-  const nativeUserId = await userLookup.findNativeUserIdByEmail(claims.email);
-  if (!nativeUserId) {
+  const nativeUser = await userLookup.findNativeUserByEmail(claims.email);
+  if (!nativeUser) {
+    return { linked: false, requiresReauth: false, reason: 'new_user' };
+  }
+
+  if (!(await nativeCognitoUserExists(nativeUser.id, admin))) {
     return { linked: false, requiresReauth: false, reason: 'new_user' };
   }
 
   const orphanUsername = orphanUsernameFromClaims(claims);
 
   try {
-    await deleteOrphanIfPresent(orphanUsername, admin);
-    await attemptLink(nativeUserId, claims.googleSub, admin);
+    await linkThenDeleteOrphan(nativeUser.id, claims.googleSub, orphanUsername, admin);
     return { linked: true, requiresReauth: true, reason: 'linked' };
   } catch (err) {
     if (isAliasExistsError(err)) {
@@ -114,14 +155,17 @@ export async function linkGoogleFederatedUser(
         throw err;
       }
 
-      await deleteOrphanIfPresent(orphanUsername, admin);
-      await attemptLink(nativeUserId, claims.googleSub, admin);
+      await linkThenDeleteOrphan(nativeUser.id, claims.googleSub, orphanUsername, admin);
       return { linked: true, requiresReauth: true, reason: 'linked' };
     }
 
     if (isMisleadingLinkedInvalidParameterError(err)) {
       await deleteOrphanIfPresent(orphanUsername, admin);
       return { linked: true, requiresReauth: true, reason: 'linked' };
+    }
+
+    if (isUserNotFoundError(err)) {
+      return { linked: false, requiresReauth: false, reason: 'new_user' };
     }
 
     throw err;

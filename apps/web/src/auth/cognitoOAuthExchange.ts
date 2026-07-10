@@ -2,6 +2,7 @@ import type { FederatedTokenClaims, FederatedLinkResult, CognitoTokenResponse } 
 import {
   buildAuthorizationCodeExchangeBody,
   buildCognitoAuthorizeUrl,
+  buildCognitoLogoutUrl,
   buildCognitoTokenUrl,
   encodeOAuthState,
   generatePkcePair,
@@ -21,13 +22,22 @@ const STATE_NONCE_STORAGE_KEY = 'echotype.oauth.stateNonce';
 const REAUTH_COUNT_KEY = 'echotype.oauth.reauthCount';
 const MAX_OAUTH_REAUTH = 1;
 
+/** Prevents Strict Mode from starting two PKCE flows (second overwrites verifier → invalid_grant). */
+let googleSignInRedirectStarted = false;
+
+export function resetGoogleSignInRedirectGuard(): void {
+  googleSignInRedirectStarted = false;
+}
+
 /** Dev Strict Mode runs effects twice — dedupe in-flight work by auth code. */
 const inflightCallbackByCode = new Map<string, Promise<OAuthCallbackOutcome>>();
+/** Authorization codes are single-use; cache outcomes so refresh/Strict Mode cannot re-exchange. */
+const completedOAuthCallbacks = new Map<string, OAuthCallbackOutcome>();
 
 export type OAuthCallbackOutcome =
   | { kind: 'error'; message: string }
   | { kind: 'redirect'; destination: string; flashGuest: boolean }
-  | { kind: 'reauth'; nextPath: string };
+  | { kind: 'reauth'; nextPath: string; hintEmail?: string };
 
 function linkFailedMessage(body: unknown): string {
   if (body && typeof body === 'object') {
@@ -67,6 +77,10 @@ function callbackErrorMessage(err: unknown): string {
     if (err.message === 'refresh_token_missing') {
       return 'Google sign-in did not return a refresh token. Try again.';
     }
+    if (err.message.startsWith('email_hint_mismatch:')) {
+      const hint = err.message.slice('email_hint_mismatch:'.length);
+      return `Please sign in with ${hint}`;
+    }
   }
   return 'Could not complete Google sign-in. Try again.';
 }
@@ -97,6 +111,7 @@ function clearPendingPkce(): void {
 export function clearPendingOAuth(): void {
   clearPendingPkce();
   sessionStorage.removeItem(REAUTH_COUNT_KEY);
+  resetGoogleSignInRedirectGuard();
 }
 
 function bumpReauthCount(): number {
@@ -105,7 +120,10 @@ function bumpReauthCount(): number {
   return next;
 }
 
-export async function startGoogleSignIn(nextPath: string): Promise<void> {
+export async function startGoogleSignIn(nextPath: string, hintEmail?: string): Promise<void> {
+  if (googleSignInRedirectStarted) return;
+  googleSignInRedirectStarted = true;
+
   const config = assertCognitoOAuthConfig();
   const { codeVerifier, codeChallenge } = await generatePkcePair();
   const stateNonce = randomUrlSafeString(16);
@@ -114,6 +132,7 @@ export async function startGoogleSignIn(nextPath: string): Promise<void> {
   const state = encodeOAuthState({
     next: nextPath.startsWith('/') ? nextPath : '/courses/short',
     nonce: stateNonce,
+    hintEmail: hintEmail?.trim() || undefined,
   });
 
   const url = buildCognitoAuthorizeUrl({
@@ -123,6 +142,7 @@ export async function startGoogleSignIn(nextPath: string): Promise<void> {
     redirectUri: oauthRedirectUri(),
     identityProvider: 'Google',
     prompt: 'login select_account',
+    maxAge: 0,
     state,
     codeChallenge,
   });
@@ -158,13 +178,83 @@ export async function exchangeAuthorizationCode(code: string): Promise<CognitoTo
   return (await res.json()) as CognitoTokenResponse;
 }
 
-export function validateOAuthCallbackState(stateParam: string | null): string | null {
+/** After invalid_grant / abandoned OAuth, clear Hosted UI SSO without keeping the user on callback. */
+export function redirectToHostedUiLogout(loginPath = '/login'): void {
+  clearAuthSession();
+  clearPendingOAuth();
+  try {
+    const config = assertCognitoOAuthConfig();
+    const url = buildCognitoLogoutUrl({
+      domainPrefix: config.domainPrefix,
+      region: config.region,
+      clientId: config.clientId,
+      logoutUri: `${window.location.origin}/`,
+    });
+    window.location.replace(url);
+  } catch {
+    window.location.replace(loginPath);
+  }
+}
+
+export function shouldClearHostedUiAfterCallbackError(message: string): boolean {
+  return (
+    message.includes('expired or was already used') ||
+    message.includes('Sign-in state was lost') ||
+    message.includes('Please sign in with')
+  );
+}
+
+/** Clears local app session and Cognito Hosted UI SSO cookie, then returns to /. */
+export function logoutWithHostedUiClear(): boolean {
+  resetGoogleSignInRedirectGuard();
+  clearAuthSession();
+  clearPendingOAuth();
+  try {
+    const config = assertCognitoOAuthConfig();
+    const url = buildCognitoLogoutUrl({
+      domainPrefix: config.domainPrefix,
+      region: config.region,
+      clientId: config.clientId,
+      logoutUri: `${window.location.origin}/`,
+    });
+    window.location.assign(url);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function parseOAuthCallbackContext(
+  stateParam: string | null,
+): { next: string; hintEmail?: string } | null {
   if (!stateParam) return null;
   const parsed = parseOAuthState(stateParam);
   if (!parsed) return null;
   const pending = readPendingOAuth();
   if (!pending || pending.stateNonce !== parsed.nonce) return null;
-  return parsed.next;
+  return { next: parsed.next, hintEmail: parsed.hintEmail };
+}
+
+/** @deprecated Use parseOAuthCallbackContext */
+export function validateOAuthCallbackState(stateParam: string | null): string | null {
+  return parseOAuthCallbackContext(stateParam)?.next ?? null;
+}
+
+function assertTokenEmailMatchesHint(
+  accessToken: string,
+  idToken: string,
+  hintEmail?: string,
+): void {
+  if (!hintEmail) return;
+  const claims = parseFederatedTokenClaims(
+    decodeJwtPayload(accessToken),
+    decodeJwtPayload(idToken),
+  );
+  const tokenEmail = claims?.email?.trim().toLowerCase();
+  const hint = hintEmail.trim().toLowerCase();
+  if (tokenEmail && tokenEmail !== hint) {
+    throw new Error(`email_hint_mismatch:${hintEmail}`);
+  }
 }
 
 export function sessionUsernameFromTokens(
@@ -227,11 +317,15 @@ export function completeOAuthCallbackOnce(input: {
   }
 
   const code = input.code;
-  const nextPath = validateOAuthCallbackState(input.state);
-  if (!code || !nextPath) {
+  const context = parseOAuthCallbackContext(input.state);
+  if (!code || !context) {
     clearPendingOAuth();
     return Promise.resolve({ kind: 'error', message: 'Sign-in expired or invalid. Try again.' });
   }
+  const { next: nextPath, hintEmail } = context;
+
+  const cached = completedOAuthCallbacks.get(code);
+  if (cached) return Promise.resolve(cached);
 
   const existing = inflightCallbackByCode.get(code);
   if (existing) return existing;
@@ -239,6 +333,7 @@ export function completeOAuthCallbackOnce(input: {
   const work = (async (): Promise<OAuthCallbackOutcome> => {
     try {
       const tokens = await exchangeAuthorizationCode(code);
+      assertTokenEmailMatchesHint(tokens.access_token, tokens.id_token, hintEmail);
       const username = sessionUsernameFromTokens(tokens.access_token, tokens.id_token);
       const session = tokensToStoredSession(tokens, username);
 
@@ -255,7 +350,7 @@ export function completeOAuthCallbackOnce(input: {
           };
         }
         clearPendingPkce();
-        return { kind: 'reauth', nextPath };
+        return { kind: 'reauth', nextPath, hintEmail };
       }
 
       clearPendingOAuth();
@@ -280,6 +375,11 @@ export function completeOAuthCallbackOnce(input: {
     }
   })();
 
-  inflightCallbackByCode.set(code, work);
-  return work;
+  const tracked = work.then((outcome) => {
+    completedOAuthCallbacks.set(code, outcome);
+    return outcome;
+  });
+
+  inflightCallbackByCode.set(code, tracked);
+  return tracked;
 }

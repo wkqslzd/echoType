@@ -13,14 +13,15 @@
     "prisma:reset": "prisma migrate reset --force",
     "prisma:studio": "prisma studio",
     "seed": "tsx prisma/seed.ts",
-    "test:auth": "node --import tsx --test src/auth/ensureUser.test.ts src/auth/federatedLink.test.ts src/routes/account.test.ts src/routes/onboarding.test.ts ../../packages/shared/src/cognitoOAuth.test.ts ../../packages/shared/src/onboardingCatalog.test.ts ../../packages/shared/src/onboardingSeed.test.ts",
+    "test:auth": "node --import tsx --test src/auth/ensureUser.test.ts src/auth/federatedLink.test.ts src/auth/cognitoUserProfile.test.ts src/routes/account.test.ts src/routes/onboarding.test.ts ../../packages/shared/src/cognitoOAuth.test.ts ../../packages/shared/src/onboardingCatalog.test.ts ../../packages/shared/src/onboardingSeed.test.ts",
     "probe:auth": "node scripts/auth-phase3-jwt-probe.mjs",
     "test:sentry": "node --import tsx --test src/sentry.test.ts",
     "probe:ops-sentry": "node scripts/ops-sentry-probe.mjs",
     "test:auth-google-phase1": "pnpm --filter @echotype/shared exec node --import tsx --test src/cognitoOAuth.test.ts",
     "probe:auth-google-phase1": "node --import tsx scripts/auth-google-phase1-probe.mjs",
-    "test:auth-google-phase2": "pnpm --filter @echotype/shared exec node --import tsx --test src/cognitoOAuth.test.ts && pnpm --filter @echotype/api exec node --import tsx --test src/auth/federatedLink.test.ts",
-    "probe:auth-google-phase2": "node --import tsx scripts/auth-google-phase2-probe.mjs"
+    "test:auth-google-phase2": "pnpm --filter @echotype/shared exec node --import tsx --test src/cognitoOAuth.test.ts && pnpm --filter @echotype/api exec node --import tsx --test src/auth/federatedLink.test.ts src/auth/ensureUser.test.ts src/auth/cognitoUserProfile.test.ts",
+    "probe:auth-google-phase2": "node --import tsx scripts/auth-google-phase2-probe.mjs",
+    "probe:auth-google-phase2-local-link": "node scripts/auth-google-phase2-local-link-probe.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.1077.0",

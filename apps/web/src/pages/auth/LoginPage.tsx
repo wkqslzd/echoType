@@ -25,7 +25,7 @@ export function LoginPage() {
     setError(null);
     setGoogleSubmitting(true);
     try {
-      await startGoogleSignIn(next);
+      await startGoogleSignIn(next, email.trim() || undefined);
     } catch {
       setError('Google sign-in is not available right now.');
       setGoogleSubmitting(false);

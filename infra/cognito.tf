@@ -81,8 +81,8 @@ resource "aws_cognito_identity_provider" "google" {
 
   attribute_mapping = {
     email = "email"
-    name  = "name"
-    # Pool uses username_attributes = ["email"]; do not map username — Cognito derives it.
+    # Do not map name — L2/native nickname lives in Postgres; Google must not overwrite Cognito name on each login (G4A).
+    # Note: AWS may retain attribute_mapping["username"] = "sub" in state; ignore that plan drift (G5A).
   }
 }
 

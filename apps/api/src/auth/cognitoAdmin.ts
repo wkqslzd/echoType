@@ -2,6 +2,7 @@ import {
   AdminDeleteUserCommand,
   AdminGetUserCommand,
   AdminLinkProviderForUserCommand,
+  AdminUpdateUserAttributesCommand,
   CognitoIdentityProviderClient,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { loadCognitoConfig } from './cognitoConfig.js';
@@ -57,6 +58,22 @@ export async function adminDeleteCognitoUser(params: {
     new AdminDeleteUserCommand({
       UserPoolId: params.userPoolId,
       Username: params.username,
+    }),
+  );
+}
+
+export async function adminUpdateUserAttributes(params: {
+  userPoolId: string;
+  username: string;
+  attributes: Record<string, string>;
+}): Promise<void> {
+  const entries = Object.entries(params.attributes);
+  if (entries.length === 0) return;
+  await getClient().send(
+    new AdminUpdateUserAttributesCommand({
+      UserPoolId: params.userPoolId,
+      Username: params.username,
+      UserAttributes: entries.map(([Name, Value]) => ({ Name, Value })),
     }),
   );
 }

@@ -4,6 +4,7 @@ import {
   buildAuthorizationCodeExchangeBody,
   buildCognitoAuthorizeUrl,
   buildCognitoHostedUiBaseUrl,
+  buildCognitoLogoutUrl,
   buildCognitoTokenUrl,
   buildGoogleIdpRedirectUri,
   codeChallengeS256,
@@ -60,6 +61,17 @@ describe('PKCE + OAuth state', () => {
     });
   });
 
+  it('round-trips OAuth state with hintEmail', () => {
+    const raw = encodeOAuthState({
+      next: '/courses/short',
+      nonce: randomUrlSafeString(16),
+      hintEmail: 'User@Example.com',
+    });
+    const parsed = parseOAuthState(raw);
+    assert.equal(parsed?.next, '/courses/short');
+    assert.equal(parsed?.hintEmail, 'user@example.com');
+  });
+
   it('rejects invalid state', () => {
     assert.equal(parseOAuthState('not-valid'), null);
     assert.equal(parseOAuthState(encodeOAuthState({ next: 'http://evil', nonce: 'x' })), null);
@@ -110,6 +122,33 @@ describe('buildCognitoAuthorizeUrl', () => {
       prompt: 'login select_account',
     });
     assert.equal(new URL(url).searchParams.get('prompt'), 'login select_account');
+  });
+
+  it('supports max_age=0 to force IdP re-authentication', () => {
+    const url = buildCognitoAuthorizeUrl({
+      domainPrefix: 'echotype-ink',
+      region: 'ap-southeast-2',
+      clientId: 'abc123',
+      redirectUri: 'http://localhost:5173/auth/callback',
+      identityProvider: 'Google',
+      maxAge: 0,
+    });
+    assert.equal(new URL(url).searchParams.get('max_age'), '0');
+  });
+});
+
+describe('buildCognitoLogoutUrl', () => {
+  it('builds hosted UI logout with logout_uri', () => {
+    const url = buildCognitoLogoutUrl({
+      domainPrefix: 'echotype-ink',
+      region: 'ap-southeast-2',
+      clientId: 'abc123',
+      logoutUri: 'http://localhost:5173/login',
+    });
+    const parsed = new URL(url);
+    assert.equal(parsed.pathname, '/logout');
+    assert.equal(parsed.searchParams.get('client_id'), 'abc123');
+    assert.equal(parsed.searchParams.get('logout_uri'), 'http://localhost:5173/login');
   });
 });
 
@@ -199,7 +238,7 @@ describe('parseFederatedTokenClaims', () => {
     assert.equal(claims?.isOrphanGoogleSession, true);
   });
 
-  it('treats email pool username as linked when identities claim is absent', () => {
+  it('does not treat native email username as linked without identities claim', () => {
     const claims = parseFederatedTokenClaims(
       {
         sub: 'uuid-native',
@@ -210,6 +249,24 @@ describe('parseFederatedTokenClaims', () => {
         sub: 'uuid-native',
         email: 'user@example.com',
         'cognito:username': 'user@example.com',
+      },
+    );
+    assert.equal(claims?.isGoogleLinked, false);
+    assert.equal(claims?.isOrphanGoogleSession, false);
+  });
+
+  it('detects linked native user via UUID username and Google identity', () => {
+    const claims = parseFederatedTokenClaims(
+      {
+        sub: 'e9be9418-40a1-70ee-de57-e2f27405b3bb',
+        email: 'user@example.com',
+        'cognito:username': 'e9be9418-40a1-70ee-de57-e2f27405b3bb',
+      },
+      {
+        sub: 'e9be9418-40a1-70ee-de57-e2f27405b3bb',
+        email: 'user@example.com',
+        'cognito:username': 'e9be9418-40a1-70ee-de57-e2f27405b3bb',
+        identities,
       },
     );
     assert.equal(claims?.isGoogleLinked, true);

@@ -3,6 +3,7 @@ import {
   sessionToTokens,
   signOutCognitoUser,
 } from './cognitoClient.js';
+import { refreshHostedUiTokens } from './cognitoOAuthRefresh.js';
 import { claimString, decodeJwtPayload, jwtExpirySeconds } from './jwtPayload.js';
 
 const STORAGE_KEY = 'echotype.auth.session';
@@ -108,6 +109,18 @@ function accessTokenValid(session: StoredAuthSession): boolean {
 
 async function refreshAccessToken(session: StoredAuthSession): Promise<string | null> {
   try {
+    if (session.username.startsWith('Google_')) {
+      const tokens = await refreshHostedUiTokens(session.refreshToken);
+      const next: StoredAuthSession = {
+        username: session.username,
+        accessToken: tokens.access_token,
+        idToken: tokens.id_token,
+        refreshToken: tokens.refresh_token ?? session.refreshToken,
+      };
+      saveAuthSession(next);
+      return next.accessToken;
+    }
+
     const refreshed = await refreshCognitoSession(session.username, session.refreshToken);
     const tokens = sessionToTokens(refreshed);
     const next: StoredAuthSession = {

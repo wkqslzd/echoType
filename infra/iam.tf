@@ -200,6 +200,7 @@ data "aws_iam_policy_document" "ec2_cognito_admin" {
       "cognito-idp:AdminGetUser",
       "cognito-idp:AdminLinkProviderForUser",
       "cognito-idp:AdminDeleteUser",
+      "cognito-idp:AdminUpdateUserAttributes",
     ]
     resources = [aws_cognito_user_pool.main.arn]
   }

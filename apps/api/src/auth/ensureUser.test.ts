@@ -22,8 +22,15 @@ describe('resolveUserProfile', () => {
     });
   });
 
-  it('returns null when name missing', () => {
-    assert.equal(resolveUserProfile({ sub: 's', email: 'a@b.c' }), null);
+  it('derives name from email when name missing', () => {
+    assert.deepEqual(resolveUserProfile({ sub: 's', email: 'a@b.c' }), {
+      email: 'a@b.c',
+      name: 'a',
+    });
+  });
+
+  it('ignores Google_ username as email', () => {
+    assert.equal(resolveUserProfile({ sub: 's', username: 'Google_123', name: 'Ann' }), null);
   });
 });
 
@@ -57,7 +64,7 @@ describe('ensureUser', () => {
     assert.equal(create.mock.calls.length, 1);
   });
 
-  it('throws ProfileIncompleteError on create without name', async () => {
+  it('throws ProfileIncompleteError on create without resolvable email', async () => {
     const prisma = {
       user: {
         findUnique: async () => null,
@@ -67,7 +74,7 @@ describe('ensureUser', () => {
     } as unknown as PrismaClient;
 
     await assert.rejects(
-      () => ensureUser(prisma, { sub: baseUser.id, username: 'a@b.c' }),
+      () => ensureUser(prisma, { sub: baseUser.id, username: 'Google_123', name: 'Ann' }),
       ProfileIncompleteError,
     );
   });
@@ -82,14 +89,36 @@ describe('ensureUser', () => {
       },
     } as unknown as PrismaClient;
 
-    const user = await ensureUser(prisma, { sub: baseUser.id, username: 'a@b.c' });
+    const user = await ensureUser(prisma, { sub: baseUser.id, username: 'Google_123' });
     assert.equal(user.id, baseUser.id);
     assert.equal(update.mock.calls.length, 0);
   });
 
-  it('updates email and name when claims differ', async () => {
-    const updated = { ...baseUser, email: 'new@b.c', name: 'Bob' };
-    const update = mock.fn(async () => updated);
+  it('creates federated new user with empty name when pendingNickname', async () => {
+    const create = mock.fn(async (args: { data: { name: string } }) => ({
+      ...baseUser,
+      name: args.data.name,
+    }));
+    const prisma = {
+      user: {
+        findUnique: async () => null,
+        create,
+        update: async () => baseUser,
+      },
+    } as unknown as PrismaClient;
+
+    const user = await ensureUser(
+      prisma,
+      { sub: baseUser.id, email: 'a@b.c', name: 'Google Name' },
+      { pendingNickname: true },
+    );
+
+    assert.equal(user.name, '');
+    assert.equal(create.mock.calls.length, 1);
+  });
+
+  it('does not overwrite name when preserveNickname is set', async () => {
+    const update = mock.fn(async () => baseUser);
     const prisma = {
       user: {
         findUnique: async () => baseUser,
@@ -98,13 +127,9 @@ describe('ensureUser', () => {
       },
     } as unknown as PrismaClient;
 
-    const user = await ensureUser(prisma, {
-      sub: baseUser.id,
-      email: 'new@b.c',
-      name: 'Bob',
+    await ensureUser(prisma, { sub: baseUser.id, email: 'a@b.c', name: 'Google Name' }, {
+      preserveNickname: true,
     });
-
-    assert.equal(user.email, 'new@b.c');
-    assert.equal(update.mock.calls.length, 1);
+    assert.equal(update.mock.calls.length, 0);
   });
 });

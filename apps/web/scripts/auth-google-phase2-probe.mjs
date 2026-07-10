@@ -25,7 +25,7 @@ function runPartA() {
   console.log('Part A PASS');
 }
 
-async function runPartB(page: import('playwright').Page) {
+async function runPartB(page) {
   console.log('--- Part B: login button + callback error UI ---');
   await page.goto(`${WEB}/login`, { waitUntil: 'domcontentloaded' });
   await page.getByTestId('auth-google').waitFor({ timeout: 10_000 });

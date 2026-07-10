@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { isDeleteConfirmationValid, NICKNAME_MAX } from '@echotype/shared';
 import { useAuth } from '../auth/AuthProvider';
 import {
@@ -18,6 +19,7 @@ import { PageLoading } from '../components/page-status/PageLoading';
 
 export function AccountPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { status, applyDisplayName, changePassword, updateNickname, deleteAccount, logout } =
     useAuth();
 
@@ -41,7 +43,6 @@ export function AccountPage() {
   const [deleteConfirm, setDeleteConfirm] = useState('');
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
-
   const orphanGoogleSession = (() => {
     const session = loadAuthSession();
     return session ? isOrphanGoogleSession(session) : false;
@@ -115,7 +116,8 @@ export function AccountPage() {
     try {
       const account = await updateNickname(nickname);
       setNickname(account.name);
-      setNicknameMessage('Nickname updated.');
+      await queryClient.invalidateQueries({ queryKey: ['account'] });
+      setNicknameMessage('Nickname saved.');
     } catch (err) {
       if (err instanceof Error && err.message !== 'not_authed') {
         setNicknameError(err.message);

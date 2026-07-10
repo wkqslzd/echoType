@@ -1,9 +1,10 @@
 import type { FastifyInstance } from 'fastify';
 import type { User } from '@prisma/client';
-import { UpdateAccountInput, type AccountDTO } from '@echotype/shared';
+import { UpdateAccountInput, type AccountDTO, needsNicknameSetup } from '@echotype/shared';
 import { parseFederatedTokenClaims } from '@echotype/shared';
 import { adminDeleteCognitoUser } from '../auth/cognitoAdmin.js';
 import { loadCognitoConfig } from '../auth/cognitoConfig.js';
+import { syncAccountNicknameToCognito } from '../auth/syncAccountNicknameToCognito.js';
 import { verifyAccessToken } from '../auth/verifyAccessToken.js';
 import { verifyIdToken } from '../auth/verifyIdToken.js';
 import { prisma } from '../prisma.js';
@@ -19,6 +20,7 @@ function toAccountDTO(user: User): AccountDTO {
     id: user.id,
     email: user.email,
     name: user.name,
+    needsNicknameSetup: needsNicknameSetup(user.name),
     onboardingSeededAt: user.onboardingSeededAt?.toISOString() ?? null,
   };
 }
@@ -41,10 +43,22 @@ export async function registerAccountRoutes(api: FastifyInstance) {
       return reply.status(400).send({ error: 'validation_error', issues: parsed.error.issues });
     }
 
+    const accessToken = bearerToken(req.headers.authorization);
+    if (!accessToken) {
+      return reply.status(401).send({ error: 'unauthorized' });
+    }
+
     const user = await prisma.user.update({
       where: { id: req.userId },
       data: { name: parsed.data.name },
     });
+
+    try {
+      await syncAccountNicknameToCognito(accessToken, parsed.data.name);
+    } catch (err) {
+      req.log.error({ err }, 'cognito nickname sync failed');
+      return reply.status(502).send({ error: 'cognito_sync_failed' });
+    }
 
     return toAccountDTO(user);
   });

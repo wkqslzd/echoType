@@ -20,6 +20,9 @@ export function useOnboardingSeed() {
     if (status !== 'authed' || !account || account.onboardingSeededAt !== null) {
       return;
     }
+    if (account.needsNicknameSetup) {
+      return;
+    }
     if (attemptedRef.current) {
       return;
     }

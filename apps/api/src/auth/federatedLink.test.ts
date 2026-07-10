@@ -10,30 +10,31 @@ const googleIdentities = [
 const nativeUserId = 'e9be9418-40a1-70ee-de57-e2f27405b3bb';
 
 const lookupWithNative: UserLookupPort = {
-  findNativeUserIdByEmail: async () => nativeUserId,
+  findNativeUserByEmail: async () => ({ id: nativeUserId, name: 'DennyG' }),
 };
 
 const lookupNewUser: UserLookupPort = {
-  findNativeUserIdByEmail: async () => null,
+  findNativeUserByEmail: async () => null,
 };
 
 function adminWithLinkBehavior(
   link: CognitoAdminPort['adminLinkGoogleToNativeUser'],
 ): CognitoAdminPort {
   return {
+    adminGetUserPoolUsername: async ({ usernameOrAlias }) => usernameOrAlias,
     adminLinkGoogleToNativeUser: link,
     adminDeleteCognitoUser: async () => undefined,
   };
 }
 
 describe('linkGoogleFederatedUser', () => {
-  it('skips when already linked (cognito:username is email)', async () => {
+  it('skips when already linked (UUID username + Google identity)', async () => {
     const result = await linkGoogleFederatedUser({
       accessPayload: { sub: 'native-sub', email: 'user@example.com' },
       idPayload: {
         sub: 'native-sub',
         email: 'user@example.com',
-        'cognito:username': 'user@example.com',
+        'cognito:username': 'e9be9418-40a1-70ee-de57-e2f27405b3bb',
         identities: googleIdentities,
       },
     });
@@ -49,6 +50,9 @@ describe('linkGoogleFederatedUser', () => {
     process.env.COGNITO_CLIENT_ID = 'testclient';
 
     const admin: CognitoAdminPort = {
+      adminGetUserPoolUsername: async () => {
+        throw Object.assign(new Error('should not lookup'), { name: 'UserNotFoundException' });
+      },
       adminLinkGoogleToNativeUser: async () => {
         throw new Error('should not link');
       },
@@ -81,20 +85,22 @@ describe('linkGoogleFederatedUser', () => {
     });
   });
 
-  it('deletes orphan and links to native pool username from Postgres', async () => {
+  it('links then deletes orphan (link before delete)', async () => {
     process.env.COGNITO_USER_POOL_ID = 'ap-southeast-2_testpool';
     process.env.COGNITO_CLIENT_ID = 'testclient';
 
+    const order: string[] = [];
     let linkedNative: string | undefined;
     let linkedGoogleSub: string | undefined;
-    let deleteUsername: string | undefined;
     const admin: CognitoAdminPort = {
+      adminGetUserPoolUsername: async ({ usernameOrAlias }) => usernameOrAlias,
       adminLinkGoogleToNativeUser: async (params) => {
+        order.push('link');
         linkedNative = params.nativeUsername;
         linkedGoogleSub = params.googleSub;
       },
       adminDeleteCognitoUser: async ({ username }) => {
-        deleteUsername = username;
+        order.push(`delete:${username}`);
       },
     };
 
@@ -122,16 +128,17 @@ describe('linkGoogleFederatedUser', () => {
     });
     assert.equal(linkedNative, nativeUserId);
     assert.equal(linkedGoogleSub, '107121059094644779940');
-    assert.equal(deleteUsername, 'Google_107121059094644779940');
+    assert.deepEqual(order, ['link', 'delete:Google_107121059094644779940']);
   });
 
-  it('retries link after deleting orphan on AliasExistsException', async () => {
+  it('retries link after AliasExistsException then deletes orphan', async () => {
     process.env.COGNITO_USER_POOL_ID = 'ap-southeast-2_testpool';
     process.env.COGNITO_CLIENT_ID = 'testclient';
 
     let linkCalls = 0;
     let deleteCount = 0;
     const admin: CognitoAdminPort = {
+      adminGetUserPoolUsername: async ({ usernameOrAlias }) => usernameOrAlias,
       adminLinkGoogleToNativeUser: async () => {
         linkCalls += 1;
         if (linkCalls === 1) {
@@ -168,10 +175,10 @@ describe('linkGoogleFederatedUser', () => {
       reason: 'linked',
     });
     assert.equal(linkCalls, 2);
-    assert.equal(deleteCount, 2);
+    assert.equal(deleteCount, 1);
   });
 
-  it('deletes orphan and requires reauth on misleading InvalidParameterException', async () => {
+  it('deletes orphan on misleading InvalidParameterException after failed link', async () => {
     process.env.COGNITO_USER_POOL_ID = 'ap-southeast-2_testpool';
     process.env.COGNITO_CLIENT_ID = 'testclient';
 
@@ -183,6 +190,7 @@ describe('linkGoogleFederatedUser', () => {
       err.name = 'InvalidParameterException';
       throw err;
     });
+    admin.adminGetUserPoolUsername = async ({ usernameOrAlias }) => usernameOrAlias;
     admin.adminDeleteCognitoUser = async () => {
       deleteCount += 1;
     };
@@ -209,6 +217,90 @@ describe('linkGoogleFederatedUser', () => {
       requiresReauth: true,
       reason: 'linked',
     });
-    assert.equal(deleteCount, 2);
+    assert.equal(deleteCount, 1);
+  });
+
+  it('returns new_user when link fails with UserNotFoundException', async () => {
+    process.env.COGNITO_USER_POOL_ID = 'ap-southeast-2_testpool';
+    process.env.COGNITO_CLIENT_ID = 'testclient';
+
+    let deleteCount = 0;
+    const admin = adminWithLinkBehavior(async () => {
+      const err = new Error('User does not exist.');
+      err.name = 'UserNotFoundException';
+      throw err;
+    });
+    admin.adminGetUserPoolUsername = async ({ usernameOrAlias }) => usernameOrAlias;
+    admin.adminDeleteCognitoUser = async () => {
+      deleteCount += 1;
+    };
+
+    const result = await linkGoogleFederatedUser(
+      {
+        accessPayload: {
+          sub: 'fed-sub',
+          email: 'user@example.com',
+          'cognito:username': 'Google_107121059094644779940',
+        },
+        idPayload: {
+          sub: 'fed-sub',
+          email: 'user@example.com',
+          'cognito:username': 'Google_107121059094644779940',
+          identities: googleIdentities,
+        },
+      },
+      admin,
+      lookupWithNative,
+    );
+    assert.deepEqual(result, {
+      linked: false,
+      requiresReauth: false,
+      reason: 'new_user',
+    });
+    assert.equal(deleteCount, 0);
+  });
+
+  it('returns new_user without deleting orphan when Postgres id is not a native pool user', async () => {
+    process.env.COGNITO_USER_POOL_ID = 'ap-southeast-2_testpool';
+    process.env.COGNITO_CLIENT_ID = 'testclient';
+
+    let deleteCount = 0;
+    const admin: CognitoAdminPort = {
+      adminGetUserPoolUsername: async () => {
+        const err = new Error('User does not exist.');
+        err.name = 'UserNotFoundException';
+        throw err;
+      },
+      adminLinkGoogleToNativeUser: async () => {
+        throw new Error('should not link');
+      },
+      adminDeleteCognitoUser: async () => {
+        deleteCount += 1;
+      },
+    };
+
+    const result = await linkGoogleFederatedUser(
+      {
+        accessPayload: {
+          sub: 'fed-sub',
+          email: 'user@example.com',
+          'cognito:username': 'Google_107121059094644779940',
+        },
+        idPayload: {
+          sub: 'fed-sub',
+          email: 'user@example.com',
+          'cognito:username': 'Google_107121059094644779940',
+          identities: googleIdentities,
+        },
+      },
+      admin,
+      lookupWithNative,
+    );
+    assert.deepEqual(result, {
+      linked: false,
+      requiresReauth: false,
+      reason: 'new_user',
+    });
+    assert.equal(deleteCount, 0);
   });
 });

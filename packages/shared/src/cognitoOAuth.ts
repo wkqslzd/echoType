@@ -37,10 +37,26 @@ export function buildGoogleIdpRedirectUri(domainPrefix: string, region: string):
 export type OAuthStatePayload = {
   next: string;
   nonce: string;
+  /** Login-page email field — mismatch with Google token email aborts link/delete (G4A). */
+  hintEmail?: string;
 };
 
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+function validHintEmail(raw: unknown): string | undefined {
+  if (typeof raw !== 'string') return undefined;
+  const trimmed = raw.trim();
+  if (!trimmed.includes('@')) return undefined;
+  return normalizeEmail(trimmed);
+}
+
 export function encodeOAuthState(payload: OAuthStatePayload): string {
-  return bytesToBase64Url(new TextEncoder().encode(JSON.stringify(payload)));
+  const body: OAuthStatePayload = { next: payload.next, nonce: payload.nonce };
+  const hint = validHintEmail(payload.hintEmail);
+  if (hint) body.hintEmail = hint;
+  return bytesToBase64Url(new TextEncoder().encode(JSON.stringify(body)));
 }
 
 export function parseOAuthState(raw: string): OAuthStatePayload | null {
@@ -49,7 +65,8 @@ export function parseOAuthState(raw: string): OAuthStatePayload | null {
     const next = typeof parsed.next === 'string' ? parsed.next : '';
     const nonce = typeof parsed.nonce === 'string' ? parsed.nonce : '';
     if (!next.startsWith('/') || !nonce) return null;
-    return { next, nonce };
+    const hintEmail = validHintEmail(parsed.hintEmail);
+    return hintEmail ? { next, nonce, hintEmail } : { next, nonce };
   } catch {
     return null;
   }
@@ -82,6 +99,8 @@ export type CognitoAuthorizeUrlParams = {
   identityProvider?: string;
   /** OAuth prompt (e.g. select_account so Google shows the account picker each time). */
   prompt?: string;
+  /** OIDC max_age=0 forces re-authentication at the IdP when supported. */
+  maxAge?: number;
   state?: string;
   codeChallenge?: string;
 };
@@ -100,6 +119,9 @@ export function buildCognitoAuthorizeUrl(params: CognitoAuthorizeUrlParams): str
   if (params.prompt) {
     search.set('prompt', params.prompt);
   }
+  if (params.maxAge !== undefined) {
+    search.set('max_age', String(params.maxAge));
+  }
   if (params.state) {
     search.set('state', params.state);
   }
@@ -108,6 +130,23 @@ export function buildCognitoAuthorizeUrl(params: CognitoAuthorizeUrlParams): str
     search.set('code_challenge_method', 'S256');
   }
   return `${base}/oauth2/authorize?${search.toString()}`;
+}
+
+export type CognitoLogoutUrlParams = {
+  domainPrefix: string;
+  region: string;
+  clientId: string;
+  logoutUri: string;
+};
+
+/** Clears the Cognito Hosted UI session (federated SSO cookie). */
+export function buildCognitoLogoutUrl(params: CognitoLogoutUrlParams): string {
+  const base = buildCognitoHostedUiBaseUrl(params.domainPrefix, params.region);
+  const search = new URLSearchParams({
+    client_id: params.clientId,
+    logout_uri: params.logoutUri,
+  });
+  return `${base}/logout?${search.toString()}`;
 }
 
 export type AuthorizationCodeExchangeParams = {
@@ -141,4 +180,5 @@ export type FederatedLinkResult = {
   linked: boolean;
   requiresReauth: boolean;
   reason: 'already_linked' | 'new_user' | 'linked' | 'not_needed';
+  needsNicknameSetup?: boolean;
 };

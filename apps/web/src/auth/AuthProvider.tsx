@@ -2,8 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { useQueryClient } from '@tanstack/react-query';
 import type { AccountDTO } from '@echotype/shared';
 import { isDeleteConfirmationValid } from '@echotype/shared';
-import { api } from '../lib/api.js';
-import { AccountDeleteCognitoError } from './accountDelete.js';
+import { api, ApiError } from '../lib/api.js';
 import {
   clearAuthSession,
   getDisplayName,
@@ -12,7 +11,7 @@ import {
   loadAuthSession,
   persistCognitoSession,
 } from './authSession.js';
-import { isOrphanGoogleSession } from './cognitoOAuthExchange.js';
+import { isOrphanGoogleSession, logoutWithHostedUiClear } from './cognitoOAuthExchange.js';
 import {
   changePassword as cognitoChangePassword,
   confirmSignUp,
@@ -23,7 +22,6 @@ import {
   signIn,
   signUp,
   sessionToTokens,
-  updateUserName,
   refreshCognitoSession,
 } from './cognitoClient.js';
 import { isUserNotConfirmed, mapCognitoError } from './mapCognitoError.js';
@@ -37,7 +35,7 @@ export type AuthContextValue = {
   displayName: string | null;
   email: string | null;
   login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => boolean;
   register: (email: string, password: string, nickname: string) => Promise<void>;
   confirmEmail: (email: string, code: string) => Promise<void>;
   resendCode: (email: string) => Promise<void>;
@@ -111,10 +109,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [syncFromSession],
   );
 
-  const logout = useCallback(() => {
-    clearAuthSession();
+  const logout = useCallback((): boolean => {
     queryClient.clear();
-    syncFromSession();
+    const redirecting = logoutWithHostedUiClear();
+    if (!redirecting) {
+      syncFromSession();
+    }
+    return redirecting;
   }, [queryClient, syncFromSession]);
 
   const register = useCallback(async (regEmail: string, password: string, nickname: string) => {
@@ -153,12 +154,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   /**
-   * Cognito name attribute + Postgres users.name.
-   *
-   * Degraded refresh: after updateAttributes, refreshSession may fail (network/Cognito).
-   * We still PUT /api/account so DB matches Cognito. Header displayName comes from the
-   * API response — not syncFromSession(), which would read a stale JWT when refresh failed.
-   * Token refresh success is best-effort only; Cognito+DB consistency beats fresh tokens.
+   * Postgres users.name + Cognito name via API admin sync (OAuth access tokens lack
+   * aws.cognito.signin.user.admin for client updateAttributes).
    */
   const updateNickname = useCallback(
     async (name: string) => {
@@ -173,17 +170,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error('not_authed');
       }
 
-      await updateUserName(session, trimmed);
+      let account: AccountDTO;
+      try {
+        account = await api.updateAccount({ name: trimmed });
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 502) {
+          throw new Error('Could not save nickname right now. Try again in a moment.');
+        }
+        throw err;
+      }
+      applyDisplayName(account.name);
 
       try {
         const refreshedSession = await refreshCognitoSession(session.username, session.refreshToken);
         persistCognitoSession(session.username, sessionToTokens(refreshedSession));
       } catch {
-        // Non-fatal: attribute already updated in Cognito; continue to DB sync below.
+        // Non-fatal: DB + Cognito already updated; header uses API response above.
       }
 
-      const account = await api.updateAccount({ name: trimmed });
-      applyDisplayName(account.name);
       return account;
     },
     [applyDisplayName],

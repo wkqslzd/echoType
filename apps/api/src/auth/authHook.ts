@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { prisma } from '../prisma.js';
+import { parseFederatedTokenClaims } from '@echotype/shared';
 import {
   claimsFromAccessTokenPayload,
   enrichClaimsFromAccessToken,
@@ -38,7 +39,13 @@ export async function registerAuthHook(app: FastifyInstance) {
       const payload = await verifyAccessToken(token);
       let claims = claimsFromAccessTokenPayload(payload as Record<string, unknown>);
       claims = await enrichClaimsFromAccessToken(token, claims);
-      const user = await ensureUser(prisma, claims);
+      const federated = parseFederatedTokenClaims(
+        payload as Record<string, unknown>,
+        payload as Record<string, unknown>,
+      );
+      const user = await ensureUser(prisma, claims, {
+        preserveNickname: federated?.isGoogleLinked === true,
+      });
       req.userId = user.id;
     } catch (err) {
       if (err instanceof ProfileIncompleteError) {
