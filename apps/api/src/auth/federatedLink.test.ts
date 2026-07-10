@@ -105,4 +105,44 @@ describe('linkGoogleFederatedUser', () => {
     assert.equal(linkCalls, 2);
     assert.equal(deleteUsername, 'Google_107121059094644779940');
   });
+
+  it('deletes orphan and requires reauth on InvalidParameterException', async () => {
+    process.env.COGNITO_USER_POOL_ID = 'ap-southeast-2_testpool';
+    process.env.COGNITO_CLIENT_ID = 'testclient';
+
+    let deleteUsername: string | undefined;
+    const admin: CognitoAdminPort = {
+      adminLinkGoogleToNativeUser: async () => {
+        const err = new Error('invalid parameter');
+        err.name = 'InvalidParameterException';
+        throw err;
+      },
+      adminDeleteCognitoUser: async ({ username }) => {
+        deleteUsername = username;
+      },
+    };
+
+    const result = await linkGoogleFederatedUser(
+      {
+        accessPayload: {
+          sub: 'fed-sub',
+          email: 'user@example.com',
+          'cognito:username': 'Google_107121059094644779940',
+        },
+        idPayload: {
+          sub: 'fed-sub',
+          email: 'user@example.com',
+          'cognito:username': 'Google_107121059094644779940',
+          identities: googleIdentities,
+        },
+      },
+      admin,
+    );
+    assert.deepEqual(result, {
+      linked: true,
+      requiresReauth: true,
+      reason: 'linked',
+    });
+    assert.equal(deleteUsername, 'Google_107121059094644779940');
+  });
 });

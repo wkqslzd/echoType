@@ -4,6 +4,7 @@ import {
   adminDeleteCognitoUser,
   adminLinkGoogleToNativeUser,
   isAliasExistsError,
+  isInvalidParameterError,
   isUserNotFoundError,
 } from './cognitoAdmin.js';
 import { loadCognitoConfig } from './cognitoConfig.js';
@@ -88,6 +89,16 @@ export async function linkGoogleFederatedUser(
       const { userPoolId } = loadCognitoConfig();
       await admin.adminDeleteCognitoUser({ userPoolId, username: orphanUsername });
       await attemptLink(claims, admin);
+      return { linked: true, requiresReauth: true, reason: 'linked' };
+    }
+
+    if (isInvalidParameterError(err)) {
+      // Cognito may already have Google on the destination profile, or link succeeded
+      // but returned a misleading InvalidParameterException (known service quirk).
+      if (claims.cognitoUsername.startsWith('Google_')) {
+        const { userPoolId } = loadCognitoConfig();
+        await admin.adminDeleteCognitoUser({ userPoolId, username: claims.cognitoUsername });
+      }
       return { linked: true, requiresReauth: true, reason: 'linked' };
     }
 

@@ -64,3 +64,12 @@ export function isUserNotFoundError(err: unknown): boolean {
     (err as { name?: string }).name === 'UserNotFoundException'
   );
 }
+
+export function isInvalidParameterError(err: unknown): boolean {
+  return (
+    typeof err === 'object' &&
+    err !== null &&
+    'name' in err &&
+    (err as { name?: string }).name === 'InvalidParameterException'
+  );
+}
