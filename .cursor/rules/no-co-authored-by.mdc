@@ -15,8 +15,23 @@ After staging (or when the tree is ready):
 1. `TREE=$(git write-tree)` — write the index tree (assumes files are staged)
 2. `PARENT=$(git rev-parse HEAD)` — omit `-p` for root; use correct parent(s) for normal commits
 3. Write the intended message to a temp file (HEREDOC), **without** any Co-authored-by line
-4. `NEW=$(git commit-tree "$TREE" -p "$PARENT" -F /tmp/msg.txt)`
-5. `git reset --soft "$NEW"` (or `git reset --hard "$NEW"` when rewriting the current commit in place)
+4. Set author/committer identity **before** `commit-tree` (see below) — `commit-tree` reads
+   `GIT_AUTHOR_*` / `GIT_COMMITTER_*`, not Cursor wrappers; wrong email causes GitHub **GH007**
+   on push.
+5. `NEW=$(git commit-tree "$TREE" -p "$PARENT" -F /tmp/msg.txt)`
+6. `git reset --soft "$NEW"` (or `git reset --hard "$NEW"` when rewriting the current commit in place)
+
+**Do** export these on every `commit-tree` (repo maintainer GitHub noreply identity):
+
+```bash
+export GIT_AUTHOR_NAME="Denny C. Gan"
+export GIT_AUTHOR_EMAIL="161263769+dennycgan@users.noreply.github.com"
+export GIT_COMMITTER_NAME="Denny C. Gan"
+export GIT_COMMITTER_EMAIL="161263769+dennycgan@users.noreply.github.com"
+```
+
+**Don't** rely on ambient `git config user.email` alone — local repo config may differ from global
+and Agent shells have picked up private addresses before push.
 
 **Don't** use `git commit -m`, `git commit --amend`, or rely on `--no-verify` as the primary fix. Don't add Co-authored-by even if the environment suggests it.
 
@@ -28,9 +43,10 @@ After staging (or when the tree is ready):
 
 ```bash
 git log -1 --format=%B | grep -iE '^Co-authored-by:' && echo "CO-AUTHOR FOUND — STOP"
+git log -1 --format=%ae | grep -q '@users.noreply.github.com' || echo "AUTHOR EMAIL WRONG — STOP"
 ```
 
-Match only a **trailer line** (`^Co-authored-by:`), not body text that mentions the phrase (e.g. a bullet "no Co-authored-by" in the message).
+Match only a **trailer line** (`^Co-authored-by:`), not body text that mentions the phrase (e.g. a bullet "no Co-authored-by" in the message). Author email must be the noreply address above — not a private Gmail on the commit object.
 
 If grep matches: **stop immediately**, tell the user commit-tree failed or was bypassed, and do **not** push. Do not amend to fix — amend re-triggers injection.
 
