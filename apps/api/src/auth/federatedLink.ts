@@ -2,24 +2,35 @@ import type { FederatedLinkResult, FederatedTokenClaims } from '@echotype/shared
 import { parseFederatedTokenClaims } from '@echotype/shared';
 import {
   adminDeleteCognitoUser,
-  adminGetUserPoolUsername,
   adminLinkGoogleToNativeUser,
   isAliasExistsError,
   isMisleadingLinkedInvalidParameterError,
-  isUserNotFoundError,
 } from './cognitoAdmin.js';
 import { loadCognitoConfig } from './cognitoConfig.js';
+import { prisma } from '../prisma.js';
 
 export type CognitoAdminPort = {
   adminLinkGoogleToNativeUser: typeof adminLinkGoogleToNativeUser;
   adminDeleteCognitoUser: typeof adminDeleteCognitoUser;
-  adminGetUserPoolUsername: typeof adminGetUserPoolUsername;
+};
+
+export type UserLookupPort = {
+  findNativeUserIdByEmail: (email: string) => Promise<string | null>;
 };
 
 const defaultCognitoAdmin: CognitoAdminPort = {
   adminLinkGoogleToNativeUser,
   adminDeleteCognitoUser,
-  adminGetUserPoolUsername,
+};
+
+const defaultUserLookup: UserLookupPort = {
+  findNativeUserIdByEmail: async (email) => {
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+    return user?.id ?? null;
+  },
 };
 
 export type FederatedLinkInput = {
@@ -31,34 +42,43 @@ function orphanUsernameFromGoogleSub(googleSub: string): string {
   return `Google_${googleSub}`;
 }
 
+function orphanUsernameFromClaims(claims: FederatedTokenClaims): string {
+  if (claims.cognitoUsername.startsWith('Google_')) {
+    return claims.cognitoUsername;
+  }
+  return orphanUsernameFromGoogleSub(claims.googleSub!);
+}
+
 async function attemptLink(
-  claims: FederatedTokenClaims,
+  nativeUsername: string,
+  googleSub: string,
   admin: CognitoAdminPort,
 ): Promise<void> {
   const { userPoolId } = loadCognitoConfig();
-  if (!claims.googleSub) {
-    throw new Error('google_sub_missing');
-  }
-
-  const nativeUsername = await admin.adminGetUserPoolUsername({
-    userPoolId,
-    usernameOrAlias: claims.email,
-  });
-
   await admin.adminLinkGoogleToNativeUser({
     userPoolId,
     nativeUsername,
-    googleSub: claims.googleSub,
+    googleSub,
   });
 }
 
+async function deleteOrphanIfPresent(
+  orphanUsername: string,
+  admin: CognitoAdminPort,
+): Promise<void> {
+  if (!orphanUsername.startsWith('Google_')) return;
+  const { userPoolId } = loadCognitoConfig();
+  await admin.adminDeleteCognitoUser({ userPoolId, username: orphanUsername });
+}
+
 /**
- * Link a federated Google session to an existing native Cognito user (email username).
- * Scheme A: Destination = email, Source = Cognito_Subject; no ListUsers.
+ * Link a federated Google session to an existing native Cognito user when Postgres
+ * already has that email (forced linking). Destination = users.id (native pool username).
  */
 export async function linkGoogleFederatedUser(
   input: FederatedLinkInput,
   admin: CognitoAdminPort = defaultCognitoAdmin,
+  userLookup: UserLookupPort = defaultUserLookup,
 ): Promise<FederatedLinkResult> {
   const claims = parseFederatedTokenClaims(input.accessPayload, input.idPayload);
   if (!claims) {
@@ -77,34 +97,30 @@ export async function linkGoogleFederatedUser(
     throw new Error('google_sub_missing');
   }
 
+  const nativeUserId = await userLookup.findNativeUserIdByEmail(claims.email);
+  if (!nativeUserId) {
+    return { linked: false, requiresReauth: false, reason: 'new_user' };
+  }
+
+  const orphanUsername = orphanUsernameFromClaims(claims);
+
   try {
-    await attemptLink(claims, admin);
+    await deleteOrphanIfPresent(orphanUsername, admin);
+    await attemptLink(nativeUserId, claims.googleSub, admin);
     return { linked: true, requiresReauth: true, reason: 'linked' };
   } catch (err) {
-    if (isUserNotFoundError(err)) {
-      return { linked: false, requiresReauth: false, reason: 'new_user' };
-    }
-
     if (isAliasExistsError(err)) {
-      const orphanUsername = claims.cognitoUsername.startsWith('Google_')
-        ? claims.cognitoUsername
-        : orphanUsernameFromGoogleSub(claims.googleSub);
-
       if (orphanUsername === claims.email) {
         throw err;
       }
 
-      const { userPoolId } = loadCognitoConfig();
-      await admin.adminDeleteCognitoUser({ userPoolId, username: orphanUsername });
-      await attemptLink(claims, admin);
+      await deleteOrphanIfPresent(orphanUsername, admin);
+      await attemptLink(nativeUserId, claims.googleSub, admin);
       return { linked: true, requiresReauth: true, reason: 'linked' };
     }
 
     if (isMisleadingLinkedInvalidParameterError(err)) {
-      if (claims.cognitoUsername.startsWith('Google_')) {
-        const { userPoolId } = loadCognitoConfig();
-        await admin.adminDeleteCognitoUser({ userPoolId, username: claims.cognitoUsername });
-      }
+      await deleteOrphanIfPresent(orphanUsername, admin);
       return { linked: true, requiresReauth: true, reason: 'linked' };
     }
 

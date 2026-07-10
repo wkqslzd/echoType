@@ -26,19 +26,47 @@ const inflightCallbackByCode = new Map<string, Promise<OAuthCallbackOutcome>>();
 
 export type OAuthCallbackOutcome =
   | { kind: 'error'; message: string }
-  | { kind: 'redirect'; destination: string; flashGuest: boolean };
+  | { kind: 'redirect'; destination: string; flashGuest: boolean }
+  | { kind: 'reauth'; nextPath: string };
+
+function linkFailedMessage(body: unknown): string {
+  if (body && typeof body === 'object') {
+    const code =
+      'code' in body && typeof (body as { code?: unknown }).code === 'string'
+        ? (body as { code: string }).code
+        : null;
+    if (code === 'google_sub_missing') {
+      return 'Google sign-in token was missing required account data. Try again.';
+    }
+    if (code === 'InvalidParameterException') {
+      return 'Could not link Google to your existing email account. Try email sign-in or contact support.';
+    }
+    if (code) {
+      return `Could not link your Google account (${code}). Try email sign-in or try again later.`;
+    }
+  }
+  return 'Could not link your Google account to an existing profile. Try email sign-in or try again later.';
+}
 
 function callbackErrorMessage(err: unknown): string {
   if (err instanceof ApiError) {
     if (err.status === 500) {
-      return 'Could not link your Google account to an existing profile. Try email sign-in or try again later.';
+      return linkFailedMessage(err.body);
     }
     if (err.status === 401) {
       return 'Google sign-in session was rejected. Try again.';
     }
   }
-  if (err instanceof Error && err.message === 'token_exchange_failed') {
-    return 'Google sign-in expired or was already used. Go back and try again.';
+  if (err instanceof Error) {
+    if (err.message === 'token_exchange_failed') {
+      return 'Google sign-in expired or was already used. Go back and try again.';
+    }
+    if (err.message === 'oauth_state_missing') {
+      return 'Sign-in state was lost. Go back and try Google sign-in again.';
+    }
+    if (err.message === 'refresh_token_missing') {
+      return 'Google sign-in did not return a refresh token. Try again.';
+    }
   }
   return 'Could not complete Google sign-in. Try again.';
 }
@@ -60,9 +88,14 @@ function writePendingOAuth(pending: PendingOAuth): void {
   sessionStorage.setItem(STATE_NONCE_STORAGE_KEY, pending.stateNonce);
 }
 
-export function clearPendingOAuth(): void {
+function clearPendingPkce(): void {
   sessionStorage.removeItem(PKCE_STORAGE_KEY);
   sessionStorage.removeItem(STATE_NONCE_STORAGE_KEY);
+}
+
+/** Clears PKCE/state and the reauth attempt counter (successful or abandoned flow). */
+export function clearPendingOAuth(): void {
+  clearPendingPkce();
   sessionStorage.removeItem(REAUTH_COUNT_KEY);
 }
 
@@ -121,7 +154,7 @@ export async function exchangeAuthorizationCode(code: string): Promise<CognitoTo
     throw new Error('token_exchange_failed');
   }
 
-  clearPendingOAuth();
+  clearPendingPkce();
   return (await res.json()) as CognitoTokenResponse;
 }
 
@@ -221,9 +254,8 @@ export function completeOAuthCallbackOnce(input: {
               'Account link did not complete after retry. Try email sign-in or contact support.',
           };
         }
-        clearPendingOAuth();
-        void startGoogleSignIn(nextPath);
-        return new Promise<OAuthCallbackOutcome>(() => {});
+        clearPendingPkce();
+        return { kind: 'reauth', nextPath };
       }
 
       clearPendingOAuth();
