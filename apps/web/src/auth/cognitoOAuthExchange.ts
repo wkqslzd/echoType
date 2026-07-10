@@ -80,7 +80,7 @@ export async function startGoogleSignIn(nextPath: string): Promise<void> {
     clientId: config.clientId,
     redirectUri: oauthRedirectUri(),
     identityProvider: 'Google',
-    prompt: 'select_account',
+    prompt: 'login select_account',
     state,
     codeChallenge,
   });

@@ -107,9 +107,9 @@ describe('buildCognitoAuthorizeUrl', () => {
       clientId: 'abc123',
       redirectUri: 'http://localhost:5173/auth/callback',
       identityProvider: 'Google',
-      prompt: 'select_account',
+      prompt: 'login select_account',
     });
-    assert.equal(new URL(url).searchParams.get('prompt'), 'select_account');
+    assert.equal(new URL(url).searchParams.get('prompt'), 'login select_account');
   });
 });
 
@@ -180,6 +180,40 @@ describe('parseFederatedTokenClaims', () => {
     assert.equal(claims?.isOrphanGoogleSession, true);
     assert.equal(claims?.isGoogleLinked, false);
     assert.equal(claims?.googleSub, '107121059094644779940');
+  });
+
+  it('derives googleSub from Google_ username when identities claim is absent', () => {
+    const claims = parseFederatedTokenClaims(
+      {
+        sub: 'federated-uuid',
+        email: 'user@example.com',
+        'cognito:username': 'Google_107121059094644779940',
+      },
+      {
+        sub: 'federated-uuid',
+        email: 'user@example.com',
+        'cognito:username': 'Google_107121059094644779940',
+      },
+    );
+    assert.equal(claims?.googleSub, '107121059094644779940');
+    assert.equal(claims?.isOrphanGoogleSession, true);
+  });
+
+  it('treats email pool username as linked when identities claim is absent', () => {
+    const claims = parseFederatedTokenClaims(
+      {
+        sub: 'uuid-native',
+        email: 'user@example.com',
+        'cognito:username': 'user@example.com',
+      },
+      {
+        sub: 'uuid-native',
+        email: 'user@example.com',
+        'cognito:username': 'user@example.com',
+      },
+    );
+    assert.equal(claims?.isGoogleLinked, true);
+    assert.equal(claims?.isOrphanGoogleSession, false);
   });
 });
 

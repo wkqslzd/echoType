@@ -43,8 +43,17 @@ export async function registerFederatedAuthRoutes(api: FastifyInstance) {
       const result = await linkGoogleFederatedUser({ accessPayload, idPayload });
       return result;
     } catch (err) {
-      req.log.error({ err }, 'federated link failed');
-      return reply.status(500).send({ error: 'link_failed' });
+      const code =
+        err instanceof Error && err.message === 'google_sub_missing'
+          ? 'google_sub_missing'
+          : typeof err === 'object' &&
+              err !== null &&
+              'name' in err &&
+              typeof (err as { name?: string }).name === 'string'
+            ? (err as { name: string }).name
+            : 'unknown';
+      req.log.error({ err, code }, 'federated link failed');
+      return reply.status(500).send({ error: 'link_failed', code });
     }
   });
 }
