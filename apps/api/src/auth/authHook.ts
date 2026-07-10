@@ -7,7 +7,7 @@ import {
 import { ensureUser, ProfileIncompleteError } from './ensureUser.js';
 import { verifyAccessToken } from './verifyAccessToken.js';
 
-const PUBLIC_API_PATHS = new Set(['/api/health']);
+const PUBLIC_API_PATHS = new Set(['/api/health', '/api/auth/federated/link']);
 if (process.env.SENTRY_DEBUG === '1') {
   PUBLIC_API_PATHS.add('/api/debug/sentry');
 }

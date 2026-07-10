@@ -1,76 +1,28 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { AuthLayout } from '../../auth/AuthLayout';
-import {
-  clearPendingOAuth,
-  exchangeAuthorizationCode,
-  sessionUsernameFromTokens,
-  startGoogleSignIn,
-  tokensToStoredSession,
-  validateOAuthCallbackState,
-} from '../../auth/cognitoOAuthExchange';
-import { clearAuthSession, persistCognitoSession } from '../../auth/authSession';
-import { resolvePostLoginPath, GUEST_LOGIN_TOAST } from '../../auth/resolvePostLoginPath';
-import { api } from '../../lib/api';
+import { completeOAuthCallbackOnce } from '../../auth/cognitoOAuthExchange';
+import { GUEST_LOGIN_TOAST } from '../../auth/resolvePostLoginPath';
 
 export function AuthCallbackPage() {
   const [params] = useSearchParams();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
-
-    void (async () => {
-      const oauthError = params.get('error');
-      if (oauthError) {
-        setError('Sign-in was cancelled. Try again.');
+    void completeOAuthCallbackOnce({
+      oauthError: params.get('error'),
+      code: params.get('code'),
+      state: params.get('state'),
+    }).then((outcome) => {
+      if (outcome.kind === 'error') {
+        setError(outcome.message);
         return;
       }
-
-      const code = params.get('code');
-      const nextPath = validateOAuthCallbackState(params.get('state'));
-      if (!code || !nextPath) {
-        setError('Sign-in expired or invalid. Try again.');
-        clearPendingOAuth();
-        return;
+      if (outcome.flashGuest) {
+        sessionStorage.setItem('echotype.auth.flash', GUEST_LOGIN_TOAST);
       }
-
-      try {
-        const tokens = await exchangeAuthorizationCode(code);
-        const username = sessionUsernameFromTokens(tokens.access_token, tokens.id_token);
-        const session = tokensToStoredSession(tokens, username);
-        persistCognitoSession(username, {
-          accessToken: session.accessToken,
-          idToken: session.idToken,
-          refreshToken: session.refreshToken,
-        });
-
-        const linkResult = await api.linkFederated(session.idToken);
-        if (cancelled) return;
-
-        if (linkResult.requiresReauth) {
-          clearAuthSession();
-          clearPendingOAuth();
-          await startGoogleSignIn(nextPath);
-          return;
-        }
-
-        const destination = resolvePostLoginPath(nextPath);
-        if (destination !== nextPath) {
-          sessionStorage.setItem('echotype.auth.flash', GUEST_LOGIN_TOAST);
-        }
-        window.location.assign(destination);
-      } catch {
-        if (!cancelled) {
-          clearPendingOAuth();
-          setError('Could not complete Google sign-in. Try again.');
-        }
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
+      window.location.assign(outcome.destination);
+    });
   }, [params]);
 
   return (

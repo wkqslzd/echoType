@@ -111,6 +111,26 @@ async function fetchWithAuth(
   }
 }
 
+/** OAuth callback: link with fresh tokens only; no session persist or login redirect on 401. */
+export async function postFederatedLink(
+  accessToken: string,
+  idToken: string,
+): Promise<FederatedLinkResult> {
+  const res = await fetchWithAuth(
+    '/auth/federated/link',
+    {
+      method: 'POST',
+      body: JSON.stringify({ idToken }),
+    },
+    accessToken,
+  );
+  if (!res.ok) {
+    const body = await parseErrorBody(res);
+    throw new ApiError(res.status, body);
+  }
+  return res.json() as Promise<FederatedLinkResult>;
+}
+
 async function request<T>(path: string, init?: RequestInit, authRetried = false): Promise<T> {
   let token = await getValidAccessToken();
   let res = await fetchWithAuth(path, init, token);

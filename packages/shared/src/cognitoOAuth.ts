@@ -80,6 +80,8 @@ export type CognitoAuthorizeUrlParams = {
   redirectUri: string;
   /** When set, skip the Hosted UI chooser and go straight to this IdP (e.g. "Google"). */
   identityProvider?: string;
+  /** OAuth prompt (e.g. select_account so Google shows the account picker each time). */
+  prompt?: string;
   state?: string;
   codeChallenge?: string;
 };
@@ -94,6 +96,9 @@ export function buildCognitoAuthorizeUrl(params: CognitoAuthorizeUrlParams): str
   });
   if (params.identityProvider) {
     search.set('identity_provider', params.identityProvider);
+  }
+  if (params.prompt) {
+    search.set('prompt', params.prompt);
   }
   if (params.state) {
     search.set('state', params.state);

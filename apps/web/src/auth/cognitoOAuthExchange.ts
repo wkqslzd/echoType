@@ -9,12 +9,37 @@ import {
   randomUrlSafeString,
 } from '@echotype/shared';
 import { parseFederatedTokenClaims } from '@echotype/shared';
+import { postFederatedLink, ApiError } from '../lib/api.js';
+import { clearAuthSession, persistCognitoSession } from './authSession.js';
+import { GUEST_LOGIN_TOAST, resolvePostLoginPath } from './resolvePostLoginPath.js';
 import { decodeJwtPayload } from './jwtPayload.js';
 import type { StoredAuthSession } from './authSession.js';
 import { assertCognitoOAuthConfig, oauthRedirectUri } from './cognitoOAuthConfig.js';
 
 const PKCE_STORAGE_KEY = 'echotype.oauth.pkce';
 const STATE_NONCE_STORAGE_KEY = 'echotype.oauth.stateNonce';
+
+/** Dev Strict Mode runs effects twice — dedupe in-flight work by auth code. */
+const inflightCallbackByCode = new Map<string, Promise<OAuthCallbackOutcome>>();
+
+export type OAuthCallbackOutcome =
+  | { kind: 'error'; message: string }
+  | { kind: 'redirect'; destination: string; flashGuest: boolean };
+
+function callbackErrorMessage(err: unknown): string {
+  if (err instanceof ApiError) {
+    if (err.status === 500) {
+      return 'Could not link your Google account to an existing profile. Try email sign-in or try again later.';
+    }
+    if (err.status === 401) {
+      return 'Google sign-in session was rejected. Try again.';
+    }
+  }
+  if (err instanceof Error && err.message === 'token_exchange_failed') {
+    return 'Google sign-in expired or was already used. Go back and try again.';
+  }
+  return 'Could not complete Google sign-in. Try again.';
+}
 
 type PendingOAuth = {
   codeVerifier: string;
@@ -55,6 +80,7 @@ export async function startGoogleSignIn(nextPath: string): Promise<void> {
     clientId: config.clientId,
     redirectUri: oauthRedirectUri(),
     identityProvider: 'Google',
+    prompt: 'select_account',
     state,
     codeChallenge,
   });
@@ -147,4 +173,62 @@ export function tokensToStoredSession(
     idToken: tokens.id_token,
     refreshToken: tokens.refresh_token,
   };
+}
+
+export function completeOAuthCallbackOnce(input: {
+  oauthError: string | null;
+  code: string | null;
+  state: string | null;
+}): Promise<OAuthCallbackOutcome> {
+  if (input.oauthError) {
+    return Promise.resolve({ kind: 'error', message: 'Sign-in was cancelled. Try again.' });
+  }
+
+  const code = input.code;
+  const nextPath = validateOAuthCallbackState(input.state);
+  if (!code || !nextPath) {
+    clearPendingOAuth();
+    return Promise.resolve({ kind: 'error', message: 'Sign-in expired or invalid. Try again.' });
+  }
+
+  const existing = inflightCallbackByCode.get(code);
+  if (existing) return existing;
+
+  const work = (async (): Promise<OAuthCallbackOutcome> => {
+    try {
+      const tokens = await exchangeAuthorizationCode(code);
+      const username = sessionUsernameFromTokens(tokens.access_token, tokens.id_token);
+      const session = tokensToStoredSession(tokens, username);
+
+      const linkResult = await postFederatedLink(session.accessToken, session.idToken);
+
+      if (linkResult.requiresReauth) {
+        clearPendingOAuth();
+        void startGoogleSignIn(nextPath);
+        return new Promise<OAuthCallbackOutcome>(() => {});
+      }
+
+      persistCognitoSession(username, {
+        accessToken: session.accessToken,
+        idToken: session.idToken,
+        refreshToken: session.refreshToken,
+      });
+
+      const destination = resolvePostLoginPath(nextPath);
+      return {
+        kind: 'redirect',
+        destination,
+        flashGuest: destination !== nextPath,
+      };
+    } catch (err) {
+      clearAuthSession();
+      clearPendingOAuth();
+      return { kind: 'error', message: callbackErrorMessage(err) };
+    } finally {
+      inflightCallbackByCode.delete(code);
+    }
+  })();
+
+  inflightCallbackByCode.set(code, work);
+  return work;
 }

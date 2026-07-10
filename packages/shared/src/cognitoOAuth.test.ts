@@ -99,6 +99,18 @@ describe('buildCognitoAuthorizeUrl', () => {
     assert.equal(parsed.searchParams.get('code_challenge_method'), 'S256');
     assert.equal(parsed.searchParams.get('state'), 'state123');
   });
+
+  it('supports prompt=select_account for Google account picker', () => {
+    const url = buildCognitoAuthorizeUrl({
+      domainPrefix: 'echotype-ink',
+      region: 'ap-southeast-2',
+      clientId: 'abc123',
+      redirectUri: 'http://localhost:5173/auth/callback',
+      identityProvider: 'Google',
+      prompt: 'select_account',
+    });
+    assert.equal(new URL(url).searchParams.get('prompt'), 'select_account');
+  });
 });
 
 describe('buildAuthorizationCodeExchangeBody', () => {
