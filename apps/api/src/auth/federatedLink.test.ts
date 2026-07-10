@@ -7,6 +7,16 @@ const googleIdentities = [
   { userId: '107121059094644779940', providerName: 'Google', providerType: 'Google' },
 ];
 
+function adminWithLinkBehavior(
+  link: CognitoAdminPort['adminLinkGoogleToNativeUser'],
+): CognitoAdminPort {
+  return {
+    adminLinkGoogleToNativeUser: link,
+    adminDeleteCognitoUser: async () => undefined,
+    adminGetUserPoolUsername: async ({ usernameOrAlias }) => usernameOrAlias,
+  };
+}
+
 describe('linkGoogleFederatedUser', () => {
   it('skips when already linked (cognito:username is email)', async () => {
     const result = await linkGoogleFederatedUser({
@@ -31,11 +41,14 @@ describe('linkGoogleFederatedUser', () => {
 
     const admin: CognitoAdminPort = {
       adminLinkGoogleToNativeUser: async () => {
+        throw new Error('should not link');
+      },
+      adminDeleteCognitoUser: async () => undefined,
+      adminGetUserPoolUsername: async () => {
         const err = new Error('not found');
         err.name = 'UserNotFoundException';
         throw err;
       },
-      adminDeleteCognitoUser: async () => undefined,
     };
 
     const result = await linkGoogleFederatedUser(
@@ -68,6 +81,7 @@ describe('linkGoogleFederatedUser', () => {
     let linkCalls = 0;
     let deleteUsername: string | undefined;
     const admin: CognitoAdminPort = {
+      adminGetUserPoolUsername: async ({ usernameOrAlias }) => usernameOrAlias,
       adminLinkGoogleToNativeUser: async () => {
         linkCalls += 1;
         if (linkCalls === 1) {
@@ -106,20 +120,20 @@ describe('linkGoogleFederatedUser', () => {
     assert.equal(deleteUsername, 'Google_107121059094644779940');
   });
 
-  it('deletes orphan and requires reauth on InvalidParameterException', async () => {
+  it('deletes orphan and requires reauth on misleading InvalidParameterException', async () => {
     process.env.COGNITO_USER_POOL_ID = 'ap-southeast-2_testpool';
     process.env.COGNITO_CLIENT_ID = 'testclient';
 
     let deleteUsername: string | undefined;
-    const admin: CognitoAdminPort = {
-      adminLinkGoogleToNativeUser: async () => {
-        const err = new Error('invalid parameter');
-        err.name = 'InvalidParameterException';
-        throw err;
-      },
-      adminDeleteCognitoUser: async ({ username }) => {
-        deleteUsername = username;
-      },
+    const admin = adminWithLinkBehavior(async () => {
+      const err = new Error(
+        'Invalid SourceUser: Cognito users with a username/password may not be passed in as a SourceUser',
+      );
+      err.name = 'InvalidParameterException';
+      throw err;
+    });
+    admin.adminDeleteCognitoUser = async ({ username }) => {
+      deleteUsername = username;
     };
 
     const result = await linkGoogleFederatedUser(

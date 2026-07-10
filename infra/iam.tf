@@ -197,6 +197,7 @@ data "aws_iam_policy_document" "ec2_cognito_admin" {
     sid    = "CognitoLinkAndDeleteUsers"
     effect = "Allow"
     actions = [
+      "cognito-idp:AdminGetUser",
       "cognito-idp:AdminLinkProviderForUser",
       "cognito-idp:AdminDeleteUser",
     ]

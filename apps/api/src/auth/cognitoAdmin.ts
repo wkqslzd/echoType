@@ -1,5 +1,6 @@
 import {
   AdminDeleteUserCommand,
+  AdminGetUserCommand,
   AdminLinkProviderForUserCommand,
   CognitoIdentityProviderClient,
 } from '@aws-sdk/client-cognito-identity-provider';
@@ -14,9 +15,22 @@ function getClient(): CognitoIdentityProviderClient {
   return client;
 }
 
+export async function adminGetUserPoolUsername(params: {
+  userPoolId: string;
+  usernameOrAlias: string;
+}): Promise<string> {
+  const res = await getClient().send(
+    new AdminGetUserCommand({
+      UserPoolId: params.userPoolId,
+      Username: params.usernameOrAlias,
+    }),
+  );
+  return res.Username ?? params.usernameOrAlias;
+}
+
 export async function adminLinkGoogleToNativeUser(params: {
   userPoolId: string;
-  nativeEmail: string;
+  nativeUsername: string;
   googleSub: string;
 }): Promise<void> {
   await getClient().send(
@@ -24,7 +38,7 @@ export async function adminLinkGoogleToNativeUser(params: {
       UserPoolId: params.userPoolId,
       DestinationUser: {
         ProviderName: 'Cognito',
-        ProviderAttributeValue: params.nativeEmail,
+        ProviderAttributeValue: params.nativeUsername,
       },
       SourceUser: {
         ProviderName: 'Google',
@@ -72,4 +86,14 @@ export function isInvalidParameterError(err: unknown): boolean {
     'name' in err &&
     (err as { name?: string }).name === 'InvalidParameterException'
   );
+}
+
+/** Cognito quirk: link may succeed but repeat calls throw this misleading message. */
+export function isMisleadingLinkedInvalidParameterError(err: unknown): boolean {
+  if (!isInvalidParameterError(err)) return false;
+  const message =
+    typeof err === 'object' && err !== null && 'message' in err
+      ? String((err as { message?: unknown }).message)
+      : '';
+  return message.includes('may not be passed in as a SourceUser');
 }

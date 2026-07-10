@@ -2,9 +2,10 @@ import type { FederatedLinkResult, FederatedTokenClaims } from '@echotype/shared
 import { parseFederatedTokenClaims } from '@echotype/shared';
 import {
   adminDeleteCognitoUser,
+  adminGetUserPoolUsername,
   adminLinkGoogleToNativeUser,
   isAliasExistsError,
-  isInvalidParameterError,
+  isMisleadingLinkedInvalidParameterError,
   isUserNotFoundError,
 } from './cognitoAdmin.js';
 import { loadCognitoConfig } from './cognitoConfig.js';
@@ -12,11 +13,13 @@ import { loadCognitoConfig } from './cognitoConfig.js';
 export type CognitoAdminPort = {
   adminLinkGoogleToNativeUser: typeof adminLinkGoogleToNativeUser;
   adminDeleteCognitoUser: typeof adminDeleteCognitoUser;
+  adminGetUserPoolUsername: typeof adminGetUserPoolUsername;
 };
 
 const defaultCognitoAdmin: CognitoAdminPort = {
   adminLinkGoogleToNativeUser,
   adminDeleteCognitoUser,
+  adminGetUserPoolUsername,
 };
 
 export type FederatedLinkInput = {
@@ -37,9 +40,14 @@ async function attemptLink(
     throw new Error('google_sub_missing');
   }
 
+  const nativeUsername = await admin.adminGetUserPoolUsername({
+    userPoolId,
+    usernameOrAlias: claims.email,
+  });
+
   await admin.adminLinkGoogleToNativeUser({
     userPoolId,
-    nativeEmail: claims.email,
+    nativeUsername,
     googleSub: claims.googleSub,
   });
 }
@@ -92,9 +100,7 @@ export async function linkGoogleFederatedUser(
       return { linked: true, requiresReauth: true, reason: 'linked' };
     }
 
-    if (isInvalidParameterError(err)) {
-      // Cognito may already have Google on the destination profile, or link succeeded
-      // but returned a misleading InvalidParameterException (known service quirk).
+    if (isMisleadingLinkedInvalidParameterError(err)) {
       if (claims.cognitoUsername.startsWith('Google_')) {
         const { userPoolId } = loadCognitoConfig();
         await admin.adminDeleteCognitoUser({ userPoolId, username: claims.cognitoUsername });

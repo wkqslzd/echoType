@@ -18,6 +18,8 @@ import { assertCognitoOAuthConfig, oauthRedirectUri } from './cognitoOAuthConfig
 
 const PKCE_STORAGE_KEY = 'echotype.oauth.pkce';
 const STATE_NONCE_STORAGE_KEY = 'echotype.oauth.stateNonce';
+const REAUTH_COUNT_KEY = 'echotype.oauth.reauthCount';
+const MAX_OAUTH_REAUTH = 1;
 
 /** Dev Strict Mode runs effects twice — dedupe in-flight work by auth code. */
 const inflightCallbackByCode = new Map<string, Promise<OAuthCallbackOutcome>>();
@@ -61,6 +63,13 @@ function writePendingOAuth(pending: PendingOAuth): void {
 export function clearPendingOAuth(): void {
   sessionStorage.removeItem(PKCE_STORAGE_KEY);
   sessionStorage.removeItem(STATE_NONCE_STORAGE_KEY);
+  sessionStorage.removeItem(REAUTH_COUNT_KEY);
+}
+
+function bumpReauthCount(): number {
+  const next = Number(sessionStorage.getItem(REAUTH_COUNT_KEY) ?? 0) + 1;
+  sessionStorage.setItem(REAUTH_COUNT_KEY, String(next));
+  return next;
 }
 
 export async function startGoogleSignIn(nextPath: string): Promise<void> {
@@ -203,11 +212,21 @@ export function completeOAuthCallbackOnce(input: {
       const linkResult = await postFederatedLink(session.accessToken, session.idToken);
 
       if (linkResult.requiresReauth) {
+        const reauthCount = bumpReauthCount();
+        if (reauthCount > MAX_OAUTH_REAUTH) {
+          clearPendingOAuth();
+          return {
+            kind: 'error',
+            message:
+              'Account link did not complete after retry. Try email sign-in or contact support.',
+          };
+        }
         clearPendingOAuth();
         void startGoogleSignIn(nextPath);
         return new Promise<OAuthCallbackOutcome>(() => {});
       }
 
+      clearPendingOAuth();
       persistCognitoSession(username, {
         accessToken: session.accessToken,
         idToken: session.idToken,
