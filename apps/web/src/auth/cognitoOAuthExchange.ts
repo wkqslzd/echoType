@@ -178,10 +178,15 @@ export async function exchangeAuthorizationCode(code: string): Promise<CognitoTo
   return (await res.json()) as CognitoTokenResponse;
 }
 
-/** After invalid_grant / abandoned OAuth, clear Hosted UI SSO without keeping the user on callback. */
-export function redirectToHostedUiLogout(loginPath = '/login'): void {
+export const AUTH_FLASH_ERROR_KEY = 'echotype.auth.flashError';
+
+/** After invalid_grant / abandoned OAuth, clear Hosted UI SSO. logout_uri is `/` (Cognito allowlist). */
+export function redirectToHostedUiLogout(loginPath = '/login', flashError?: string): void {
   clearAuthSession();
   clearPendingOAuth();
+  if (flashError) {
+    sessionStorage.setItem(AUTH_FLASH_ERROR_KEY, flashError);
+  }
   try {
     const config = assertCognitoOAuthConfig();
     const url = buildCognitoLogoutUrl({
@@ -196,11 +201,14 @@ export function redirectToHostedUiLogout(loginPath = '/login'): void {
   }
 }
 
+/**
+ * Only clear Hosted UI for token/state failures (SSO cookie would break the next attempt).
+ * Hint mismatch stays on the callback page so the user can see "Please sign in with …".
+ */
 export function shouldClearHostedUiAfterCallbackError(message: string): boolean {
   return (
     message.includes('expired or was already used') ||
-    message.includes('Sign-in state was lost') ||
-    message.includes('Please sign in with')
+    message.includes('Sign-in state was lost')
   );
 }
 

@@ -1,15 +1,23 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ACCOUNT_DELETED_FLASH } from '../auth/accountDelete';
+import { AUTH_FLASH_ERROR_KEY } from '../auth/cognitoOAuthExchange';
 
 export function HomePage() {
   const [flash, setFlash] = useState<string | null>(null);
+  const [flashError, setFlashError] = useState<string | null>(null);
 
   useEffect(() => {
+    const error = sessionStorage.getItem(AUTH_FLASH_ERROR_KEY);
+    if (error) {
+      sessionStorage.removeItem(AUTH_FLASH_ERROR_KEY);
+      setFlashError(error);
+    }
     const message = sessionStorage.getItem('echotype.auth.flash');
-    if (!message) return;
-    sessionStorage.removeItem('echotype.auth.flash');
-    setFlash(message);
+    if (message) {
+      sessionStorage.removeItem('echotype.auth.flash');
+      setFlash(message);
+    }
   }, []);
 
   return (
@@ -19,6 +27,14 @@ export function HomePage() {
         <p className="mt-2 text-slate-600">
           Repeat, type, and remember meaningful texts with your own annotated notes.
         </p>
+        {flashError && (
+          <p className="mt-3 text-sm text-red-600" data-testid="home-auth-flash-error">
+            {flashError}{' '}
+            <Link to="/login" className="underline">
+              Back to sign in
+            </Link>
+          </p>
+        )}
         {flash && (
           <p className="mt-3 text-sm text-green-700" data-testid="home-auth-flash">
             {flash}

@@ -37,7 +37,7 @@ export function AuthCallbackPage() {
 
       if (outcome.kind === 'error') {
         if (shouldClearHostedUiAfterCallbackError(outcome.message)) {
-          redirectToHostedUiLogout('/login');
+          redirectToHostedUiLogout('/login', outcome.message);
           return;
         }
         setError(outcome.message);

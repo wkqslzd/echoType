@@ -45,6 +45,49 @@ describe('linkGoogleFederatedUser', () => {
     });
   });
 
+  it('returns already_linked when Postgres row is the same Cognito sub (repeat Google-only sign-in)', async () => {
+    process.env.COGNITO_USER_POOL_ID = 'ap-southeast-2_testpool';
+    process.env.COGNITO_CLIENT_ID = 'testclient';
+
+    const sameSub = 'fed-sub-same';
+    const admin: CognitoAdminPort = {
+      adminGetUserPoolUsername: async () => {
+        throw new Error('should not lookup');
+      },
+      adminLinkGoogleToNativeUser: async () => {
+        throw new Error('should not link');
+      },
+      adminDeleteCognitoUser: async () => {
+        throw new Error('should not delete');
+      },
+    };
+
+    const result = await linkGoogleFederatedUser(
+      {
+        accessPayload: {
+          sub: sameSub,
+          email: 'google-only@example.com',
+          'cognito:username': 'Google_107121059094644779940',
+        },
+        idPayload: {
+          sub: sameSub,
+          email: 'google-only@example.com',
+          'cognito:username': 'Google_107121059094644779940',
+          identities: googleIdentities,
+        },
+      },
+      admin,
+      {
+        findNativeUserByEmail: async () => ({ id: sameSub, name: 'Nick' }),
+      },
+    );
+    assert.deepEqual(result, {
+      linked: false,
+      requiresReauth: false,
+      reason: 'already_linked',
+    });
+  });
+
   it('returns new_user when Postgres has no row for email', async () => {
     process.env.COGNITO_USER_POOL_ID = 'ap-southeast-2_testpool';
     process.env.COGNITO_CLIENT_ID = 'testclient';

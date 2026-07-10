@@ -1,8 +1,8 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { AuthLayout } from '../../auth/AuthLayout';
 import { useAuth } from '../../auth/AuthProvider';
-import { startGoogleSignIn } from '../../auth/cognitoOAuthExchange';
+import { AUTH_FLASH_ERROR_KEY, startGoogleSignIn } from '../../auth/cognitoOAuthExchange';
 import { isUserNotFound } from '../../auth/mapCognitoError';
 import { GUEST_LOGIN_TOAST, resolvePostLoginPath } from '../../auth/resolvePostLoginPath';
 
@@ -21,10 +21,19 @@ export function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
   const [googleSubmitting, setGoogleSubmitting] = useState(false);
 
+  useEffect(() => {
+    const flashError = sessionStorage.getItem(AUTH_FLASH_ERROR_KEY);
+    if (!flashError) return;
+    sessionStorage.removeItem(AUTH_FLASH_ERROR_KEY);
+    setError(flashError);
+  }, []);
+
   async function onGoogleSignIn() {
     setError(null);
     setGoogleSubmitting(true);
     try {
+      // hintEmail is only for linking an existing email account (G4A). Autofill in the
+      // Email field must not block brand-new Google sign-up — leave Email empty for that.
       await startGoogleSignIn(next, email.trim() || undefined);
     } catch {
       setError('Google sign-in is not available right now.');
@@ -78,6 +87,10 @@ export function LoginPage() {
       >
         {googleSubmitting ? 'Redirecting…' : 'Continue with Google'}
       </button>
+      <p className="mt-2 text-xs text-slate-500">
+        New Google account: leave Email empty. To link an existing email account, fill Email
+        first, then continue with that same Google address.
+      </p>
       <div className="my-4 flex items-center gap-3 text-xs text-slate-500">
         <span className="h-px flex-1 bg-slate-200" />
         <span>or</span>

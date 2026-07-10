@@ -140,6 +140,12 @@ export async function linkGoogleFederatedUser(
     return { linked: false, requiresReauth: false, reason: 'new_user' };
   }
 
+  // Pure Google signup already created Postgres row with id === Cognito sub. Do not
+  // AdminLink Google onto itself (InvalidParameterException on repeat sign-in).
+  if (nativeUser.id === claims.sub) {
+    return { linked: false, requiresReauth: false, reason: 'already_linked' };
+  }
+
   if (!(await nativeCognitoUserExists(nativeUser.id, admin))) {
     return { linked: false, requiresReauth: false, reason: 'new_user' };
   }
