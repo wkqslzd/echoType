@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import type { AccountDTO } from '@echotype/shared';
 import { isDeleteConfirmationValid } from '@echotype/shared';
 import { api, ApiError } from '../lib/api.js';
+import { AccountDeleteCognitoError } from './accountDelete.js';
 import {
   clearAuthSession,
   getDisplayName,
