@@ -358,7 +358,13 @@ export function completeOAuthCallbackOnce(input: {
           };
         }
         clearPendingPkce();
-        return { kind: 'reauth', nextPath, hintEmail };
+        // Prefer the Google email just linked (not login-form autofill) for reauth guard.
+        const linkedEmail =
+          parseFederatedTokenClaims(
+            decodeJwtPayload(session.accessToken),
+            decodeJwtPayload(session.idToken),
+          )?.email ?? hintEmail;
+        return { kind: 'reauth', nextPath, hintEmail: linkedEmail };
       }
 
       clearPendingOAuth();

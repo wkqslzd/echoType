@@ -32,9 +32,9 @@ export function LoginPage() {
     setError(null);
     setGoogleSubmitting(true);
     try {
-      // hintEmail is only for linking an existing email account (G4A). Autofill in the
-      // Email field must not block brand-new Google sign-up — leave Email empty for that.
-      await startGoogleSignIn(next, email.trim() || undefined);
+      // Do not pass Email-field autofill as hintEmail — it blocks Google sign-in for users.
+      // L2 link matches on the Google account email server-side; reauth may still pass a hint.
+      await startGoogleSignIn(next);
     } catch {
       setError('Google sign-in is not available right now.');
       setGoogleSubmitting(false);
@@ -87,10 +87,6 @@ export function LoginPage() {
       >
         {googleSubmitting ? 'Redirecting…' : 'Continue with Google'}
       </button>
-      <p className="mt-2 text-xs text-slate-500">
-        New Google account: leave Email empty. To link an existing email account, fill Email
-        first, then continue with that same Google address.
-      </p>
       <div className="my-4 flex items-center gap-3 text-xs text-slate-500">
         <span className="h-px flex-1 bg-slate-200" />
         <span>or</span>
