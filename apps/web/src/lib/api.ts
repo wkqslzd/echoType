@@ -131,6 +131,27 @@ export async function postFederatedLink(
   return res.json() as Promise<FederatedLinkResult>;
 }
 
+export type EmailStatusResult =
+  | { available: true }
+  | { available: false; message: string };
+
+/** Public: whether email can be used for native SignUp (no auth). */
+export async function checkEmailStatus(email: string): Promise<EmailStatusResult> {
+  const res = await fetchWithAuth(
+    '/auth/email-status',
+    {
+      method: 'POST',
+      body: JSON.stringify({ email: email.trim() }),
+    },
+    null,
+  );
+  if (!res.ok) {
+    const body = await parseErrorBody(res);
+    throw new ApiError(res.status, body);
+  }
+  return res.json() as Promise<EmailStatusResult>;
+}
+
 async function request<T>(path: string, init?: RequestInit, authRetried = false): Promise<T> {
   let token = await getValidAccessToken();
   let res = await fetchWithAuth(path, init, token);
@@ -228,5 +249,6 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ idToken }),
     }),
+  checkEmailStatus: (email: string) => checkEmailStatus(email),
   seedOnboarding: () => request<void>('/onboarding/seed', { method: 'POST' }),
 };

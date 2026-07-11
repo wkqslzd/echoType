@@ -60,6 +60,11 @@ resource "aws_cognito_user_pool" "main" {
     allow_admin_create_user_only = false
   }
 
+  # PreSignUp Lambda must exist + invoke permission before this attaches (see cognito_presignup.tf).
+  lambda_config {
+    pre_sign_up = aws_lambda_function.cognito_presignup.arn
+  }
+
   tags = {
     Name    = "${var.project}-user-pool"
     Project = var.project

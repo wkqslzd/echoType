@@ -161,6 +161,7 @@ override.tf.json
 *_override.tf.json
 .terraformrc
 terraform.rc
+infra/.build/
 # NOTE: .terraform.lock.hcl is intentionally NOT ignored (commit it to pin providers)
 
 # IDE

@@ -1,8 +1,10 @@
 import { FormEvent, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { EMAIL_ALREADY_EXISTS_MESSAGE } from '@echotype/shared';
 import { AuthLayout } from '../../auth/AuthLayout.js';
 import { useAuth } from '../../auth/AuthProvider.js';
 import { validatePassword } from '../../auth/passwordPolicy.js';
+import { api } from '../../lib/api.js';
 
 export function RegisterPage() {
   const { register, mapError } = useAuth();
@@ -30,6 +32,12 @@ export function RegisterPage() {
 
     setSubmitting(true);
     try {
+      const status = await api.checkEmailStatus(email);
+      if (!status.available) {
+        setError(status.message || EMAIL_ALREADY_EXISTS_MESSAGE);
+        return;
+      }
+
       await register(email, password, nickname);
       navigate(`/verify-email?email=${encodeURIComponent(email.trim())}`, { replace: true });
     } catch (err) {
@@ -82,7 +90,11 @@ export function RegisterPage() {
             At least 8 characters with uppercase, lowercase, and a number.
           </span>
         </label>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && (
+          <p className="text-sm text-red-600 whitespace-pre-line" role="alert">
+            {error}
+          </p>
+        )}
         <p className="text-xs text-slate-500">
           By creating an account, you agree to our{' '}
           <Link to="/privacy" className="text-slate-700 underline hover:text-slate-900">

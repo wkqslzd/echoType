@@ -1,3 +1,5 @@
+import { EMAIL_ALREADY_EXISTS_MESSAGE } from '@echotype/shared';
+
 type CognitoLikeError = {
   code?: string;
   message?: string;
@@ -21,7 +23,7 @@ export function mapCognitoError(err: unknown): string {
     case 'InvalidPasswordException':
       return 'Password does not meet requirements.';
     case 'UsernameExistsException':
-      return 'An account with this email already exists.';
+      return EMAIL_ALREADY_EXISTS_MESSAGE;
     case 'CodeMismatchException':
       return 'Invalid verification code.';
     case 'ExpiredCodeException':
@@ -33,8 +35,12 @@ export function mapCognitoError(err: unknown): string {
       return 'Too many attempts. Please wait and try again.';
     case 'NEW_PASSWORD_REQUIRED':
       return 'Password change is required. Contact support.';
-    default:
+    default: {
+      if (err instanceof Error && err.message.includes('already exists')) {
+        return EMAIL_ALREADY_EXISTS_MESSAGE;
+      }
       return 'Something went wrong. Please try again.';
+    }
   }
 }
 

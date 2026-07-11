@@ -4,6 +4,7 @@ import {
   AdminLinkProviderForUserCommand,
   AdminUpdateUserAttributesCommand,
   CognitoIdentityProviderClient,
+  ListUsersCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { loadCognitoConfig } from './cognitoConfig.js';
 
@@ -113,4 +114,28 @@ export function isMisleadingLinkedInvalidParameterError(err: unknown): boolean {
       ? String((err as { message?: unknown }).message)
       : '';
   return message.includes('may not be passed in as a SourceUser');
+}
+
+export async function adminListUsersByEmail(params: {
+  userPoolId: string;
+  email: string;
+}): Promise<Array<{ username: string; status?: string }>> {
+  const email = params.email.trim().toLowerCase();
+  if (!email || !email.includes('@')) return [];
+
+  const safe = email.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  const res = await getClient().send(
+    new ListUsersCommand({
+      UserPoolId: params.userPoolId,
+      Filter: `email = "${safe}"`,
+      Limit: 5,
+    }),
+  );
+
+  return (res.Users ?? [])
+    .map((u) => ({
+      username: u.Username ?? '',
+      status: u.UserStatus,
+    }))
+    .filter((u) => u.username);
 }
