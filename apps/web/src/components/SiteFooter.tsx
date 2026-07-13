@@ -13,6 +13,15 @@ export function SiteFooter() {
           Privacy
         </Link>
         <span aria-hidden="true">·</span>
+        <a
+          href="https://github.com/dennycgan/echoType"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline hover:text-slate-800"
+        >
+          GitHub
+        </a>
+        <span aria-hidden="true">·</span>
         <span>© {year} EchoType</span>
       </div>
     </footer>
