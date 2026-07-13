@@ -40,6 +40,7 @@ function partA() {
   assert(source.includes(`contactEmail: '${CONTACT_EMAIL}'`), 'privacy.ts contact email mismatch');
   assert(source.includes('What we collect'), 'privacy.ts missing What we collect section');
   assert(source.includes('Account deletion'), 'privacy.ts missing Account deletion section');
+  assert(source.includes('Google sign-in:'), 'privacy.ts missing Google sign-in disclosure');
   console.log('Part A OK: privacy source contract');
 
   if (!existsSync(DIST)) {

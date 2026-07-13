@@ -32,6 +32,11 @@ export const PRIVACY_POLICY: PrivacyPolicy = {
         },
         {
           type: 'labeled',
+          label: 'Google sign-in:',
+          text: 'If you choose to sign in with Google, we receive your Google account email address and display name from Google OAuth. We use this information to create or link your EchoType account. We do not receive your Google password or any other Google account data.',
+        },
+        {
+          type: 'labeled',
           label: 'Practice data:',
           text: 'When you are signed in, your courses, annotations, collections, and typing session statistics are stored in a PostgreSQL database hosted on AWS. Guest browsing stores courses locally in your browser only; that data is not sent to our servers until you sign in.',
         },

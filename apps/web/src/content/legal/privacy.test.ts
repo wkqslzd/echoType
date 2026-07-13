@@ -21,4 +21,13 @@ describe('PRIVACY_POLICY', () => {
     assert.ok(practice && practice.type === 'labeled');
     assert.match(practice.text, /browser/i);
   });
+
+  it('discloses Google sign-in data use', () => {
+    const google = PRIVACY_POLICY.sections
+      .find((section) => section.heading === 'What we collect')
+      ?.blocks.find((block) => block.type === 'labeled' && block.label === 'Google sign-in:');
+    assert.ok(google && google.type === 'labeled');
+    assert.match(google.text, /Google OAuth/i);
+    assert.match(google.text, /do not receive your Google password/i);
+  });
 });
