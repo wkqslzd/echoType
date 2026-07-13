@@ -25,7 +25,7 @@ Since I am a Chinese native speaker, I can also pin native-language annotations 
 - **Notes survive edits** — If you change the source text later, your notes are not silently wiped. The app shows you which notes still align and which need your attention before saving.
 - **Your courses are portable plain text** — Import a `.txt` with inline `{phrase}{annotation}` markers to create a fully annotated course in one step (parse errors point at the offending line); export any course back to the same format for local backup. The parser and serializer are shared, round-trip-tested pure functions that run entirely in the browser — no upload, no extra cloud cost.
 - **Honest practice stats** — Manual saves write per-session rows (WPM, accuracy, loops, active time); courses keep materialized cumulative stats and collections roll them up. One written contract (`docs/STATS.md`) defines every formula.
-- **Try before sign-up** — Guests browse and type sample courses from a local catalog; sign in to persist courses, collections, and saved practice sessions in PostgreSQL.
+- **Try before sign-up** — Guests browse and type sample courses from a local catalog; sign in (email/password or Google) to persist courses, collections, and saved practice sessions in PostgreSQL. The same email maps to one EchoType account whether you register with password or continue with Google.
 
 ---
 
@@ -42,7 +42,7 @@ The stack is conventional React/Node/Postgres. The interesting choices are aroun
 | Overlay layout | **Mirror measurement + global indices** | A hidden mirror measures per-character `offsetTop` for visual-line breaks and per-glyph `getBoundingClientRect` for horizontal edges (charEdges); annotations are stored as global indices. Post-layout width rules widen note labels and separate touching highlight bands without re-measuring on each keystroke. |
 | Frontend | **React 18 + Vite + Tailwind** | Component model fits a measurement-heavy overlay; utilities keep the typing surface simple without a heavy design system. |
 | State | **Zustand + TanStack Query** | Local typing UI state vs server-backed course list and mutations. |
-| Auth | **AWS Cognito (SRP) + JWT verification in Fastify** | Email/password sign-in; Cognito `sub` is the user primary key. Guests browse and type sample courses from `localStorage`; signed-in users persist data in PostgreSQL. New accounts with zero courses receive a one-time onboarding seed (`POST /api/onboarding/seed`). Public [privacy policy](https://echotype.ink/privacy); Google sign-in is next. |
+| Auth | **AWS Cognito (email/password SRP + Google IdP) + JWT in Fastify** | Email/password or Continue with Google (Hosted UI, `openid email profile`). Cognito `sub` is the user primary key; Postgres `users.email` is the account identity source of truth so Google and password sign-in link to one profile. Guests browse and type sample courses from `localStorage`; signed-in users persist data in PostgreSQL. New accounts with zero courses receive a one-time onboarding seed (`POST /api/onboarding/seed`). Public [privacy policy](https://echotype.ink/privacy) (includes Google OAuth disclosure). |
 | Regression guard | **Playwright probes (local) + unit tests** | Stop-loss scripts after overlay/layout/auth changes; alignment and stats helpers unit-tested (`node:test`). |
 | Observability | **Sentry (web + API)** | `@sentry/react` + Vite plugin (source maps uploaded in CI, not published to S3); `@sentry/node` on Fastify. DSNs in SSM; release = deploy git sha. |
 | Cloud | **EC2 + RDS + S3 + CloudFront + SSM + GitHub Actions OIDC** | One CloudFront distribution serves the SPA (S3/OAC) and `/api/*` (EC2) on **https://echotype.ink** — same-origin HTTPS, no mixed content. ACM certificate (us-east-1) and DNS are Terraform-managed; CI deploys API via OIDC + SSM and frontend via `deploy-web.yml` (S3 sync + invalidation). |
@@ -103,7 +103,7 @@ SEED_ENV=dev pnpm --filter @echotype/api seed
 pnpm dev          # API :3001, web :5173 (proxies /api)
 ```
 
-Open `http://localhost:5173`. Guest mode lets you browse and type the sample catalog without an account; sign in (Cognito email/password) to create courses, collections, and save sessions.
+Open `http://localhost:5173`. Guest mode lets you browse and type the sample catalog without an account; sign in (Cognito email/password, or Google when IdP env/infra is configured) to create courses, collections, and save sessions.
 
 ```bash
 pnpm run typecheck
@@ -131,14 +131,15 @@ I ship in phases with manual gates (`docs/STATE.md`); after overlay changes I ru
 | ✅ | **Auth** — Cognito email/password (SRP), JWT-verified API, guest sample catalog, account page (nickname, password change, delete), onboarding seed for new users |
 | ✅ | **Custom domain** — echotype.ink via ACM + CloudFront alias; HTTPS enforced |
 | ✅ | **Ops & safety** — Sentry (web + API), public privacy policy, unified loading/error/empty states |
-| 🚧 | **Google sign-in** — Cognito Google IdP + account linking (next) |
+| ✅ | **Google sign-in** — Cognito Google IdP, Hosted UI OAuth, email-based account linking, privacy Google disclosure |
+| 🔧 | **Maintenance** — Ongoing polish and UX fixes |
 
 ---
 
 ## Further reading
 
 - **`docs/STATE.md`** — Current engineering snapshot and roadmap.
-- **`docs/DECISIONS.md`** — Decision log (24 ADRs: anchoring, measurement, stats, auth, layout, import/export, forgiving mode, immersive refocus, custom domain, Sentry, privacy/error states).
+- **`docs/DECISIONS.md`** — Decision log (28 ADRs: anchoring, measurement, stats, auth, Google federation + email identity, layout, import/export, forgiving mode, immersive refocus, custom domain, Sentry, privacy).
 - **`docs/STATS.md`** — Stats field definitions and formulas (the contract).
 - **`deploy/README.md`** — Terraform, SSM access, cloud deploy.
 
