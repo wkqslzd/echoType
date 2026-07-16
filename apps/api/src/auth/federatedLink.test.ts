@@ -232,6 +232,104 @@ describe('linkGoogleFederatedUser', () => {
     );
   });
 
+  it('recovers from Merging-not-supported: deletes orphan then retries link (pre-materialization route)', async () => {
+    process.env.COGNITO_USER_POOL_ID = 'ap-southeast-2_testpool';
+    process.env.COGNITO_CLIENT_ID = 'testclient';
+
+    const order: string[] = [];
+    const nativeUsername = '690e8408-6001-7078-d5b4-694c1c970e50';
+    let linkCalls = 0;
+    const admin: CognitoAdminPort = {
+      adminGetUserPoolUsername: async () => {
+        throw new Error('should not get user');
+      },
+      adminListUsersByEmail: async () => [
+        { username: nativeUsername, status: 'CONFIRMED' },
+        { username: 'Google_107121059094644779940', status: 'EXTERNAL_PROVIDER' },
+      ],
+      adminLinkGoogleToNativeUser: async () => {
+        linkCalls += 1;
+        order.push('link');
+        if (linkCalls === 1) {
+          const err = new Error(
+            'Merging is not currently supported, provide a SourceUser that has not been signed up in order to link',
+          );
+          err.name = 'InvalidParameterException';
+          throw err;
+        }
+      },
+      adminDeleteCognitoUser: async ({ username }) => {
+        order.push(`delete:${username}`);
+      },
+    };
+
+    const result = await linkGoogleFederatedUser(
+      {
+        accessPayload: {
+          sub: 'fed-sub',
+          email: 'pending-native@example.com',
+          'cognito:username': 'Google_107121059094644779940',
+        },
+        idPayload: {
+          sub: 'fed-sub',
+          email: 'pending-native@example.com',
+          'cognito:username': 'Google_107121059094644779940',
+          identities: googleIdentities,
+        },
+      },
+      admin,
+      lookupNewUser,
+    );
+
+    assert.deepEqual(result, {
+      linked: true,
+      requiresReauth: true,
+      reason: 'linked',
+    });
+    assert.equal(linkCalls, 2);
+    assert.deepEqual(order, ['link', 'delete:Google_107121059094644779940', 'link']);
+  });
+
+  it('propagates the error when retry after Merging-not-supported also fails', async () => {
+    process.env.COGNITO_USER_POOL_ID = 'ap-southeast-2_testpool';
+    process.env.COGNITO_CLIENT_ID = 'testclient';
+
+    let deleteCount = 0;
+    const admin = adminWithLinkBehavior(async () => {
+      const err = new Error(
+        'Merging is not currently supported, provide a SourceUser that has not been signed up in order to link',
+      );
+      err.name = 'InvalidParameterException';
+      throw err;
+    });
+    admin.adminDeleteCognitoUser = async () => {
+      deleteCount += 1;
+    };
+
+    await assert.rejects(
+      () =>
+        linkGoogleFederatedUser(
+          {
+            accessPayload: {
+              sub: 'fed-sub',
+              email: 'user@example.com',
+              'cognito:username': 'Google_107121059094644779940',
+            },
+            idPayload: {
+              sub: 'fed-sub',
+              email: 'user@example.com',
+              'cognito:username': 'Google_107121059094644779940',
+              identities: googleIdentities,
+            },
+          },
+          admin,
+          lookupWithNative,
+        ),
+      /Merging is not currently supported/,
+    );
+    assert.equal(deleteCount, 1);
+  });
+
   it('fails closed when multiple confirmed native Cognito users share the email', async () => {
     process.env.COGNITO_USER_POOL_ID = 'ap-southeast-2_testpool';
     process.env.COGNITO_CLIENT_ID = 'testclient';

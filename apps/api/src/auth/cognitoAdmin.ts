@@ -116,6 +116,20 @@ export function isMisleadingLinkedInvalidParameterError(err: unknown): boolean {
   return message.includes('may not be passed in as a SourceUser');
 }
 
+/**
+ * AdminLink rejects a SourceUser that already exists in the pool: "Merging is not
+ * currently supported, provide a SourceUser that has not been signed up in order
+ * to link". Recovery = delete the orphan Google_* user, then retry the link.
+ */
+export function isMergingNotSupportedError(err: unknown): boolean {
+  if (!isInvalidParameterError(err)) return false;
+  const message =
+    typeof err === 'object' && err !== null && 'message' in err
+      ? String((err as { message?: unknown }).message)
+      : '';
+  return message.includes('Merging is not currently supported');
+}
+
 export async function adminListUsersByEmail(params: {
   userPoolId: string;
   email: string;

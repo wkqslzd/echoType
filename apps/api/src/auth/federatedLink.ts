@@ -6,6 +6,7 @@ import {
   adminLinkGoogleToNativeUser,
   adminListUsersByEmail,
   isAliasExistsError,
+  isMergingNotSupportedError,
   isMisleadingLinkedInvalidParameterError,
   isUserNotFoundError,
 } from './cognitoAdmin.js';
@@ -189,6 +190,19 @@ export async function linkGoogleFederatedUser(
     await linkThenDeleteOrphan(nativeUsername, claims.googleSub, orphanUsername, admin);
     return { linked: true, requiresReauth: true, reason: 'linked' };
   } catch (err) {
+    if (isMergingNotSupportedError(err)) {
+      // Hosted UI creates the orphan Google_* user before the API ever sees tokens,
+      // so when the native user exists but was never materialized in Postgres the
+      // FIRST AdminLink always fails with "Merging is not currently supported".
+      // Expected three-step path on this route: link fails -> delete orphan ->
+      // retry link. Not a bug; Cognito requires the SourceUser to not be signed
+      // up in this state. Failure after the delete is benign: the next Google
+      // sign-in recreates the orphan and the native user is untouched.
+      await deleteOrphanIfPresent(orphanUsername, admin);
+      await attemptLink(nativeUsername, claims.googleSub, admin);
+      return { linked: true, requiresReauth: true, reason: 'linked' };
+    }
+
     if (isAliasExistsError(err)) {
       if (orphanUsername === claims.email) {
         throw err;
