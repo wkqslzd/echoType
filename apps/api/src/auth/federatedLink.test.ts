@@ -17,6 +17,8 @@ const lookupNewUser: UserLookupPort = {
   findNativeUserByEmail: async () => null,
 };
 
+const noCognitoUsers: CognitoAdminPort['adminListUsersByEmail'] = async () => [];
+
 function adminWithLinkBehavior(
   link: CognitoAdminPort['adminLinkGoogleToNativeUser'],
 ): CognitoAdminPort {
@@ -24,6 +26,7 @@ function adminWithLinkBehavior(
     adminGetUserPoolUsername: async ({ usernameOrAlias }) => usernameOrAlias,
     adminLinkGoogleToNativeUser: link,
     adminDeleteCognitoUser: async () => undefined,
+    adminListUsersByEmail: noCognitoUsers,
   };
 }
 
@@ -60,6 +63,9 @@ describe('linkGoogleFederatedUser', () => {
       adminDeleteCognitoUser: async () => {
         throw new Error('should not delete');
       },
+      adminListUsersByEmail: async () => {
+        throw new Error('should not list');
+      },
     };
 
     const result = await linkGoogleFederatedUser(
@@ -88,7 +94,7 @@ describe('linkGoogleFederatedUser', () => {
     });
   });
 
-  it('returns new_user when Postgres has no row for email', async () => {
+  it('returns new_user when Postgres has no row and Cognito has only the Google orphan', async () => {
     process.env.COGNITO_USER_POOL_ID = 'ap-southeast-2_testpool';
     process.env.COGNITO_CLIENT_ID = 'testclient';
 
@@ -102,6 +108,9 @@ describe('linkGoogleFederatedUser', () => {
       adminDeleteCognitoUser: async () => {
         throw new Error('should not delete');
       },
+      adminListUsersByEmail: async () => [
+        { username: 'Google_107121059094644779940', status: 'EXTERNAL_PROVIDER' },
+      ],
     };
 
     const result = await linkGoogleFederatedUser(
@@ -128,6 +137,136 @@ describe('linkGoogleFederatedUser', () => {
     });
   });
 
+  it('links a confirmed native Cognito user when Postgres has not materialized it yet', async () => {
+    process.env.COGNITO_USER_POOL_ID = 'ap-southeast-2_testpool';
+    process.env.COGNITO_CLIENT_ID = 'testclient';
+
+    const order: string[] = [];
+    const nativeUsername = '690e8408-6001-7078-d5b4-694c1c970e50';
+    let listedEmail: string | undefined;
+    let linkedNative: string | undefined;
+    const admin: CognitoAdminPort = {
+      adminGetUserPoolUsername: async () => {
+        throw new Error('should not get user');
+      },
+      adminListUsersByEmail: async ({ email }) => {
+        order.push('list');
+        listedEmail = email;
+        return [
+          { username: nativeUsername, status: 'CONFIRMED' },
+          { username: 'Google_107121059094644779940', status: 'EXTERNAL_PROVIDER' },
+        ];
+      },
+      adminLinkGoogleToNativeUser: async ({ nativeUsername: destination }) => {
+        order.push('link');
+        linkedNative = destination;
+      },
+      adminDeleteCognitoUser: async ({ username }) => {
+        order.push(`delete:${username}`);
+      },
+    };
+
+    const result = await linkGoogleFederatedUser(
+      {
+        accessPayload: {
+          sub: 'fed-sub',
+          email: 'pending-native@example.com',
+          'cognito:username': 'Google_107121059094644779940',
+        },
+        idPayload: {
+          sub: 'fed-sub',
+          email: 'pending-native@example.com',
+          'cognito:username': 'Google_107121059094644779940',
+          identities: googleIdentities,
+        },
+      },
+      admin,
+      lookupNewUser,
+    );
+
+    assert.deepEqual(result, {
+      linked: true,
+      requiresReauth: true,
+      reason: 'linked',
+    });
+    assert.equal(listedEmail, 'pending-native@example.com');
+    assert.equal(linkedNative, nativeUsername);
+    assert.deepEqual(order, ['list', 'link', 'delete:Google_107121059094644779940']);
+  });
+
+  it('fails closed for an unconfirmed native Cognito user when Postgres has no row', async () => {
+    process.env.COGNITO_USER_POOL_ID = 'ap-southeast-2_testpool';
+    process.env.COGNITO_CLIENT_ID = 'testclient';
+
+    const admin = adminWithLinkBehavior(async () => {
+      throw new Error('should not link');
+    });
+    admin.adminDeleteCognitoUser = async () => {
+      throw new Error('should not delete');
+    };
+    admin.adminListUsersByEmail = async () => [
+      { username: 'unconfirmed-native', status: 'UNCONFIRMED' },
+      { username: 'Google_107121059094644779940', status: 'EXTERNAL_PROVIDER' },
+    ];
+
+    await assert.rejects(
+      () =>
+        linkGoogleFederatedUser(
+          {
+            accessPayload: {
+              sub: 'fed-sub',
+              email: 'unconfirmed@example.com',
+              'cognito:username': 'Google_107121059094644779940',
+            },
+            idPayload: {
+              sub: 'fed-sub',
+              email: 'unconfirmed@example.com',
+              'cognito:username': 'Google_107121059094644779940',
+              identities: googleIdentities,
+            },
+          },
+          admin,
+          lookupNewUser,
+        ),
+      /native_user_unconfirmed/,
+    );
+  });
+
+  it('fails closed when multiple confirmed native Cognito users share the email', async () => {
+    process.env.COGNITO_USER_POOL_ID = 'ap-southeast-2_testpool';
+    process.env.COGNITO_CLIENT_ID = 'testclient';
+
+    const admin = adminWithLinkBehavior(async () => {
+      throw new Error('should not link');
+    });
+    admin.adminListUsersByEmail = async () => [
+      { username: 'native-one', status: 'CONFIRMED' },
+      { username: 'native-two', status: 'CONFIRMED' },
+    ];
+
+    await assert.rejects(
+      () =>
+        linkGoogleFederatedUser(
+          {
+            accessPayload: {
+              sub: 'fed-sub',
+              email: 'ambiguous@example.com',
+              'cognito:username': 'Google_107121059094644779940',
+            },
+            idPayload: {
+              sub: 'fed-sub',
+              email: 'ambiguous@example.com',
+              'cognito:username': 'Google_107121059094644779940',
+              identities: googleIdentities,
+            },
+          },
+          admin,
+          lookupNewUser,
+        ),
+      /native_user_ambiguous/,
+    );
+  });
+
   it('links then deletes orphan (link before delete)', async () => {
     process.env.COGNITO_USER_POOL_ID = 'ap-southeast-2_testpool';
     process.env.COGNITO_CLIENT_ID = 'testclient';
@@ -144,6 +283,9 @@ describe('linkGoogleFederatedUser', () => {
       },
       adminDeleteCognitoUser: async ({ username }) => {
         order.push(`delete:${username}`);
+      },
+      adminListUsersByEmail: async () => {
+        throw new Error('should not list');
       },
     };
 
@@ -192,6 +334,9 @@ describe('linkGoogleFederatedUser', () => {
       },
       adminDeleteCognitoUser: async () => {
         deleteCount += 1;
+      },
+      adminListUsersByEmail: async () => {
+        throw new Error('should not list');
       },
     };
 
@@ -319,6 +464,9 @@ describe('linkGoogleFederatedUser', () => {
       },
       adminDeleteCognitoUser: async () => {
         deleteCount += 1;
+      },
+      adminListUsersByEmail: async () => {
+        throw new Error('should not list');
       },
     };
 

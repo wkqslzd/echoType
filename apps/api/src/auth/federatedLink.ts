@@ -4,6 +4,7 @@ import {
   adminDeleteCognitoUser,
   adminGetUserPoolUsername,
   adminLinkGoogleToNativeUser,
+  adminListUsersByEmail,
   isAliasExistsError,
   isMisleadingLinkedInvalidParameterError,
   isUserNotFoundError,
@@ -15,6 +16,7 @@ export type CognitoAdminPort = {
   adminGetUserPoolUsername: typeof adminGetUserPoolUsername;
   adminLinkGoogleToNativeUser: typeof adminLinkGoogleToNativeUser;
   adminDeleteCognitoUser: typeof adminDeleteCognitoUser;
+  adminListUsersByEmail: typeof adminListUsersByEmail;
 };
 
 export type NativeUserRecord = {
@@ -30,6 +32,7 @@ const defaultCognitoAdmin: CognitoAdminPort = {
   adminGetUserPoolUsername,
   adminLinkGoogleToNativeUser,
   adminDeleteCognitoUser,
+  adminListUsersByEmail,
 };
 
 const defaultUserLookup: UserLookupPort = {
@@ -85,6 +88,28 @@ async function nativeCognitoUserExists(
   }
 }
 
+async function findConfirmedNativeUsernameByEmail(
+  email: string,
+  admin: CognitoAdminPort,
+): Promise<string | null> {
+  const { userPoolId } = loadCognitoConfig();
+  const users = await admin.adminListUsersByEmail({ userPoolId, email });
+  const nativeUsers = users.filter((user) => !user.username.startsWith('Google_'));
+  const candidates = nativeUsers.filter((user) => user.status === 'CONFIRMED');
+
+  if (candidates.length > 1) {
+    throw new Error('native_user_ambiguous');
+  }
+  if (candidates[0]) {
+    return candidates[0].username;
+  }
+  if (nativeUsers.length > 0) {
+    throw new Error('native_user_unconfirmed');
+  }
+
+  return null;
+}
+
 async function deleteOrphanIfPresent(
   orphanUsername: string,
   admin: CognitoAdminPort,
@@ -110,8 +135,9 @@ async function linkThenDeleteOrphan(
 }
 
 /**
- * Link a federated Google session to an existing native Cognito user when Postgres
- * already has that email (forced linking). Destination = users.id (native pool username).
+ * Link a federated Google session to an existing native Cognito user. Prefer the
+ * Postgres email owner; before first native login, discover the confirmed native
+ * Cognito user by email. Destination is always the native pool username (UUID/sub).
  */
 export async function linkGoogleFederatedUser(
   input: FederatedLinkInput,
@@ -136,24 +162,31 @@ export async function linkGoogleFederatedUser(
   }
 
   const nativeUser = await userLookup.findNativeUserByEmail(claims.email);
+  let nativeUsername: string;
+
   if (!nativeUser) {
-    return { linked: false, requiresReauth: false, reason: 'new_user' };
-  }
+    const discoveredNativeUsername = await findConfirmedNativeUsernameByEmail(claims.email, admin);
+    if (!discoveredNativeUsername) {
+      return { linked: false, requiresReauth: false, reason: 'new_user' };
+    }
+    nativeUsername = discoveredNativeUsername;
+  } else {
+    // Pure Google signup already created Postgres row with id === Cognito sub. Do not
+    // AdminLink Google onto itself (InvalidParameterException on repeat sign-in).
+    if (nativeUser.id === claims.sub) {
+      return { linked: false, requiresReauth: false, reason: 'already_linked' };
+    }
 
-  // Pure Google signup already created Postgres row with id === Cognito sub. Do not
-  // AdminLink Google onto itself (InvalidParameterException on repeat sign-in).
-  if (nativeUser.id === claims.sub) {
-    return { linked: false, requiresReauth: false, reason: 'already_linked' };
-  }
-
-  if (!(await nativeCognitoUserExists(nativeUser.id, admin))) {
-    return { linked: false, requiresReauth: false, reason: 'new_user' };
+    if (!(await nativeCognitoUserExists(nativeUser.id, admin))) {
+      return { linked: false, requiresReauth: false, reason: 'new_user' };
+    }
+    nativeUsername = nativeUser.id;
   }
 
   const orphanUsername = orphanUsernameFromClaims(claims);
 
   try {
-    await linkThenDeleteOrphan(nativeUser.id, claims.googleSub, orphanUsername, admin);
+    await linkThenDeleteOrphan(nativeUsername, claims.googleSub, orphanUsername, admin);
     return { linked: true, requiresReauth: true, reason: 'linked' };
   } catch (err) {
     if (isAliasExistsError(err)) {
@@ -161,7 +194,7 @@ export async function linkGoogleFederatedUser(
         throw err;
       }
 
-      await linkThenDeleteOrphan(nativeUser.id, claims.googleSub, orphanUsername, admin);
+      await linkThenDeleteOrphan(nativeUsername, claims.googleSub, orphanUsername, admin);
       return { linked: true, requiresReauth: true, reason: 'linked' };
     }
 
