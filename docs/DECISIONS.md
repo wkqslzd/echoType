@@ -1345,7 +1345,15 @@
     `users.id` remains Cognito `sub`.
   - Follow-ups on same capability: `4c51639` (self-link), `ff2b004` (no hintEmail),
     `5ee7d54` / `99dcd68` (register email guard + copy) — identity SSoT in ADR-0027.
+- Amendment (2026-07-17, `c49b890`): Decision 2's absolute "Never delete-then-link" is
+  **partially superseded** for the Hosted UI path where a confirmed native Cognito user
+  exists but Postgres has not materialized yet. Cognito creates the orphan `Google_*`
+  user before the API sees tokens, so the first `AdminLinkProviderForUser` always fails
+  with `InvalidParameterException` ("Merging is not currently supported…"). Recovery is
+  still link-first: catch that specific message → delete orphan → retry link once. Other
+  paths keep link-then-delete; the product did **not** switch to global delete-first.
 - Supersedes / superseded-by: Partially updates ADR-0025 IdP attribute mapping (`name` removed).
+  Decision 2 partially superseded by amendment above (`c49b890`).
 
 ## ADR-0027 — Account identity: Postgres email as the single source of truth across all sign-in paths
 - Status: Accepted (2026-07-11)
@@ -1390,6 +1398,24 @@
     ListUsers check as SignUp) — do not document the opposite.
   - ExternalProvider intentionally not rejected on email clash (required for Google L2).
   - Orphan `Google_*` cleanup is semi-automatic (link-then-delete on success paths only).
+- Enumerated Cognito coexistence shapes (Google; maintenance follow-ups 2026-07-17):
+  1. **Confirmed native Cognito user, no Postgres row yet** (registered + confirmed, never
+     first logged in) — Postgres email miss is not `new_user`. Discover via Cognito
+     `ListUsers` by email, AdminLink to native username, then materialize Postgres from
+     `AdminGetUser` nickname (`43a0035`, `4bf4d51`). Onboarding still via existing
+     `/api/onboarding/seed`.
+  2. **Orphan exists + native unmaterialized** — Hosted UI creates `Google_*` first; first
+     AdminLink hits "Merging is not currently supported"; delete orphan then retry link
+     (`c49b890`; see ADR-0026 amendment).
+  3. **Stale Hosted UI session after orphan delete** — Cognito managed-login cookie may
+     still name the deleted orphan. Reauth authorize can mint a code that token-exchanges
+     as `invalid_grant`. Web reacts once: save retry marker → Cognito `/logout` (clears
+     Cognito session + `REAUTH_COUNT`) → HomePage auto-restarts Google OAuth with
+     `autoReuse` (no forced `prompt`/`max_age`). Cognito logout does **not** clear Google
+     IdP cookies; multi-account browsers may still show Google's chooser (platform
+     best-effort; `a2ad035`, `b268219`).
+  4. **Google-only account without password** — intentional Known debt: no
+     AdminSetUserPassword path yet (STATE).
 - Supersedes / superseded-by: none (complements ADR-0026 / ADR-0015)
 
 ## ADR-0028 — Google sign-in Phase 3: privacy Google disclosure; brand verification deferred
