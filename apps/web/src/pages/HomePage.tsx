@@ -15,7 +15,9 @@ export function HomePage() {
 
   useLayoutEffect(() => {
     if (!staleSessionRetry) return;
-    void startGoogleSignIn(staleSessionRetry.nextPath, staleSessionRetry.hintEmail).catch(() => {
+    void startGoogleSignIn(staleSessionRetry.nextPath, staleSessionRetry.hintEmail, {
+      autoReuse: true,
+    }).catch(() => {
       sessionStorage.setItem(
         AUTH_FLASH_ERROR_KEY,
         'Google sign-in is not available right now. Try again.',

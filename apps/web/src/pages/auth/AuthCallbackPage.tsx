@@ -68,7 +68,7 @@ export function AuthCallbackPage() {
         if (reauthStartedRef.current) return;
         reauthStartedRef.current = true;
         setPhase('reauth');
-        void startGoogleSignIn(outcome.nextPath, outcome.hintEmail);
+        void startGoogleSignIn(outcome.nextPath, outcome.hintEmail, { autoReuse: true });
         return;
       }
 

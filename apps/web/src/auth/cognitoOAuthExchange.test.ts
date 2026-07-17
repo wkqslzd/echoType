@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { buildCognitoAuthorizeUrl } from '@echotype/shared';
 import {
   consumeStaleSessionRetry,
+  googleSignInInteractionParams,
   saveStaleSessionRetry,
   shouldRetryStaleCognitoSession,
 } from './cognitoOAuthExchange.js';
@@ -57,5 +59,33 @@ describe('stale Cognito session retry', () => {
     const external = new MemoryStorage();
     saveStaleSessionRetry({ nextPath: '//example.com', createdAt: 1_000 }, external);
     assert.equal(consumeStaleSessionRetry(external, 2_000), null);
+  });
+});
+
+describe('Google sign-in interaction mode', () => {
+  function authorizeUrl(autoReuse?: boolean): URL {
+    return new URL(
+      buildCognitoAuthorizeUrl({
+        domainPrefix: 'echotype-ink',
+        region: 'ap-southeast-2',
+        clientId: 'client',
+        redirectUri: 'https://echotype.ink/auth/callback',
+        identityProvider: 'Google',
+        ...googleSignInInteractionParams({ autoReuse }),
+      }),
+    );
+  }
+
+  it('keeps forced account selection for a user-initiated sign-in', () => {
+    const url = authorizeUrl();
+    assert.equal(url.searchParams.get('prompt'), 'login select_account');
+    assert.equal(url.searchParams.get('max_age'), '0');
+  });
+
+  it('omits prompt and max_age for automatic account reuse', () => {
+    const url = authorizeUrl(true);
+    assert.equal(url.searchParams.get('prompt'), null);
+    assert.equal(url.searchParams.get('max_age'), null);
+    assert.equal(url.searchParams.get('identity_provider'), 'Google');
   });
 });

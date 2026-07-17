@@ -184,7 +184,23 @@ function bumpReauthCount(): number {
   return next;
 }
 
-export async function startGoogleSignIn(nextPath: string, hintEmail?: string): Promise<void> {
+export type GoogleSignInOptions = {
+  /** Allow Google to reuse its current account instead of forcing another picker. */
+  autoReuse?: boolean;
+};
+
+export function googleSignInInteractionParams(options?: GoogleSignInOptions): {
+  prompt?: string;
+  maxAge?: number;
+} {
+  return options?.autoReuse ? {} : { prompt: 'login select_account', maxAge: 0 };
+}
+
+export async function startGoogleSignIn(
+  nextPath: string,
+  hintEmail?: string,
+  options?: GoogleSignInOptions,
+): Promise<void> {
   if (googleSignInRedirectStarted) return;
   googleSignInRedirectStarted = true;
 
@@ -205,8 +221,7 @@ export async function startGoogleSignIn(nextPath: string, hintEmail?: string): P
     clientId: config.clientId,
     redirectUri: oauthRedirectUri(),
     identityProvider: 'Google',
-    prompt: 'login select_account',
-    maxAge: 0,
+    ...googleSignInInteractionParams(options),
     state,
     codeChallenge,
   });
