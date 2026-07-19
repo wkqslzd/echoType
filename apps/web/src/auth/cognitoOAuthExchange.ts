@@ -103,6 +103,38 @@ export function consumeStaleSessionRetry(
   }
 }
 
+/**
+ * Page-load-scoped memo over consumeStaleSessionRetry. React Strict Mode
+ * double-invokes useState initializers; the raw read-and-delete consume would
+ * hand the marker to the discarded first invocation and null to the committed
+ * one, so the automatic retry never fired in dev. undefined = not read yet.
+ */
+let staleSessionRetryOnce: StaleSessionRetry | null | undefined;
+
+export function consumeStaleSessionRetryOnce(
+  storage: SessionStorageLike = sessionStorage,
+  now = Date.now(),
+): StaleSessionRetry | null {
+  if (staleSessionRetryOnce === undefined) {
+    staleSessionRetryOnce = consumeStaleSessionRetry(storage, now);
+  }
+  return staleSessionRetryOnce;
+}
+
+/**
+ * Call right after the retry has been acted on (startGoogleSignIn issued).
+ * Without this, an SPA remount of HomePage before the OAuth redirect lands
+ * would re-read the memo and lock the page in the retry loading state.
+ */
+export function clearConsumedStaleSessionRetry(): void {
+  staleSessionRetryOnce = null;
+}
+
+/** Test-only: resets the page-load memo between test cases. */
+export function resetStaleSessionRetryOnceForTests(): void {
+  staleSessionRetryOnce = undefined;
+}
+
 function linkFailedMessage(body: unknown): string {
   if (body && typeof body === 'object') {
     const code =

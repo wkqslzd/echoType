@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { ACCOUNT_DELETED_FLASH } from '../auth/accountDelete';
 import {
   AUTH_FLASH_ERROR_KEY,
-  consumeStaleSessionRetry,
+  clearConsumedStaleSessionRetry,
+  consumeStaleSessionRetryOnce,
   startGoogleSignIn,
 } from '../auth/cognitoOAuthExchange';
 import { PageLoading } from '../components/page-status/PageLoading';
@@ -11,7 +12,9 @@ import { PageLoading } from '../components/page-status/PageLoading';
 export function HomePage() {
   const [flash, setFlash] = useState<string | null>(null);
   const [flashError, setFlashError] = useState<string | null>(null);
-  const [staleSessionRetry] = useState(() => consumeStaleSessionRetry());
+  // Memoized consume: Strict Mode double-invokes this initializer and keeps
+  // the second result, so a raw one-shot read would lose the marker.
+  const [staleSessionRetry] = useState(() => consumeStaleSessionRetryOnce());
 
   useLayoutEffect(() => {
     if (!staleSessionRetry) return;
@@ -24,6 +27,9 @@ export function HomePage() {
       );
       window.location.replace('/');
     });
+    // Retry acted on — drop the memo so an SPA remount before the redirect
+    // lands falls back to the normal home page instead of the retry spinner.
+    clearConsumedStaleSessionRetry();
   }, [staleSessionRetry]);
 
   useEffect(() => {

@@ -2,8 +2,11 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { buildCognitoAuthorizeUrl } from '@echotype/shared';
 import {
+  clearConsumedStaleSessionRetry,
   consumeStaleSessionRetry,
+  consumeStaleSessionRetryOnce,
   googleSignInInteractionParams,
+  resetStaleSessionRetryOnceForTests,
   saveStaleSessionRetry,
   shouldRetryStaleCognitoSession,
 } from './cognitoOAuthExchange.js';
@@ -59,6 +62,36 @@ describe('stale Cognito session retry', () => {
     const external = new MemoryStorage();
     saveStaleSessionRetry({ nextPath: '//example.com', createdAt: 1_000 }, external);
     assert.equal(consumeStaleSessionRetry(external, 2_000), null);
+  });
+
+  it('returns the same marker across Strict Mode double useState init', () => {
+    resetStaleSessionRetryOnceForTests();
+    const storage = new MemoryStorage();
+    saveStaleSessionRetry({ nextPath: '/', hintEmail: 'user@example.com', createdAt: 1_000 }, storage);
+
+    const first = consumeStaleSessionRetryOnce(storage, 2_000);
+    const second = consumeStaleSessionRetryOnce(storage, 2_000);
+    assert.deepEqual(first, { nextPath: '/', hintEmail: 'user@example.com', createdAt: 1_000 });
+    assert.deepEqual(second, first);
+    // The underlying sessionStorage key was still consumed exactly once.
+    assert.equal(consumeStaleSessionRetry(storage, 2_000), null);
+  });
+
+  it('returns null after the retry has been acted on (SPA remount)', () => {
+    resetStaleSessionRetryOnceForTests();
+    const storage = new MemoryStorage();
+    saveStaleSessionRetry({ nextPath: '/', createdAt: 1_000 }, storage);
+
+    assert.notEqual(consumeStaleSessionRetryOnce(storage, 2_000), null);
+    clearConsumedStaleSessionRetry();
+    assert.equal(consumeStaleSessionRetryOnce(storage, 2_000), null);
+  });
+
+  it('memoizes null when no marker exists', () => {
+    resetStaleSessionRetryOnceForTests();
+    const storage = new MemoryStorage();
+    assert.equal(consumeStaleSessionRetryOnce(storage, 2_000), null);
+    assert.equal(consumeStaleSessionRetryOnce(storage, 2_000), null);
   });
 });
 
