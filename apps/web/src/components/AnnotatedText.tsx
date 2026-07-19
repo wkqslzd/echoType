@@ -286,7 +286,10 @@ const LineRow = memo(function LineRow({
         openNoteId={openNoteId}
         onNoteToggle={onNoteToggle}
       />
-      <div className="relative" style={{ whiteSpace: 'pre' }}>
+      {/* minHeight keeps blank lines (a line whose only char is '\n', rendered
+          as an empty span) one line tall — without it the row collapses to 0px
+          and its margin collapses away, visually deleting the blank line. */}
+      <div className="relative" style={{ whiteSpace: 'pre', minHeight: charHeight || '1.6em' }}>
         <BandLayer bands={datum.bands} charHeight={charHeight} />
         <span className="relative z-[1]">
           {indices.map((i) =>

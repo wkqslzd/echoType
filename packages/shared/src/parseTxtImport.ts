@@ -6,7 +6,7 @@ import {
   SHORT_MAX,
   SHORT_MIN,
   formatContentIssueMessage,
-  normalizeLineEndings,
+  normalizeCourseWhitespace,
   validateContentCharacters,
   type AnnotationInput,
   type CourseMode,
@@ -46,7 +46,10 @@ function missingNoteError(phrase: { text: string; line: number }): ParseTxtFailu
 }
 
 export function parseAnnotatedTxt(raw: string, mode: CourseMode): ParseTxtResult {
-  const text = normalizeLineEndings(raw);
+  // Whitespace-normalize BEFORE scanning so annotation indices are computed on
+  // the final content. Blank-line runs never span '{' / '}' (braces are not
+  // whitespace), so marker positions survive normalization intact.
+  const text = normalizeCourseWhitespace(raw);
   const annotations: AnnotationInput[] = [];
   let content = '';
   let line = 1;

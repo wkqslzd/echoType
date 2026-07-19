@@ -5,6 +5,7 @@ import {
   SHORT_MAX,
   SHORT_MIN,
   formatContentIssueMessage,
+  normalizeCourseWhitespace,
   normalizeLineEndings,
   remapAnnotationIndexAfterLineEndingNormalization,
   validateContentCharacters,
@@ -267,13 +268,16 @@ export function useCourseEditor(
 
   const step1Error = useMemo(() => {
     if (!title.trim()) return 'Title is required.';
-    if (!content) return 'Text content is required.';
-    const contentIssue = validateContentCharacters(content);
+    // Validate the normalized form — the exact content Step 1 Next writes back
+    // and the server stores (whitespace-only content counts as empty).
+    const normalized = normalizeCourseWhitespace(content);
+    if (!normalized) return 'Text content is required.';
+    const contentIssue = validateContentCharacters(normalized);
     if (contentIssue) return formatContentIssueMessage(contentIssue);
-    if (!lengthOk(courseMode, content.length)) {
+    if (!lengthOk(courseMode, normalized.length)) {
       return courseMode === 'SHORT'
-        ? `Short mode needs ${SHORT_MIN}-${SHORT_MAX} characters (currently ${content.length}).`
-        : `Article mode needs ${ARTICLE_MIN}-${ARTICLE_MAX} characters (currently ${content.length}).`;
+        ? `Short mode needs ${SHORT_MIN}-${SHORT_MAX} characters (currently ${normalized.length}).`
+        : `Article mode needs ${ARTICLE_MIN}-${ARTICLE_MAX} characters (currently ${normalized.length}).`;
     }
     return null;
   }, [title, content, courseMode]);
@@ -291,11 +295,20 @@ export function useCourseEditor(
 
   const goNext = useCallback((): { purgedAnnotations: number } | void => {
     if (step === 1) {
-      const contentChangedFromBaseline = content !== contentBaseline.current;
+      // Whitespace normalization happens here (content confirmation), NOT per
+      // keystroke in setContent — trimming while typing would eat trailing
+      // spaces/newlines under the user's cursor. If normalization changes
+      // legacy content, the diff flows through the same review path as a
+      // manual edit, so annotation anchors are re-checked instead of silently
+      // shifting.
+      const normalized = normalizeCourseWhitespace(content);
+      if (normalized !== content) setContentState(normalized);
+
+      const contentChangedFromBaseline = normalized !== contentBaseline.current;
       let purgedAnnotations = 0;
 
       if (contentChangedFromBaseline && annotations.length > 0) {
-        const { kept, purgedCount } = dropFullyUnreachableAnnotations(content, annotations);
+        const { kept, purgedCount } = dropFullyUnreachableAnnotations(normalized, annotations);
         purgedAnnotations = purgedCount;
         if (purgedCount > 0) setAnnotations(kept);
 
@@ -304,7 +317,7 @@ export function useCourseEditor(
         setReviewActive(annotations.length > 0);
       }
 
-      contentBaseline.current = content;
+      contentBaseline.current = normalized;
       setStep(skipAnnotationChoice ? 3 : 2);
       return purgedAnnotations > 0 ? { purgedAnnotations } : undefined;
     }

@@ -230,7 +230,9 @@ const EditorLineRow = memo(function EditorLineRow({
           ))}
         </div>
       )}
-      <div className="relative" style={{ whiteSpace: 'pre' }}>
+      {/* minHeight keeps blank lines (only char is '\n', rendered as an empty
+          span) one line tall instead of collapsing to a 0px row. */}
+      <div className="relative" style={{ whiteSpace: 'pre', minHeight: charHeight || '1.6em' }}>
         <EditorBandLayer
           bands={datum.bands}
           charHeight={charHeight}

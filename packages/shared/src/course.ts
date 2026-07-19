@@ -171,6 +171,24 @@ export function normalizeLineEndings(content: string): string {
   return content.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 }
 
+// Whitespace normalization for course content, applied when content is
+// CONFIRMED (editor Step 1 Next, .txt import, API save) — never per keystroke,
+// because trimming while typing would eat trailing spaces/newlines as the user
+// writes. Steps, in order:
+//   1. line endings -> LF
+//   2. whitespace-only lines become truly empty lines
+//   3. runs of 4+ \n (= 3+ visual blank lines) compress to 3 \n (= 2 blank lines)
+//   4. leading/trailing whitespace trimmed
+// Interior blank lines (1-2) are preserved on purpose: they are user layout
+// intent (e.g. passages from different sources separated by blank lines).
+export function normalizeCourseWhitespace(raw: string): string {
+  const blanked = normalizeLineEndings(raw)
+    .split('\n')
+    .map((line) => (line.trim() === '' ? '' : line))
+    .join('\n');
+  return blanked.replace(/\n{4,}/g, '\n\n\n').trim();
+}
+
 export type ContentIssueCode = 'control_character';
 
 export type ContentIssue = {
@@ -227,7 +245,11 @@ export function prepareCourseContent(raw: string): {
   content: string;
   issue: ContentIssue | null;
 } {
-  const content = normalizeLineEndings(raw);
+  // Full whitespace normalization (not just line endings): the app's own
+  // clients send already-normalized content, so this is a no-op for them;
+  // for raw API callers annotations are validated against the normalized
+  // content afterwards.
+  const content = normalizeCourseWhitespace(raw);
   return { content, issue: validateContentCharacters(content) };
 }
 
