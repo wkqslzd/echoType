@@ -26,7 +26,7 @@ Since I am a Chinese native speaker, I can also pin native-language annotations 
 - **Native-language annotation overlay** — Optional notes in your own language float above anchored English characters while you type, so glosses stay in context instead of a separate glossary. On the typing page, long notes can widen into unused line space on the same row (without covering the next note).
 - **Notes survive edits** — If you change the source text later, your notes are not silently wiped. The app shows you which notes still align and which need your attention before saving.
 - **Your courses are portable plain text** — Import a `.txt` with inline `{phrase}{annotation}` markers to create a fully annotated course in one step (parse errors point at the offending line); export any course back to the same format for local backup. The parser and serializer are shared, round-trip-tested pure functions that run entirely in the browser — no upload, no extra cloud cost.
-- **Honest practice stats** — Manual saves write per-session rows (WPM, accuracy, loops, active time); courses keep materialized cumulative stats and collections roll them up. One written contract (`docs/STATS.md`) defines every formula.
+- **Honest practice stats** — Manual saves write per-session rows (WPM, accuracy, loops, active time); courses keep materialized cumulative stats and collections roll them up. Signed-in users also see a home summary of total practice time and completed passes across all courses — a JWT-backed read aggregate over those existing course columns, not a second set of user-level counters. One written contract (`docs/STATS.md`) defines every stored formula.
 - **Try before sign-up** — Guests browse and type sample courses from a local catalog; sign in (email/password or Google) to persist courses, collections, and saved practice sessions in PostgreSQL. The same email maps to one EchoType account whether you register with password or continue with Google.
 
 ---
@@ -129,7 +129,7 @@ I ship in phases with manual gates (`docs/STATE.md`); after overlay changes I ru
 | ✅ | **Cloud deploy** — Terraform-provisioned EC2/RDS/S3/CloudFront; OIDC + SSM deploys; live at https://echotype.ink |
 | ✅ | **Typing experience** — Auto-loop, newline auto-skip, IME composition, session timer with pause, immersive & forgiving modes, .txt import/export |
 | ✅ | **Course management** — Short/Article mode routes, search/sort, descriptions, collections with batch add and stats rollup |
-| ✅ | **Course stats** — Per-session rows + materialized course cumulative; formulas contracted in `docs/STATS.md` |
+| ✅ | **Course stats** — Per-session rows + materialized course cumulative; home cross-course summary via aggregate API; formulas contracted in `docs/STATS.md` |
 | ✅ | **Auth** — Cognito email/password (SRP), JWT-verified API, guest sample catalog, account page (nickname, password change, delete), onboarding seed for new users |
 | ✅ | **Custom domain** — echotype.ink via ACM + CloudFront alias; HTTPS enforced |
 | ✅ | **Ops & safety** — Sentry (web + API), public privacy policy, unified loading/error/empty states |
