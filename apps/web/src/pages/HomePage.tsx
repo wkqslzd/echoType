@@ -7,6 +7,7 @@ import {
   consumeStaleSessionRetryOnce,
   startGoogleSignIn,
 } from '../auth/cognitoOAuthExchange';
+import { PracticeSummary } from '../components/PracticeSummary';
 import { PageLoading } from '../components/page-status/PageLoading';
 
 export function HomePage() {
@@ -77,6 +78,8 @@ export function HomePage() {
           </p>
         )}
       </div>
+
+      <PracticeSummary />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Link

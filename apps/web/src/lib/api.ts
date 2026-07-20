@@ -11,6 +11,7 @@ import type {
   CreateSessionInput,
   CreateSessionResponse,
   ModeIssue,
+  PracticeSummaryDTO,
   SessionDTO,
   UpdateCategoryInput,
   UpdateCourseInput,
@@ -234,6 +235,7 @@ export const api = {
   deleteCourse: (id: string) => request<void>(`/courses/${id}`, { method: 'DELETE' }),
   createSession: (input: CreateSessionInput) =>
     request<CreateSessionResponse>('/sessions', { method: 'POST', body: JSON.stringify(input) }),
+  getPracticeSummary: () => request<PracticeSummaryDTO>('/stats/summary'),
   listSessions: (courseId?: string) =>
     request<SessionDTO[]>(`/sessions${courseId ? `?courseId=${courseId}` : ''}`),
   getAccount: () => request<AccountDTO>('/account'),

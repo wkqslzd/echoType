@@ -12,6 +12,7 @@ import { registerAccountRoutes } from './routes/account.js';
 import { registerOnboardingRoutes } from './routes/onboarding.js';
 import { registerFederatedAuthRoutes } from './routes/federatedAuth.js';
 import { registerEmailStatusRoutes } from './routes/emailStatus.js';
+import { registerStatsRoutes } from './routes/stats.js';
 import { registerDebugRoutes } from './routes/debug.js';
 
 initSentry();
@@ -71,6 +72,7 @@ await app.register(
     await registerCourseRoutes(api);
     await registerCategoryRoutes(api);
     await registerSessionRoutes(api);
+    await registerStatsRoutes(api);
     await registerAccountRoutes(api);
     await registerOnboardingRoutes(api);
     await registerFederatedAuthRoutes(api);

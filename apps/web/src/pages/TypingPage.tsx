@@ -524,6 +524,7 @@ function TypingSession({
         old ? { ...old, stats: data.courseStats } : old,
       );
       void queryClient.invalidateQueries({ queryKey: ['courses', courseMode] });
+      void queryClient.invalidateQueries({ queryKey: ['stats', 'summary'] });
       beginFreshSession();
       queueMicrotask(() => textareaRef.current?.focus());
     },
