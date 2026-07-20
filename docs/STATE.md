@@ -41,6 +41,7 @@ Active capability: Maintenance & polish
 ## Contract pointers (don't memorize, go read the source)
 - Stats metrics (definitions/formulas only): docs/STATS.md
 - Course stats serialize: packages/shared/courseStats.ts, apps/api/src/courseStats.ts
+- User practice summary (home): GET `/api/stats/summary` → `apps/api/src/routes/stats.ts`, `packages/shared/practiceSummary.ts`; UI `apps/web/src/components/PracticeSummary.tsx`; formatters `formatPracticeDuration` / `formatPracticeSummaryLines` in `packages/shared/practiceDisplay.ts` (ADR-0032)
 - Card display helpers: packages/shared/practiceDisplay.ts
 - Last-practice winner (read-time): apps/api/src/modeLastPractice.ts
 - Collection rollup: packages/shared/categoryRollup.ts, apps/api/src/routes/categories.ts

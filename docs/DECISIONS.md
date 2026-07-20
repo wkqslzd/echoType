@@ -1605,3 +1605,50 @@
     and does not change this ADR.
 - Supersedes / superseded-by: Extends immersive UX in ADR-0021 / ADR-0008; does not
   flip ADR-0021 refocus/amber decisions.
+
+---
+
+## ADR-0032 — Home practice summary: course aggregate + separate duration display
+- Status: Accepted (2026-07-20)
+- Commit/PR anchor: ffbc66f (API + first UI); copy/typography follow-up 477881d
+- Plain summary (owner reads this): Signed-in users see a two-line practice summary
+  on the home page. Totals come from summing each course’s existing cumulative
+  columns (not a new user table, not a full session scan). Home duration wording
+  uses ceil-to-minute (min 1 min) and must not reuse the course-card duration
+  formatter.
+- Context: Maintenance polish wanted cross-course “accumulation” on `/` without
+  inventing new persisted metrics. Course rows already store `totalDurationSec`,
+  `totalCompletedPasses`, and `lastPracticedAt` (STATS.md §3). Card UI already
+  formats duration with floor and a compact `Nh Nm` / `0m` style
+  (`formatCardDuration`). Home copy needed friendlier prose, a different rounding
+  rule, and an explicit note that only saved sessions count.
+- Decision:
+  1. **`GET /api/stats/summary` (JWT)** — `Course.aggregate` for the current user:
+     `sum(totalDurationSec)`, `sum(totalCompletedPasses)`,
+     `max(lastPracticedAt)` → DTO `lastSavedAt` + `hasSessions`
+     (`lastSavedAt !== null`). No `User` cumulative columns; no `TypingSession`
+     full-table sum (list endpoint is capped at 50).
+  2. **Display formatters** — `formatPracticeDuration` (ceil seconds→minutes,
+     floor at “1 min”, `hr`/`min` words) and `formatPracticeSummaryLines`
+     (`{ line1, line2 }`) live beside but separate from `formatCardDuration` /
+     `formatCardStatsLine`. Do not merge the two duration styles.
+  3. **Copy** — passes > 0: return/time(s)/duration line; passes = 0: “spent”
+     duration only (omit “0 times”). Line 2: local `YYYY-MM-DD` “Last practiced”
+     plus home-only InfoTooltip (saved sessions only).
+  4. **Freshness** — query key `['stats','summary']`, `staleTime` 30s; invalidate
+     on successful session save.
+  5. **STATS.md** — unchanged; summary is a read rollup of §3 course fields plus
+     presentation rules, not new metric definitions.
+- Rejected alternatives:
+  - Client sum of `GET /courses` — works but duplicates aggregate and depends on
+    list payload shape; dedicated endpoint is the contract.
+  - Reuse `formatCardDuration` on the home page — wrong rounding and wrong
+    labels (`0m` / `2h 15m` vs `1 min` / `1 hr 30 min`).
+  - Persist user-level totals on `User` — redundant with course columns; more
+    write-path surface.
+- Consequences:
+  - Deleting a course removes its contribution (cascade already drops sessions
+    and destroys that course’s cumulative).
+  - Guest / empty states stay copy-only; guest never calls the endpoint.
+- Supersedes / superseded-by: Builds on ADR-0014 course cumulative; does not
+  change STATS.md §2/§3 formulas.
