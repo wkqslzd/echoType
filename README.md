@@ -21,7 +21,7 @@ Since I am a Chinese native speaker, I can also pin native-language annotations 
 ## Differentiators
 
 - **Choose your own meaningful text** — Courses are passages and short articles you pick and keep (e.g. *Stray Birds*, favorite quotes). No random word lists; the text itself is the point.
-- **Quiet repetition over WPM** — The session is for low-pressure review and muscle memory, not speed leaderboards. Auto-loop restarts the passage on completion; a session timer with pause supports timeboxed practice.
+- **Quiet repetition over WPM** — The session is for low-pressure review and muscle memory, not speed leaderboards. Auto-loop restarts the passage on completion; a session timer with pause supports timeboxed practice. Optional *Night mode* softens the typing shell (header included) for long sessions — scoped to that page only, not a site-wide theme; it follows the browser light/dark preference by default, with a local override you can clear.
 - **Low-pressure modes** — *Immersive mode* hides the input box so you type against the passage itself. *Forgiving mode* relaxes accuracy grading: spaces, punctuation, and Latin letter case are ignored, while letters and numbers still must match.
 - **Native-language annotation overlay** — Optional notes in your own language float above anchored English characters while you type, so glosses stay in context instead of a separate glossary. On the typing page, long notes can widen into unused line space on the same row (without covering the next note).
 - **Notes survive edits** — If you change the source text later, your notes are not silently wiped. The app shows you which notes still align and which need your attention before saving.
@@ -127,7 +127,7 @@ I ship in phases with manual gates (`docs/STATE.md`); after overlay changes I ru
 |--------|------------|
 | ✅ | **Annotation feature** — Shared Zod contracts, overlay rendering (charEdges + post-layout width rules), four-step editor, edit-time review (re-anchor / delete) |
 | ✅ | **Cloud deploy** — Terraform-provisioned EC2/RDS/S3/CloudFront; OIDC + SSM deploys; live at https://echotype.ink |
-| ✅ | **Typing experience** — Auto-loop, newline auto-skip, IME composition, session timer with pause, immersive & forgiving modes, .txt import/export |
+| ✅ | **Typing experience** — Auto-loop, newline auto-skip, IME composition, session timer with pause, immersive & forgiving modes, typing-shell Night mode, .txt import/export |
 | ✅ | **Course management** — Short/Article mode routes, search/sort, descriptions, collections with batch add and stats rollup |
 | ✅ | **Course stats** — Per-session rows + materialized course cumulative; home cross-course summary via aggregate API; formulas contracted in `docs/STATS.md` |
 | ✅ | **Auth** — Cognito email/password (SRP), JWT-verified API, guest sample catalog, account page (nickname, password change, delete), onboarding seed for new users |
