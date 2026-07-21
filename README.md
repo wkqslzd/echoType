@@ -142,7 +142,7 @@ I ship in phases with manual gates (`docs/STATE.md`); after overlay changes I ru
 ## Further reading
 
 - **`docs/STATE.md`** — Current engineering snapshot and roadmap.
-- **`docs/DECISIONS.md`** — Decision log (34 ADRs: anchoring, measurement, stats, auth, Google federation + email identity + password reconstruction, layout, import/export, content whitespace normalization, forgiving mode, immersive refocus + caret under pinch-zoom, home practice summary, typing-session Night mode, custom domain, Sentry, privacy).
+- **`docs/DECISIONS.md`** — Decision log (35 ADRs: anchoring, measurement, stats, auth, Google federation + email identity + password reconstruction, layout, import/export + export-notes footer, content whitespace normalization, forgiving mode, immersive refocus + caret under pinch-zoom, home practice summary, typing-session Night mode, custom domain, Sentry, privacy).
 - **`docs/STATS.md`** — Stats field definitions and formulas (the contract).
 - **`deploy/README.md`** — Terraform, SSM access, cloud deploy.
 

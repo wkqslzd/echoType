@@ -971,7 +971,7 @@
 ---
 
 ## ADR-0019 — Typing page: client-side Export .txt backup (inverse of ADR-0018)
-- Status: Accepted (2026-07-06)
+- Status: Accepted (2026-07-06); clarified by ADR-0035 (2026-07-21)
 - Commit/PR anchor: a0cbf80
 - Plain summary: On the typing page, users can download a local `.txt` backup of the
   current course; annotations appear as `{phrase}{annotation}` pairs in the file
@@ -1727,3 +1727,51 @@
   - New guests and new onboarding seeds see `echoType`; older accounts may still show old casing in stored descriptions.
   - Sentry project slugs and technical identifiers (`echotype.ink`, `@echotype/*`, SSM) unchanged.
 - Supersedes / superseded-by: none.
+
+---
+
+## ADR-0035 — Export .txt notes footer; clarify header vs importer
+- Status: Accepted (2026-07-21)
+- Commit/PR anchor: c47431b
+- Plain summary (owner reads this): Downloaded course backups end with a fixed
+  help footer (marker syntax + how to Import from .txt). The `title:` /
+  `description:` header is not skipped by the importer — if left in, it becomes
+  ordinary course text; users must delete header and footer before importing.
+- Context: ADR-0019 said the importer "does not read" the export header, which
+  was easy to misread as "ignored." The importer has no header awareness: leftover
+  lines are parsed as plain content (and any `{phrase}{annotation}` inside a help
+  block can become real annotations). Authors also need the format explained
+  inside the file itself when the in-app tooltip is not available.
+- Decision:
+  1. **Header semantics (clarifies ADR-0019 §3)** — Fixed two-line `title:` /
+     `description:` header remains. The importer does not treat those lines as
+     metadata; if not deleted, they are ingested as ordinary content. Re-import
+     guidance: delete them first.
+  2. **Export-notes footer (always on)** — After the body, always append two blank
+     lines plus a banner
+     `=== echoType export notes (delete before Import from .txt) ===` and a short
+     English notes block (syntax, example with real braces, New course → Import
+     from .txt beside Text content). Present even when the course has no
+     annotations.
+  3. **Real braces in the footer by design** — The notes may contain literal
+     `{phrase}{annotation}` examples. Forgetting to strip the footer can pollute
+     content or create bogus annotations; loud delete instructions are the v1
+     mitigation (same manual-strip philosophy as the header).
+  4. **UI copy** — Typing-page Export tooltip matches the footer: user path is
+     New course → Import from .txt, not internal "Step 1 / course editor" wording.
+     Export ⓘ uses the default `InfoTooltip` size (same as mode-switch help).
+- Rejected alternatives:
+  - Footer without curly braces — safer if forgotten, weaker teaching; rejected
+    for explanation clarity.
+  - Importer auto-strips header/footer — deferred; keeps parseAnnotatedTxt
+    single-purpose (same deferral as ADR-0019).
+  - Footer only when annotations exist — rejected; backup format should always
+    self-document.
+- Consequences:
+  - Implementation: `TXT_EXPORT_NOTES_*` in `serializeTxtExport.ts`; unit tests
+    strip footer for round-trip; `TypingPage` tooltip updated.
+  - Round-trip of body markers still holds after manually removing header +
+    footer; full-file re-import without stripping is unsupported.
+  - Future auto-strip or escape syntax needs a new ADR.
+- Supersedes / superseded-by: clarifies ADR-0019 (header wording); does not
+  replace ADR-0018/0019 marker syntax.
