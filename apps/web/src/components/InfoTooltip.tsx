@@ -45,21 +45,21 @@ export function InfoTooltip({
     size === 'sm' ? 'h-3 w-3 min-h-0 min-w-0' : 'h-[1em] w-[1em] min-h-[14px] min-w-[14px]';
   const iconSizeClass =
     size === 'sm'
-      ? 'h-2.5 w-2.5 shrink-0 text-slate-500'
-      : 'h-[0.85em] w-[0.85em] shrink-0 text-slate-500';
+      ? 'h-2.5 w-2.5 shrink-0 text-slate-500 dark:text-serika-sub'
+      : 'h-[0.85em] w-[0.85em] shrink-0 text-slate-500 dark:text-serika-sub';
 
   return (
     <span className="group/info-tooltip relative inline-flex">
       <button
         type="button"
         aria-label={ariaLabel}
-        className={`inline-flex items-center justify-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 ${triggerSizeClass}`}
+        className={`inline-flex items-center justify-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:focus-visible:ring-slate-500 ${triggerSizeClass}`}
       >
         <CircleInfoIcon className={iconSizeClass} />
       </button>
       <span
         role="tooltip"
-        className={`pointer-events-none absolute z-20 hidden rounded-md border border-slate-200 bg-white p-2 text-xs font-normal leading-snug text-slate-500 shadow-md group-hover/info-tooltip:block group-focus-within/info-tooltip:block ${alignClass} ${placementClass} ${panelClassName}`}
+        className={`pointer-events-none absolute z-20 hidden rounded-md border border-slate-200 bg-white p-2 text-xs font-normal leading-snug text-slate-500 shadow-md group-hover/info-tooltip:block group-focus-within/info-tooltip:block dark:border-serika-border dark:bg-serika-surface dark:text-serika-sub ${alignClass} ${placementClass} ${panelClassName}`}
       >
         {children}
       </span>

@@ -74,29 +74,33 @@ interface AnnotatedTextProps {
 
 function legacyCharClassName(ch: string, typedCh: string | undefined, isCursor: boolean): string {
   if (typedCh !== undefined) {
-    return typedCh === ch ? 'text-emerald-600' : 'rounded-sm bg-red-200 text-red-800';
+    return typedCh === ch
+      ? 'text-emerald-600 dark:text-emerald-400'
+      : 'rounded-sm bg-red-200 text-red-800 dark:bg-red-950/70 dark:text-red-300';
   }
-  if (isCursor) return 'underline decoration-2 underline-offset-2 text-slate-700';
-  return 'text-slate-400';
+  if (isCursor) {
+    return 'underline decoration-2 underline-offset-2 text-slate-700 dark:text-serika-sub';
+  }
+  return 'text-slate-400 dark:text-serika-sub';
 }
 
 function typingStatusClassName(status: TargetCharStatus): string {
   switch (status) {
     case 'correct':
-      return 'text-emerald-600';
+      return 'text-emerald-600 dark:text-emerald-400';
     case 'wrong':
-      return 'rounded-sm bg-red-200 text-red-800';
+      return 'rounded-sm bg-red-200 text-red-800 dark:bg-red-950/70 dark:text-red-300';
     case 'correct-newline':
-      return 'text-emerald-600';
+      return 'text-emerald-600 dark:text-emerald-400';
     case 'wrong-enter':
-      return 'rounded-sm bg-red-200 text-red-800';
+      return 'rounded-sm bg-red-200 text-red-800 dark:bg-red-950/70 dark:text-red-300';
     case 'cursor':
-      return 'underline decoration-2 underline-offset-2 text-slate-700';
+      return 'underline decoration-2 underline-offset-2 text-slate-700 dark:text-serika-sub';
     case 'skipped-newline':
     case 'skipped-ignorable':
     case 'untyped':
     default:
-      return 'text-slate-400';
+      return 'text-slate-400 dark:text-serika-sub';
   }
 }
 
@@ -177,7 +181,7 @@ const NoteBox = memo(function NoteBox({
       role={clickable ? 'button' : undefined}
       tabIndex={clickable ? 0 : undefined}
       aria-hidden={isOpen ? true : undefined}
-      className={`absolute top-0 block overflow-hidden text-amber-700 ${clickable ? 'cursor-pointer' : ''}`}
+      className={`absolute top-0 block overflow-hidden text-amber-700 dark:text-serika-main ${clickable ? 'cursor-pointer' : ''}`}
       style={{
         left: note.left,
         width: note.width,
@@ -254,7 +258,7 @@ const BandLayer = memo(function BandLayer({
         <span
           key={`${b.id}-${i}`}
           aria-hidden
-          className="absolute left-0 top-0 z-0 rounded-sm bg-amber-100"
+          className="absolute left-0 top-0 z-0 rounded-sm bg-amber-100 dark:bg-serika-main/15"
           style={{ left: b.left, width: b.width, height: charHeight || '1.6em' }}
         />
       ))}
@@ -345,7 +349,7 @@ function NotePopover({
       role="dialog"
       aria-label="Annotation note"
       data-testid="note-popover"
-      className="fixed z-50 cursor-pointer rounded-md border border-amber-200 bg-white px-2 py-1 text-amber-800 shadow-md"
+      className="fixed z-50 cursor-pointer rounded-md border border-amber-200 bg-white px-2 py-1 text-amber-800 shadow-md dark:border-serika-main/50 dark:bg-serika-surface dark:text-serika-main"
       style={{
         top: pos.top,
         left: pos.left,

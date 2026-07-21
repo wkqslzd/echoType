@@ -19,52 +19,53 @@ export function TimerEndDialog({
 }: TimerEndDialogProps) {
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4 dark:bg-black/60"
       role="presentation"
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="timer-end-title"
-        className="w-full max-w-md rounded-lg border bg-white p-6 shadow-lg"
+        className="w-full max-w-md rounded-lg border border-slate-200 bg-white p-6 shadow-lg dark:border-serika-border dark:bg-serika-surface"
         onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 id="timer-end-title" className="text-lg font-semibold text-slate-900">
+        <h2 id="timer-end-title" className="text-lg font-semibold text-slate-900 dark:text-serika-sub">
           Time&apos;s up
         </h2>
         {canSave ? (
-          <div className="mt-2 space-y-2 text-sm text-slate-600">
+          <div className="mt-2 space-y-2 text-sm text-slate-600 dark:text-serika-sub">
             <p>
-              Your countdown has ended. <span className="font-medium text-slate-800">Save session</span>{' '}
+              Your countdown has ended.{' '}
+              <span className="font-medium text-slate-800 dark:text-serika-sub">Save session</span>{' '}
               stores only what you typed since your last save in this timed block (or since you
               started typing, if you have not saved yet).
             </p>
             <p>
               Anything you already saved during this countdown is in your course statistics and is
-              not saved again. <span className="font-medium text-slate-800">Don&apos;t save</span>{' '}
+              not saved again. <span className="font-medium text-slate-800 dark:text-serika-sub">Don&apos;t save</span>{' '}
               discards only this unsaved portion.
             </p>
           </div>
         ) : (
-          <div className="mt-2 space-y-2 text-sm text-slate-600">
+          <div className="mt-2 space-y-2 text-sm text-slate-600 dark:text-serika-sub">
             <p>
               Your countdown has ended. There is nothing new to save — your last save in this timed
               block is already in your course statistics.
             </p>
             <p>
-              Choose <span className="font-medium text-slate-800">Don&apos;t save</span> to continue
+              Choose <span className="font-medium text-slate-800 dark:text-serika-sub">Don&apos;t save</span> to continue
               practicing without saving.
             </p>
           </div>
         )}
-        {saveError && <p className="mt-2 text-sm text-red-600">{saveError}</p>}
+        {saveError && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{saveError}</p>}
         <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-end">
           <button
             type="button"
             onClick={onDontSave}
             disabled={saving}
-            className="rounded-md border border-red-200 bg-white px-4 py-2 text-sm text-red-700 hover:bg-red-50 disabled:opacity-50"
+            className="rounded-md border border-red-200 bg-white px-4 py-2 text-sm text-red-700 hover:bg-red-50 disabled:opacity-50 dark:border-red-800 dark:bg-serika-surface dark:text-red-300 dark:hover:bg-red-950/40"
           >
             Don&apos;t save
           </button>
@@ -72,7 +73,7 @@ export function TimerEndDialog({
             <button
               type="button"
               disabled
-              className="cursor-not-allowed rounded-md border border-slate-200 bg-slate-100 px-4 py-2 text-sm text-slate-400"
+              className="cursor-not-allowed rounded-md border border-slate-200 bg-slate-100 px-4 py-2 text-sm text-slate-400 dark:border-serika-border dark:bg-serika-raised dark:text-serika-sub"
             >
               Saving requires sign-in
             </button>
@@ -81,7 +82,7 @@ export function TimerEndDialog({
               type="button"
               onClick={onSave}
               disabled={saving || !canSave}
-              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40 dark:border dark:border-serika-sub dark:bg-serika-raised dark:text-serika-text dark:hover:bg-[#4a4d50] dark:disabled:border-serika-border dark:disabled:bg-transparent dark:disabled:text-serika-sub dark:disabled:opacity-100"
             >
               {saving ? 'Saving…' : 'Save session'}
             </button>

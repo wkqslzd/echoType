@@ -8,6 +8,7 @@ import { SiteFooter } from './components/SiteFooter';
 import { SiteHeader } from './components/SiteHeader';
 import { logRouteScrollMonitor, scrollRouteToTop } from './lib/routeScroll';
 import { NicknameSetupModal } from './components/auth/NicknameSetupModal';
+import { NightModeProvider } from './lib/NightModeProvider';
 import { api } from './lib/api';
 
 export function AppLayout() {
@@ -61,50 +62,57 @@ export function AppLayout() {
   const showNicknameSetup = status === 'authed' && account?.needsNicknameSetup;
 
   return (
-    <div className="flex min-h-dvh flex-col">
-      {showNicknameSetup && <NicknameSetupModal />}
-      <SiteHeader className="shrink-0" trailing={
-          status === 'authed' ? (
-            <>
-              {displayName && (
-                <Link
-                  to="/account"
-                  className="text-sm text-slate-600 underline hover:text-slate-900"
-                  data-testid="auth-display-name"
-                >
-                  {displayName}
-                </Link>
-              )}
-              <button
-                type="button"
-                onClick={onLogout}
-                className="text-sm text-slate-600 hover:text-slate-900"
-                data-testid="auth-logout"
-              >
-                Log out
-              </button>
-            </>
-          ) : (
-            <Link
-              to={loginPathWithNext(location.pathname + location.search)}
-              className="text-sm font-medium text-slate-900 hover:underline"
-              data-testid="auth-login"
-            >
-              Log in
-            </Link>
-          )
-        }
-      />
-      <main
-        className={
-          isTypingPage
-            ? 'mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col overflow-y-auto px-4 py-4'
-            : 'mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-6'
-        }
+    <NightModeProvider active={isTypingPage}>
+      <div
+        className="flex min-h-dvh flex-col bg-white dark:bg-serika-bg"
+        data-testid={isTypingPage ? 'typing-session-shell' : 'app-shell'}
       >
-        <Outlet />
-      </main>
-      {!isTypingPage && <SiteFooter />}
-    </div>
+        {showNicknameSetup && <NicknameSetupModal />}
+        <SiteHeader
+          className="shrink-0"
+          trailing={
+            status === 'authed' ? (
+              <>
+                {displayName && (
+                  <Link
+                    to="/account"
+                    className="text-sm text-slate-600 underline hover:text-slate-900 dark:text-serika-text dark:hover:text-serika-text"
+                    data-testid="auth-display-name"
+                  >
+                    {displayName}
+                  </Link>
+                )}
+                <button
+                  type="button"
+                  onClick={onLogout}
+                  className="text-sm text-slate-600 hover:text-slate-900 dark:text-serika-text dark:hover:text-serika-text"
+                  data-testid="auth-logout"
+                >
+                  Log out
+                </button>
+              </>
+            ) : (
+              <Link
+                to={loginPathWithNext(location.pathname + location.search)}
+                className="text-sm font-medium text-slate-900 hover:underline dark:text-serika-text"
+                data-testid="auth-login"
+              >
+                Log in
+              </Link>
+            )
+          }
+        />
+        <main
+          className={
+            isTypingPage
+              ? 'mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col overflow-y-auto px-4 py-4 text-slate-900 dark:text-slate-400'
+              : 'mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-6'
+          }
+        >
+          <Outlet />
+        </main>
+        {!isTypingPage && <SiteFooter />}
+      </div>
+    </NightModeProvider>
   );
 }

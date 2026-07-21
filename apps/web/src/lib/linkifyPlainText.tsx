@@ -18,7 +18,7 @@ export function linkifyPlainText(text: string): ReactNode[] {
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        className="underline hover:text-slate-900"
+        className="underline hover:text-slate-900 dark:hover:text-slate-100"
       >
         {url}
       </a>,

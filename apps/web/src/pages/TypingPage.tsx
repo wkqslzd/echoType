@@ -47,6 +47,7 @@ import {
   TYPING_TEXTAREA_IMMERSIVE_CLASS,
   formatTypingDuration,
 } from '../lib/typingSurface';
+import { useNightMode } from '../lib/NightModeProvider';
 import {
   clearImmersiveTextareaPosition,
   positionImmersiveTextareaAtCursor,
@@ -59,7 +60,15 @@ const IDLE_MS = 5000;
 const TICK_MS = 100;
 const COURSE_NOT_FOUND_REDIRECT_SEC = 5;
 const SESSION_ACTION_BTN_BASE =
-  'flex-1 rounded-md px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-40';
+  'flex-1 rounded-md px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-40 dark:disabled:opacity-100';
+
+/** Night secondary actions (Pause / Start over): cream label when enabled, muted when disabled. */
+const SESSION_SECONDARY_BTN_NIGHT =
+  'dark:border-serika-sub dark:bg-serika-surface dark:text-serika-text dark:hover:bg-serika-raised dark:disabled:border-serika-border dark:disabled:bg-serika-bg dark:disabled:text-serika-sub dark:disabled:hover:bg-serika-bg';
+
+/** Night primary Save: soft fill + cream label when enabled; flat muted when disabled. */
+const SESSION_PRIMARY_BTN_NIGHT =
+  'dark:border dark:border-serika-sub dark:bg-serika-raised dark:text-serika-text dark:hover:bg-[#4a4d50] dark:disabled:border-serika-border dark:disabled:bg-transparent dark:disabled:text-serika-sub dark:disabled:hover:bg-transparent';
 
 declare global {
   interface Window {
@@ -93,6 +102,8 @@ function TypingModeSwitch({
   testId,
   onChange,
   tooltip,
+  className,
+  tooltipAlign = 'center',
 }: {
   checked: boolean;
   disabled?: boolean;
@@ -101,9 +112,11 @@ function TypingModeSwitch({
   testId: string;
   onChange: (enabled: boolean) => void;
   tooltip: ReactNode;
+  className?: string;
+  tooltipAlign?: 'center' | 'end';
 }) {
   return (
-    <div className="flex items-center gap-3">
+    <div className={`flex items-center gap-3${className ? ` ${className}` : ''}`}>
       <button
         type="button"
         role="switch"
@@ -112,20 +125,24 @@ function TypingModeSwitch({
         disabled={disabled}
         data-testid={testId}
         onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40 ${
-          checked ? 'bg-slate-900' : 'bg-slate-200'
+        className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40 dark:focus-visible:ring-slate-500 dark:focus-visible:ring-offset-serika-bg ${
+          checked
+            ? 'bg-slate-900 dark:border-transparent dark:bg-serika-sub'
+            : 'bg-slate-200 dark:border-serika-border dark:bg-serika-bg'
         }`}
       >
         <span
           aria-hidden
           className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${
-            checked ? 'translate-x-5' : 'translate-x-0'
+            checked
+              ? 'translate-x-5 dark:bg-serika-text'
+              : 'translate-x-0 dark:bg-serika-sub'
           }`}
         />
       </button>
-      <span className="inline-flex items-center gap-1 text-sm font-medium leading-tight text-slate-700">
+      <span className="inline-flex items-center gap-1 text-sm font-medium leading-tight text-slate-700 dark:text-serika-sub">
         {label}
-        <InfoTooltip ariaLabel={ariaLabel} placement="bottom">
+        <InfoTooltip ariaLabel={ariaLabel} placement="bottom" align={tooltipAlign}>
           {tooltip}
         </InfoTooltip>
       </span>
@@ -147,13 +164,13 @@ function CourseNotFoundPanel() {
   }, [secLeft, navigate]);
 
   return (
-    <div className="space-y-3 rounded-md border border-slate-200 bg-white p-6">
-      <p className="font-medium text-slate-900">Course not found</p>
-      <p className="text-sm text-slate-600">
+    <div className="space-y-3 rounded-md border border-slate-200 bg-white p-6 dark:border-serika-border dark:bg-serika-surface">
+      <p className="font-medium text-slate-900 dark:text-serika-sub">Course not found</p>
+      <p className="text-sm text-slate-600 dark:text-serika-sub">
         This course was deleted or is no longer available.
       </p>
-      <p className="text-sm text-slate-500">Redirecting to home in {secLeft}s…</p>
-      <Link to="/" className="text-sm text-slate-700 underline hover:text-slate-900">
+      <p className="text-sm text-slate-500 dark:text-serika-sub">Redirecting to home in {secLeft}s…</p>
+      <Link to="/" className="text-sm text-slate-700 underline hover:text-slate-900 dark:text-serika-sub dark:hover:text-serika-text">
         Go now
       </Link>
     </div>
@@ -249,6 +266,7 @@ function TypingSession({
   const [immersiveMode, setImmersiveMode] = useState(readImmersiveModePreference);
   const [typingInputFocused, setTypingInputFocused] = useState(true);
   const [forgivingMode, setForgivingMode] = useState(readForgivingModePreference);
+  const { effectiveNight, hasOverride, setNightEnabled, clearToSystem } = useNightMode();
   const alignMode: AlignMode = forgivingMode ? 'forgiving' : 'strict';
   const [sessionTimerHidden, setSessionTimerHidden] = useState(readSessionTimerHiddenPreference);
   const [statsHidden, setStatsHidden] = useState(false);
@@ -796,11 +814,14 @@ function TypingSession({
       <div className="shrink-0">
         <div className="flex items-start justify-between">
           {timerEndOpen ? (
-            <span className="text-sm text-slate-300" aria-disabled="true">
+            <span className="text-sm text-slate-300 dark:text-slate-600" aria-disabled="true">
               ← Back
             </span>
           ) : (
-            <Link to={typingBackPath(courseMode, categoryId)} className="text-sm text-slate-500 hover:text-slate-800">
+            <Link
+              to={typingBackPath(courseMode, categoryId)}
+              className="text-sm text-slate-500 hover:text-slate-800 dark:text-serika-sub dark:hover:text-serika-text"
+            >
               ← Back
             </Link>
           )}
@@ -829,8 +850,8 @@ function TypingSession({
               onClick={handleExportTxt}
               className={`underline underline-offset-2 ${
                 timerEndOpen
-                  ? 'cursor-not-allowed text-slate-300'
-                  : 'text-slate-500 hover:text-slate-800'
+                  ? 'cursor-not-allowed text-slate-300 dark:text-slate-600'
+                  : 'text-slate-500 hover:text-slate-800 dark:text-serika-sub dark:hover:text-serika-text'
               }`}
               data-testid="txt-export-button"
             >
@@ -838,7 +859,7 @@ function TypingSession({
             </button>
           </span>
         </div>
-        <h1 className="mt-1 text-xl font-semibold">{title}</h1>
+        <h1 className="mt-1 text-xl font-semibold text-slate-900 dark:text-serika-sub">{title}</h1>
       </div>
 
       {description?.trim() && (
@@ -901,7 +922,7 @@ function TypingSession({
             />
             {immersiveMode && !typingInputFocused && (
               <div
-                className="pointer-events-none absolute inset-0 z-10 rounded-md bg-amber-50/70"
+                className="pointer-events-none absolute inset-0 z-10 rounded-md bg-amber-50/80 dark:bg-black/70"
                 aria-hidden
                 data-testid="immersive-passage-unfocused"
               />
@@ -943,6 +964,35 @@ function TypingSession({
               </>
             }
           />
+          <div className="ml-auto flex flex-wrap items-center justify-end gap-x-3 gap-y-2">
+            {hasOverride && (
+              <button
+                type="button"
+                data-testid="night-mode-use-system"
+                disabled={timerEndOpen}
+                onClick={clearToSystem}
+                className="text-xs text-slate-500 underline hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-40 dark:text-serika-sub dark:hover:text-serika-text"
+              >
+                Follow browser setting
+              </button>
+            )}
+            <TypingModeSwitch
+              checked={effectiveNight}
+              disabled={timerEndOpen}
+              label="Night mode"
+              ariaLabel="About night mode"
+              testId="night-mode"
+              onChange={setNightEnabled}
+              tooltipAlign="end"
+              tooltip={
+                <>
+                  Softer dark colors for this typing page. By default it follows your browser&apos;s
+                  light or dark look (which may or may not match your computer). Flip the switch to
+                  choose yourself; use Follow browser setting to go back.
+                </>
+              }
+            />
+          </div>
         </div>
 
         <textarea
@@ -967,7 +1017,7 @@ function TypingSession({
         />
 
         {immersiveMode && (
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-500 dark:text-serika-sub">
             Typing box hidden — click the passage to type. Turn off immersive mode to see your
             input.
           </p>
@@ -983,7 +1033,7 @@ function TypingSession({
           aria-label="Show session stats"
           title="Show session stats"
           onClick={() => setStatsHidden(false)}
-          className="group min-w-[1.25rem] text-sm text-slate-300 hover:text-slate-600"
+          className="group min-w-[1.25rem] text-sm text-slate-300 hover:text-slate-600 dark:text-serika-sub dark:hover:text-serika-text"
         >
           <span className="group-hover:hidden" aria-hidden>
             —
@@ -1004,7 +1054,7 @@ function TypingSession({
             type="button"
             data-testid="stats-hide"
             onClick={() => setStatsHidden(true)}
-            className="mt-1 text-xs text-slate-500 underline hover:text-slate-800"
+            className="mt-1 text-xs text-slate-500 underline hover:text-slate-800 dark:text-serika-sub dark:hover:text-serika-text"
           >
             Hide
           </button>
@@ -1018,7 +1068,7 @@ function TypingSession({
             data-testid="pause-session"
             onClick={handlePause}
             disabled={!startedAt || paused || submitMutation.isPending || timerEndOpen || showLeaveDialog}
-            className={`${SESSION_ACTION_BTN_BASE} border border-slate-200 bg-white text-slate-700 hover:bg-slate-50`}
+            className={`${SESSION_ACTION_BTN_BASE} border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 ${SESSION_SECONDARY_BTN_NIGHT}`}
           >
             Pause
           </button>
@@ -1028,41 +1078,43 @@ function TypingSession({
             disabled={isGuest || !startedAt || submitMutation.isPending || timerEndOpen}
             className={`${SESSION_ACTION_BTN_BASE} ${
               isGuest
-                ? 'cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-400'
-                : 'bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50'
+                ? 'cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-400 dark:border-serika-border dark:bg-serika-bg dark:text-serika-sub'
+                : `border border-transparent bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 ${SESSION_PRIMARY_BTN_NIGHT}`
             }`}
           >
             {isGuest ? 'Saving requires sign-in' : submitMutation.isPending ? 'Saving…' : 'Save session'}
           </button>
           <button
+            type="button"
             onClick={handleReset}
-            className={`${SESSION_ACTION_BTN_BASE} border border-slate-200 bg-white text-slate-700 hover:bg-slate-50`}
+            disabled={timerEndOpen}
+            className={`${SESSION_ACTION_BTN_BASE} border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 ${SESSION_SECONDARY_BTN_NIGHT}`}
           >
             Start over
           </button>
         </div>
         {paused && (
-          <p data-testid="pause-hint" className="text-sm text-amber-800">
+          <p data-testid="pause-hint" className="text-sm text-amber-800 dark:text-amber-300">
             Paused — type to resume
           </p>
         )}
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-slate-500 dark:text-serika-sub">
           Course statistics update only when you save this session.
         </p>
         </div>
 
         {lastSaved && (
-        <div className="relative rounded-md border border-emerald-200 bg-emerald-50 p-4 pr-10 text-sm text-emerald-900">
+        <div className="relative rounded-md border border-emerald-200 bg-emerald-50 p-4 pr-10 text-sm text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-100">
           <button
             type="button"
             onClick={() => setLastSaved(null)}
-            className="absolute right-2 top-2 rounded p-1 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-900"
+            className="absolute right-2 top-2 rounded p-1 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-900 dark:text-emerald-300 dark:hover:bg-emerald-900/50 dark:hover:text-emerald-100"
             aria-label="Dismiss last saved session stats"
           >
             ×
           </button>
           <p className="font-medium">Last session saved</p>
-          <p className="mt-1 text-emerald-800">
+          <p className="mt-1 text-emerald-800 dark:text-emerald-200">
             Stats from your most recent save: duration {formatTypingDuration(lastSaved.durationSec)} · wpm{' '}
             {lastSaved.wpm.toFixed(1)} · accuracy {(lastSaved.accuracy * 100).toFixed(1)}% · errors{' '}
             {lastSaved.errorCount} · chars {lastSaved.charCount} · loops {lastSaved.loopCount}
@@ -1070,7 +1122,7 @@ function TypingSession({
         </div>
         )}
         {submitMutation.isError && !showLeaveDialog && !timerEndOpen && (
-          <p className="text-sm text-red-600">Failed to save: {(submitMutation.error as Error).message}</p>
+          <p className="text-sm text-red-600 dark:text-red-400">Failed to save: {(submitMutation.error as Error).message}</p>
         )}
       </div>
     </div>
@@ -1093,7 +1145,7 @@ function StatsBar({
   completedLoops: number | null;
 }) {
   return (
-    <div className="grid grid-cols-2 gap-2 rounded-md border bg-white p-3 text-sm sm:grid-cols-6">
+    <div className="grid grid-cols-2 gap-2 rounded-md border border-slate-200 bg-white p-3 text-sm dark:border-serika-border dark:bg-serika-surface sm:grid-cols-6">
       <Stat label="time" value={formatTypingDuration(durationSec)} valueTestId="stats-time" />
       <Stat label="wpm" value={wpm.toFixed(1)} wpmInfo />
       <Stat label="accuracy" value={`${(accuracy * 100).toFixed(1)}%`} />
@@ -1106,7 +1158,7 @@ function StatsBar({
 
 const WPM_TOOLTIP = (
   <>
-    <p className="font-medium text-slate-700">Words per minute (WPM)</p>
+    <p className="font-medium text-slate-700 dark:text-serika-sub">Words per minute (WPM)</p>
     <p className="mt-1">
       Characters you type, divided by 5, divided by active typing minutes. This is the usual rule from
       English typing tests.
@@ -1134,16 +1186,16 @@ function Stat({
   return (
     <div className="flex flex-col gap-0.5">
       {wpmInfo ? (
-        <span className="inline-flex items-center gap-1 text-sm leading-tight text-slate-400">
+        <span className="inline-flex items-center gap-1 text-sm leading-tight text-slate-400 dark:text-serika-sub">
           <span className="uppercase">{label}</span>
           <InfoTooltip ariaLabel="About words per minute" placement="top" panelClassName="w-72">
             {WPM_TOOLTIP}
           </InfoTooltip>
         </span>
       ) : (
-        <span className="text-sm leading-tight text-slate-400 uppercase">{label}</span>
+        <span className="text-sm leading-tight text-slate-400 uppercase dark:text-serika-sub">{label}</span>
       )}
-      <div className="font-mono text-sm text-slate-900" data-testid={valueTestId}>
+      <div className="font-mono text-sm text-slate-900 dark:text-serika-sub" data-testid={valueTestId}>
         {value}
       </div>
     </div>

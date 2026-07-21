@@ -29,7 +29,7 @@ const HELP_TEXT =
 
 function ExitCountdownHint() {
   return (
-    <p className="mt-1 text-right text-xs text-slate-400">
+    <p className="mt-1 text-right text-xs text-slate-400 dark:text-serika-sub">
       Click Start over to cancel the countdown and clear your current session.
     </p>
   );
@@ -61,7 +61,7 @@ export function SessionTimerStrip({
           aria-label="Show session timer"
           title="Show session timer"
           onClick={onShowIdle}
-          className="group min-w-[1.25rem] text-sm text-slate-300 hover:text-slate-600"
+          className="group min-w-[1.25rem] text-sm text-slate-300 hover:text-slate-600 dark:text-serika-sub dark:hover:text-serika-text"
         >
           <span className="group-hover:hidden" aria-hidden>
             —
@@ -77,7 +77,7 @@ export function SessionTimerStrip({
           type="button"
           data-testid="session-timer-hide"
           onClick={onHideIdle}
-          className="text-sm text-slate-400 hover:text-slate-600"
+          className="text-sm text-slate-400 hover:text-slate-600 dark:text-serika-sub dark:hover:text-serika-text"
         >
           Hide
         </button>
@@ -85,7 +85,7 @@ export function SessionTimerStrip({
           type="button"
           data-testid="session-timer-set"
           onClick={onOpenConfig}
-          className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-serika-border dark:bg-serika-surface dark:text-serika-sub dark:hover:bg-serika-raised"
         >
           Set session timer
         </button>
@@ -97,12 +97,12 @@ export function SessionTimerStrip({
     <div data-testid="session-timer-strip" className="max-w-full px-1 py-1 text-right text-sm">
       {phase === 'running' && remainingSec != null && (
         <>
-          <p className="text-slate-600" aria-live="polite">
+          <p className="text-slate-600 dark:text-serika-sub" aria-live="polite">
             <span aria-hidden>⏱ </span>
             <span className="font-mono">{formatCountdown(remainingSec)}</span> left
             {paused && (
               <>
-                <span className="text-slate-400"> · </span>
+                <span className="text-slate-400 dark:text-serika-sub"> · </span>
                 <span>Paused</span>
               </>
             )}
@@ -113,9 +113,11 @@ export function SessionTimerStrip({
 
       {phase === 'armed' && armedMinutes != null && (
         <>
-          <p className="text-slate-600">
-            <span className="font-medium text-slate-800">{presetLabel(armedMinutes)}</span>
-            <span className="text-slate-400"> · </span>
+          <p className="text-slate-600 dark:text-serika-sub">
+            <span className="font-medium text-slate-800 dark:text-serika-sub">
+              {presetLabel(armedMinutes)}
+            </span>
+            <span className="text-slate-400 dark:text-serika-sub"> · </span>
             Start typing to begin
           </p>
           <ExitCountdownHint />
@@ -125,7 +127,7 @@ export function SessionTimerStrip({
       {phase === 'configuring' && (
         <>
           <div className="flex flex-wrap items-center justify-end gap-2 pb-1">
-            <span className="shrink-0 text-xs text-slate-500">Preset</span>
+            <span className="shrink-0 text-xs text-slate-500 dark:text-serika-sub">Preset</span>
             {TIMER_PRESET_MINUTES.map((m) => (
               <button
                 key={m}
@@ -133,14 +135,16 @@ export function SessionTimerStrip({
                 onClick={() => onPresetChange(m)}
                 className={`shrink-0 rounded-md border px-2 py-1 text-xs ${
                   presetMinutes === m && !customMinutesInput.trim()
-                    ? 'border-slate-900 bg-slate-900 text-white'
-                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                    ? 'border-slate-900 bg-slate-900 text-white dark:border-serika-sub dark:bg-transparent dark:text-serika-text'
+                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-serika-border dark:bg-serika-surface dark:text-serika-sub dark:hover:bg-serika-raised'
                 }`}
               >
                 {presetLabel(m)}
               </button>
             ))}
-            <span className="shrink-0 text-xs text-slate-500">Custom (minutes, 10–120)</span>
+            <span className="shrink-0 text-xs text-slate-500 dark:text-serika-sub">
+              Custom (minutes, 10–120)
+            </span>
             <input
               type="text"
               inputMode="numeric"
@@ -148,11 +152,11 @@ export function SessionTimerStrip({
               onChange={(e) => onCustomChange(e.target.value)}
               placeholder="e.g. 25"
               aria-invalid={durationError != null}
-              className="w-20 shrink-0 rounded-md border px-2 py-1 font-mono text-xs"
+              className="w-20 shrink-0 rounded-md border border-slate-200 bg-white px-2 py-1 font-mono text-xs text-slate-900 dark:border-serika-border dark:bg-serika-surface dark:text-serika-sub"
             />
           </div>
           {durationError && (
-            <p className="mt-1 text-right text-xs text-red-600">{durationError}</p>
+            <p className="mt-1 text-right text-xs text-red-600 dark:text-red-400">{durationError}</p>
           )}
           <div className="mt-1 flex flex-col items-end gap-1">
             <div className="flex shrink-0 gap-2">
@@ -160,19 +164,21 @@ export function SessionTimerStrip({
                 type="button"
                 data-testid="session-timer-confirm"
                 onClick={onConfirm}
-                className="shrink-0 rounded-md bg-slate-900 px-3 py-1 text-xs font-medium text-white hover:bg-slate-800"
+                className="shrink-0 rounded-md bg-slate-900 px-3 py-1 text-xs font-medium text-white hover:bg-slate-800 dark:border dark:border-serika-sub dark:bg-serika-raised dark:text-serika-text dark:hover:bg-[#4a4d50]"
               >
                 Confirm
               </button>
               <button
                 type="button"
                 onClick={onCancelConfig}
-                className="shrink-0 rounded-md border border-slate-200 px-3 py-1 text-xs text-slate-600 hover:bg-slate-50"
+                className="shrink-0 rounded-md border border-slate-200 px-3 py-1 text-xs text-slate-600 hover:bg-slate-50 dark:border-serika-border dark:text-serika-sub dark:hover:bg-serika-raised"
               >
                 Cancel
               </button>
             </div>
-            <p className="max-w-md text-right text-xs leading-normal text-slate-400">{HELP_TEXT}</p>
+            <p className="max-w-md text-right text-xs leading-normal text-slate-400 dark:text-serika-sub">
+              {HELP_TEXT}
+            </p>
           </div>
         </>
       )}

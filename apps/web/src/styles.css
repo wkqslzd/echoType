@@ -10,6 +10,12 @@ body,
   min-height: 100dvh;
 }
 
+html.dark {
+  color-scheme: dark;
+  /* Serika subAlt — page outside the passage box */
+  background-color: #2c2e31;
+}
+
 @layer components {
   .mode-page-title {
     font-family: Pacifico, cursive;

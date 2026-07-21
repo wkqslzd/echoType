@@ -38,7 +38,7 @@ export function CourseDescriptionPanel({
         aria-label="Show description"
         title="Show description"
         onClick={() => setHidden(false)}
-        className="group min-w-[1.25rem] text-sm text-slate-300 hover:text-slate-600"
+        className="group min-w-[1.25rem] text-sm text-slate-300 hover:text-slate-600 dark:text-serika-sub dark:hover:text-serika-text"
       >
         <span className="group-hover:hidden" aria-hidden>
           —
@@ -54,7 +54,7 @@ export function CourseDescriptionPanel({
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
-          className="text-xs text-slate-500 underline hover:text-slate-800"
+          className="text-xs text-slate-500 underline hover:text-slate-800 dark:text-serika-sub dark:hover:text-serika-text"
         >
           {expanded ? 'Show less' : 'Show more'}
         </button>
@@ -64,7 +64,7 @@ export function CourseDescriptionPanel({
           type="button"
           data-testid="description-hide"
           onClick={() => setHidden(true)}
-          className="text-xs text-slate-500 underline hover:text-slate-800"
+          className="text-xs text-slate-500 underline hover:text-slate-800 dark:text-serika-sub dark:hover:text-serika-text"
         >
           Hide
         </button>
@@ -76,11 +76,11 @@ export function CourseDescriptionPanel({
     <div>
       <div
         ref={clampRef}
-        className={`text-sm leading-snug text-slate-600 ${
+        className={`text-sm leading-snug text-slate-600 dark:text-serika-sub ${
           expanded ? 'whitespace-pre-wrap' : 'line-clamp-1 overflow-hidden'
         }`}
       >
-        <span className="text-slate-400">Description: </span>
+        <span className="text-slate-400 dark:text-serika-sub">Description: </span>
         {linkifyPlainText(trimmed)}
       </div>
       {toggleRow}
