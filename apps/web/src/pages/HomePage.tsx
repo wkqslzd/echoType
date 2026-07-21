@@ -55,7 +55,7 @@ export function HomePage() {
       <div>
         <h1 className="text-2xl font-semibold">Welcome to echoType</h1>
         <p className="mt-2 text-slate-600">
-          Repeat, type, and remember meaningful texts with your own annotations.
+          Type, repeat, and remember meaningful texts with your own annotations.
         </p>
         {flashError && (
           <p className="mt-3 text-sm text-red-600" data-testid="home-auth-flash-error">

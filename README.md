@@ -1,6 +1,6 @@
 # echoType
 
-**Repeat, type, and remember meaningful texts with your own annotations.**
+**Type, repeat, and remember meaningful texts with your own annotations.**
 
 **Live:** [echotype.ink](https://echotype.ink)
 
