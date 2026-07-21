@@ -34,7 +34,7 @@ Active capability: Maintenance & polish
 
 ## Now working on (describe ONLY the in-progress item)
 - Goal (one line): Post-launch maintenance — polish and bug fixes as discovered
-- Sub-steps done: Google sign-in capability closed (ADR-0025–0028)
+- Sub-steps done: Google sign-in capability closed (ADR-0025–0028); typing-session Night mode (ADR-0033)
 - Next step: ongoing
 - Related decisions: see Known debt table
 
@@ -49,6 +49,7 @@ Active capability: Maintenance & polish
 - Types/validation: packages/shared/course.ts, packages/shared/category.ts
 - Course + collection routes: apps/api/src/routes/courses.ts, apps/api/src/routes/categories.ts
 - Typing UI: apps/web/src/pages/TypingPage.tsx
+- Typing Night mode (shell only): apps/web/src/lib/nightMode.ts, NightModeProvider.tsx; Tailwind `serika` tokens in `apps/web/tailwind.config.js`; probe `apps/web/scripts/night-mode-probe.mjs` (ADR-0033)
 - Typing scroll + immersive caret pin: apps/web/src/lib/typingScroll.ts (ADR-0031)
 - Session timer + pause: apps/web/src/components/typing/SessionTimerStrip.tsx, TimerEndDialog.tsx, apps/web/src/lib/sessionTimer.ts; probe `apps/web/scripts/phase7-pause-probe.mjs`
 - Typing Back paths: apps/web/src/lib/collectionPaths.ts

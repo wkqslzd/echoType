@@ -1652,3 +1652,59 @@
   - Guest / empty states stay copy-only; guest never calls the endpoint.
 - Supersedes / superseded-by: Builds on ADR-0014 course cumulative; does not
   change STATS.md §2/§3 formulas.
+
+---
+
+## ADR-0033 — Typing-session Night mode (Serika shell; browser color-scheme default)
+- Status: Accepted (2026-07-21)
+- Commit/PR anchor: 7a73d8e
+- Plain summary (owner reads this): On the typing page only, users can turn on a
+  soft dark “Night mode” (including the top bar). By default it follows the
+  browser’s light/dark setting; flipping the switch remembers a personal choice
+  until “Follow browser setting”. Colors borrow Monkeytype Serika Dark warm
+  grays and annotation yellow; typing correct/wrong greens and reds stay as they
+  were.
+- Context: Long typing sessions need a less glaring surface at night. A full-site
+  dark theme would touch every page and fight the product’s minimal light UI.
+  Monkeytype Serika Dark’s brightness structure (warm deep gray, not pure black)
+  fits EchoType better than inventing a new palette from scratch, without
+  adopting Serika as a branded yellow “skin” for chrome.
+- Decision:
+  1. **Scope** — Typing session shell only (`/…/type`): `AppLayout` when
+     `isTypingPage`, `SiteHeader`, passage/textarea, timer/stats/controls, leave
+     and timer-end dialogs. `html.dark` is applied only while that route is
+     active so portals inherit Night; leaving `/type` removes it. No site-wide
+     theme. Nickname setup modal stays light in v1.
+  2. **Preference** — `localStorage` key `echotype-night-mode`: absent → follow
+     `prefers-color-scheme` (browser-reported; may differ from OS if the browser
+     Appearance is not “System”); `'1'`/`'0'` force on/off; “Follow browser
+     setting” clears the override. `matchMedia` updates immediately when there
+     is no override. Switch UI sits with Immersive/Forgiving (Night + follow
+     link on the right, A2 layout). Accept that following-browser-on cannot be
+     one-click “pinned on” without toggling off then on.
+  3. **Palette** — Tailwind `serika` tokens from Monkeytype `serika_dark`: page
+     outside the box uses subAlt `#2c2e31`, passage/textarea surface uses bg
+     `#323437` (swapped nesting vs Monkeytype’s default), untyped body/caret use
+     sub `#646669`, annotation accent uses main `#e2b714`, chrome/borders use
+     warm neutrals (`text` `#d1d0c5`, `border` `#45484a`, `raised`). Typing
+     correct/wrong stay EchoType emerald/red. Light mode classes unchanged.
+  4. **Engineering** — `darkMode: 'class'`; shared components (`AnnotatedText`,
+     `SiteHeader`, tooltips) only add `dark:` variants so the course editor and
+     non-typing routes stay light without a `.dark` ancestor. Unit tests for
+     `resolveNightMode`; local Playwright probe `night-mode-probe.mjs` (not CI).
+- Rejected alternatives:
+  - Site-wide Dark Mode / CSS-variable redesign of every page — out of maintenance
+    scope; high miss risk; conflicts with intentional light minimalism elsewhere.
+  - Passage-only dark inset — “dark hole in a bright page” worse than all-light.
+  - Default follow OS while labeling “system appearance” without noting the
+    browser middle layer — inaccurate on Chrome when Appearance ≠ System.
+  - Using Serika `text` `#d1d0c5` for untyped passage — reads as already typed;
+    untyped uses `sub` instead.
+- Consequences:
+  - Future site-wide theme would need a separate ADR; do not widen `html.dark`
+    beyond typing without one.
+  - Auth pages sharing `SiteHeader` remain light unless a typing Night session
+    left `html.dark` on (must keep teardown on route leave).
+  - Nickname modal under Night stays a light island by design until a follow-up.
+- Supersedes / superseded-by: none (maintenance polish; does not flip typing
+  ADRs).
