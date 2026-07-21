@@ -830,17 +830,19 @@ function TypingSession({
               ariaLabel="About exporting to .txt"
               placement="bottom"
               align="end"
-              size="sm"
               panelClassName="w-72"
             >
               <span className="block text-left">
                 <span className="block">
                   Downloads a local backup. Annotated phrases are written as{' '}
-                  {'{phrase}{annotation}'} pairs in the file body.
+                  {'{phrase}{annotation}'} pairs in the file body. A notes section
+                  at the end of the file explains the format.
                 </span>
                 <span className="mt-1.5 block">
-                  To re-import in the course editor, use Import from .txt and delete the
-                  first two lines (title and description) from the file first.
+                  To use the file again: New course → Import from .txt (beside Text
+                  content). Delete the title: and description: lines at the top and
+                  the notes section at the bottom first — otherwise they become part
+                  of the course text.
                 </span>
               </span>
             </InfoTooltip>

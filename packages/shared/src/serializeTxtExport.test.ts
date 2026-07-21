@@ -4,6 +4,8 @@ import { parseAnnotatedTxt } from './parseTxtImport.js';
 import {
   sanitizeTxtFilename,
   serializeAnnotatedTxt,
+  TXT_EXPORT_NOTES_BANNER,
+  TXT_EXPORT_NOTES_FOOTER,
   type SerializeTxtInput,
 } from './serializeTxtExport.js';
 
@@ -17,26 +19,33 @@ function makeInput(overrides: Partial<SerializeTxtInput>): SerializeTxtInput {
   };
 }
 
-/** Strip the fixed 2-line header + blank separator, returning the body. */
+/** Strip fixed header and export-notes footer, returning the body only. */
 function bodyOf(exported: string): string {
   const lines = exported.split('\n');
   assert.match(lines[0]!, /^title: /);
   assert.match(lines[1]!, /^description: /);
   assert.equal(lines[2], '');
-  return lines.slice(3).join('\n');
+
+  const bannerIdx = lines.indexOf(TXT_EXPORT_NOTES_BANNER);
+  assert.ok(bannerIdx >= 0, 'expected export-notes banner');
+  // Two blank lines immediately before the banner.
+  assert.equal(lines[bannerIdx - 1], '');
+  assert.equal(lines[bannerIdx - 2], '');
+
+  return lines.slice(3, bannerIdx - 2).join('\n');
 }
 
 describe('serializeAnnotatedTxt — header', () => {
-  it('always emits exactly two header lines plus a blank separator', () => {
+  it('always emits exactly two header lines plus a blank separator before the body', () => {
     const out = serializeAnnotatedTxt(
       makeInput({ title: 'Deer Park', description: 'Wang Wei', content: '空山不见人' }),
     );
-    assert.equal(out, 'title: Deer Park\ndescription: Wang Wei\n\n空山不见人');
+    assert.match(out, /^title: Deer Park\ndescription: Wang Wei\n\n空山不见人\n/);
   });
 
   it('emits an empty description line when the course has none', () => {
     const out = serializeAnnotatedTxt(makeInput({ title: 'Deer Park', content: '空山不见人' }));
-    assert.equal(out, 'title: Deer Park\ndescription: \n\n空山不见人');
+    assert.match(out, /^title: Deer Park\ndescription: \n\n空山不见人\n/);
   });
 
   it('collapses newlines inside the description to keep the header fixed', () => {
@@ -45,6 +54,26 @@ describe('serializeAnnotatedTxt — header', () => {
     );
     assert.equal(bodyOf(out), 'abcde');
     assert.match(out, /^title: Test course\ndescription: line one line two line three\n\n/);
+  });
+});
+
+describe('serializeAnnotatedTxt — footer', () => {
+  it('always appends the export-notes footer after two blank lines', () => {
+    const out = serializeAnnotatedTxt(makeInput({ content: 'Hello world here' }));
+    assert.ok(out.endsWith(TXT_EXPORT_NOTES_FOOTER));
+    assert.ok(out.includes(`\n\n\n${TXT_EXPORT_NOTES_BANNER}\n`));
+  });
+
+  it('includes the footer even when the course has annotations', () => {
+    const out = serializeAnnotatedTxt(
+      makeInput({
+        content: 'abcdef',
+        annotations: [{ startIndex: 0, endIndex: 1, noteText: 'first' }],
+      }),
+    );
+    assert.ok(out.includes(TXT_EXPORT_NOTES_BANNER));
+    assert.ok(out.includes('{phrase}{annotation}'));
+    assert.ok(out.includes('{bourn}{boundary; limit}'));
   });
 });
 
