@@ -9,7 +9,7 @@ import {
 
 export function PracticeTag({ label }: { label: 'Last practiced here' }) {
   return (
-    <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">{label}</span>
+    <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500 dark:bg-serika-raised dark:text-serika-sub">{label}</span>
   );
 }
 
@@ -89,7 +89,7 @@ export function CardStatsPopover({
         aria-haspopup="dialog"
         aria-controls={panelId}
         onClick={() => setPinnedOpen((v) => !v)}
-        className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+        className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:text-serika-sub dark:hover:bg-serika-raised dark:hover:text-serika-text"
       >
         <span aria-hidden className="text-base leading-none">
           ⓘ
@@ -99,7 +99,7 @@ export function CardStatsPopover({
         <div
           id={panelId}
           role="dialog"
-          className="absolute bottom-full right-0 z-20 mb-1 w-56 rounded-md border bg-white p-3 text-sm shadow-lg"
+          className="absolute bottom-full right-0 z-20 mb-1 w-56 rounded-md border bg-white p-3 text-sm shadow-lg dark:border-serika-border dark:bg-serika-surface"
         >
           {pinnedOpen && (
             <button
@@ -109,7 +109,7 @@ export function CardStatsPopover({
                 isolateFromParent(e, stopParentClick);
                 setPinnedOpen(false);
               }}
-              className="absolute right-1 top-1 rounded p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+              className="absolute right-1 top-1 rounded p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:text-serika-sub dark:hover:bg-serika-raised dark:hover:text-serika-text"
             >
               <span aria-hidden className="text-base leading-none">
                 ×
@@ -119,8 +119,8 @@ export function CardStatsPopover({
           <dl className={`space-y-2 ${pinnedOpen ? 'pt-4' : ''}`}>
             {rows.map((row) => (
               <div key={row.label} className="flex justify-between gap-3">
-                <dt className="text-slate-500">{row.label}</dt>
-                <dd className="text-right font-mono text-slate-800">{row.value}</dd>
+                <dt className="text-slate-500 dark:text-serika-sub">{row.label}</dt>
+                <dd className="text-right font-mono text-slate-800 dark:text-serika-text">{row.value}</dd>
               </div>
             ))}
           </dl>
@@ -145,7 +145,7 @@ export function CardExplicitStats({
 }: CardExplicitStatsProps) {
   return (
     <div
-      className={`flex min-h-5 min-w-0 flex-wrap items-center gap-2 text-sm text-slate-500 ${className}`}
+      className={`flex min-h-5 min-w-0 flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-serika-sub ${className}`}
     >
       <span>{formatCardStatsLine(totalDurationSec, totalCompletedPasses)}</span>
       {tag}

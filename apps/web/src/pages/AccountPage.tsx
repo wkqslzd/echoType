@@ -251,22 +251,22 @@ export function AccountPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-xl font-semibold">Account</h1>
-        <p className="mt-1 text-sm text-slate-600">Manage your sign-in details and nickname.</p>
+        <p className="mt-1 text-sm text-slate-600 dark:text-serika-sub">Manage your sign-in details and nickname.</p>
       </div>
 
-      <section className="rounded-md border bg-white p-4">
-        <h2 className="text-sm font-medium text-slate-900">Email</h2>
-        <p className="mt-2 text-sm text-slate-700" data-testid="account-email">
+      <section className="rounded-md border bg-white p-4 dark:border-serika-border dark:bg-serika-surface">
+        <h2 className="text-sm font-medium text-slate-900 dark:text-serika-text">Email</h2>
+        <p className="mt-2 text-sm text-slate-700 dark:text-serika-sub" data-testid="account-email">
           {email || '…'}
         </p>
-        <p className="mt-1 text-xs text-slate-500">Email cannot be changed yet.</p>
+        <p className="mt-1 text-xs text-slate-500 dark:text-serika-sub">Email cannot be changed yet.</p>
       </section>
 
-      <section className="rounded-md border bg-white p-4">
-        <h2 className="text-sm font-medium text-slate-900">Change nickname</h2>
+      <section className="rounded-md border bg-white p-4 dark:border-serika-border dark:bg-serika-surface">
+        <h2 className="text-sm font-medium text-slate-900 dark:text-serika-text">Change nickname</h2>
         <form className="mt-3 space-y-3" onSubmit={onNicknameSubmit}>
           <label className="block text-sm">
-            <span className="text-slate-700">Nickname</span>
+            <span className="text-slate-700 dark:text-serika-sub">Nickname</span>
             <input
               type="text"
               required
@@ -274,15 +274,15 @@ export function AccountPage() {
               maxLength={NICKNAME_MAX}
               value={nickname}
               onChange={(e) => setNickname(e.target.value)}
-              className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-md border px-3 py-2 text-sm dark:border-serika-border dark:bg-serika-surface dark:text-serika-text"
             />
           </label>
-          {nicknameError && <p className="text-sm text-red-600">{nicknameError}</p>}
+          {nicknameError && <p className="text-sm text-red-600 dark:text-red-300">{nicknameError}</p>}
           {nicknameMessage && <p className="text-sm text-green-700">{nicknameMessage}</p>}
           <button
             type="submit"
             disabled={nicknameSubmitting}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60"
+            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60 dark:border dark:border-serika-sub dark:bg-serika-raised dark:text-serika-text dark:hover:bg-[#4a4d50] dark:disabled:border-serika-border dark:disabled:bg-transparent dark:disabled:text-serika-sub dark:disabled:opacity-100"
           >
             {nicknameSubmitting ? 'Saving…' : 'Save nickname'}
           </button>
@@ -290,48 +290,48 @@ export function AccountPage() {
       </section>
 
       {canSetPassword ? (
-        <section className="rounded-md border bg-white p-4">
-          <h2 className="text-sm font-medium text-slate-900">Set a password</h2>
-          <p className="mt-1 text-xs text-slate-500">
+        <section className="rounded-md border bg-white p-4 dark:border-serika-border dark:bg-serika-surface">
+          <h2 className="text-sm font-medium text-slate-900 dark:text-serika-text">Set a password</h2>
+          <p className="mt-1 text-xs text-slate-500 dark:text-serika-sub">
             Add a password so you can also sign in with your email.
           </p>
           <form className="mt-3 space-y-3" onSubmit={onSetPasswordSubmit}>
             <label className="block text-sm">
-              <span className="text-slate-700">Password</span>
+              <span className="text-slate-700 dark:text-serika-sub">Password</span>
               <PasswordInput
                 value={setupPassword}
                 onChange={setSetupPassword}
                 autoComplete="new-password"
               />
-              <span className="mt-1 block text-xs text-slate-500">
+              <span className="mt-1 block text-xs text-slate-500 dark:text-serika-sub">
                 At least 8 characters with uppercase, lowercase, and a number.
               </span>
             </label>
             <label className="block text-sm">
-              <span className="text-slate-700">Confirm password</span>
+              <span className="text-slate-700 dark:text-serika-sub">Confirm password</span>
               <PasswordInput
                 value={setupPasswordConfirm}
                 onChange={setSetupPasswordConfirm}
                 autoComplete="new-password"
               />
             </label>
-            {setupPasswordError && <p className="text-sm text-red-600">{setupPasswordError}</p>}
+            {setupPasswordError && <p className="text-sm text-red-600 dark:text-red-300">{setupPasswordError}</p>}
             <button
               type="submit"
               disabled={setupPasswordSubmitting}
-              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60"
+              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60 dark:border dark:border-serika-sub dark:bg-serika-raised dark:text-serika-text dark:hover:bg-[#4a4d50] dark:disabled:border-serika-border dark:disabled:bg-transparent dark:disabled:text-serika-sub dark:disabled:opacity-100"
             >
               {setupPasswordSubmitting ? 'Saving…' : 'Save password'}
             </button>
-            <p className="text-xs text-red-600">{PASSWORD_CHANGE_SIGNOUT_NOTICE}</p>
+            <p className="text-xs text-red-600 dark:text-red-300">{PASSWORD_CHANGE_SIGNOUT_NOTICE}</p>
           </form>
         </section>
       ) : (
-      <section className="rounded-md border bg-white p-4">
-        <h2 className="text-sm font-medium text-slate-900">Change password</h2>
+      <section className="rounded-md border bg-white p-4 dark:border-serika-border dark:bg-serika-surface">
+        <h2 className="text-sm font-medium text-slate-900 dark:text-serika-text">Change password</h2>
         <form className="mt-3 space-y-3" onSubmit={onPasswordSubmit}>
           <label className="block text-sm">
-            <span className="text-slate-700">Current password</span>
+            <span className="text-slate-700 dark:text-serika-sub">Current password</span>
             <PasswordInput
               value={currentPassword}
               onChange={setCurrentPassword}
@@ -339,7 +339,7 @@ export function AccountPage() {
             />
           </label>
           <label className="block text-sm">
-            <span className="text-slate-700">New password</span>
+            <span className="text-slate-700 dark:text-serika-sub">New password</span>
             <PasswordInput
               value={newPassword}
               onChange={setNewPassword}
@@ -347,37 +347,37 @@ export function AccountPage() {
             />
           </label>
           <label className="block text-sm">
-            <span className="text-slate-700">Confirm new password</span>
+            <span className="text-slate-700 dark:text-serika-sub">Confirm new password</span>
             <PasswordInput
               value={confirmPassword}
               onChange={setConfirmPassword}
               autoComplete="new-password"
             />
           </label>
-          {passwordError && <p className="text-sm text-red-600">{passwordError}</p>}
+          {passwordError && <p className="text-sm text-red-600 dark:text-red-300">{passwordError}</p>}
           {passwordMessage && <p className="text-sm text-green-700">{passwordMessage}</p>}
           <button
             type="submit"
             disabled={passwordSubmitting}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60"
+            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60 dark:border dark:border-serika-sub dark:bg-serika-raised dark:text-serika-text dark:hover:bg-[#4a4d50] dark:disabled:border-serika-border dark:disabled:bg-transparent dark:disabled:text-serika-sub dark:disabled:opacity-100"
           >
             {passwordSubmitting ? 'Updating…' : 'Update password'}
           </button>
-          <p className="text-xs text-red-600">{PASSWORD_CHANGE_SIGNOUT_NOTICE}</p>
+          <p className="text-xs text-red-600 dark:text-red-300">{PASSWORD_CHANGE_SIGNOUT_NOTICE}</p>
         </form>
       </section>
       )}
 
-      <section className="rounded-md border border-red-200 bg-red-50 p-4">
-        <h2 className="text-sm font-medium text-red-900">Danger zone</h2>
-        <p className="mt-2 text-sm text-red-800">
+      <section className="rounded-md border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950/30">
+        <h2 className="text-sm font-medium text-red-900 dark:text-red-300">Danger zone</h2>
+        <p className="mt-2 text-sm text-red-800 dark:text-red-300">
           Permanently delete your account, courses, collections, and practice history. This
           cannot be undone.
         </p>
         <form className="mt-4 space-y-3" onSubmit={onDeleteSubmit}>
           {!orphanGoogleSession && (
           <label className="block text-sm">
-            <span className="text-slate-700">Current password</span>
+            <span className="text-slate-700 dark:text-serika-sub">Current password</span>
             <PasswordInput
               value={deletePassword}
               onChange={setDeletePassword}
@@ -386,18 +386,18 @@ export function AccountPage() {
           </label>
           )}
           <label className="block text-sm">
-            <span className="text-slate-700">Type DELETE to confirm</span>
+            <span className="text-slate-700 dark:text-serika-sub">Type DELETE to confirm</span>
             <input
               type="text"
               required
               autoComplete="off"
               value={deleteConfirm}
               onChange={(e) => setDeleteConfirm(e.target.value)}
-              className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-md border px-3 py-2 text-sm dark:border-serika-border dark:bg-serika-surface dark:text-serika-text"
               data-testid="account-delete-confirm"
             />
           </label>
-          {deleteError && <p className="text-sm text-red-600">{deleteError}</p>}
+          {deleteError && <p className="text-sm text-red-600 dark:text-red-300">{deleteError}</p>}
           <button
             type="submit"
             disabled={!deleteReady}

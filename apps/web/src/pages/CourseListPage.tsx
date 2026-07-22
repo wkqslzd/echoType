@@ -338,7 +338,7 @@ export function CourseListPage({ courseMode }: { courseMode: CourseMode }) {
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <div>
             <h2 className="mode-page-title">{copy.title}</h2>
-            <Link to={copy.otherPath} className="text-sm text-slate-500 hover:text-slate-800">
+            <Link to={copy.otherPath} className="text-sm text-slate-500 hover:text-slate-800 dark:text-serika-sub dark:hover:text-serika-text">
               Switch to {copy.otherLabel.toLowerCase()} →
             </Link>
           </div>
@@ -347,7 +347,7 @@ export function CourseListPage({ courseMode }: { courseMode: CourseMode }) {
               <button
                 type="button"
                 onClick={() => requireAuth()}
-                className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+                className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 dark:border dark:border-serika-sub dark:bg-serika-raised dark:text-serika-text dark:hover:bg-[#4a4d50]"
               >
                 New collection
               </button>
@@ -355,14 +355,14 @@ export function CourseListPage({ courseMode }: { courseMode: CourseMode }) {
               <button
                 type="button"
                 onClick={() => setCollectionEditor('create')}
-                className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+                className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 dark:border dark:border-serika-sub dark:bg-serika-raised dark:text-serika-text dark:hover:bg-[#4a4d50]"
               >
                 New collection
               </button>
             )}
             <button
               onClick={() => setEditor({ mode: 'create' })}
-              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 dark:border dark:border-serika-sub dark:bg-serika-raised dark:text-serika-text dark:hover:bg-[#4a4d50]"
             >
               New course
             </button>
@@ -370,7 +370,7 @@ export function CourseListPage({ courseMode }: { courseMode: CourseMode }) {
         </div>
 
         {actionError && (
-          <p className="mb-3 text-sm text-red-600" role="alert">
+          <p className="mb-3 text-sm text-red-600 dark:text-red-300" role="alert">
             {actionError}
           </p>
         )}
@@ -386,21 +386,21 @@ export function CourseListPage({ courseMode }: { courseMode: CourseMode }) {
               onCompositionEnd={(e) => search.onCompositionEnd(e.currentTarget.value)}
               maxLength={SEARCH_Q_MAX}
               placeholder="Search collections, courses, notes, or description…"
-              className="w-full rounded-md border px-3 py-2 pr-9 text-sm"
+              className="w-full rounded-md border px-3 py-2 pr-9 text-sm dark:border-serika-border dark:bg-serika-surface dark:text-serika-text"
               aria-label="Search collections and courses"
             />
             {search.showClear && (
               <button
                 type="button"
                 onClick={search.clear}
-                className="absolute top-1/2 right-2 -translate-y-1/2 rounded p-0.5 text-slate-400 hover:text-slate-700"
+                className="absolute top-1/2 right-2 -translate-y-1/2 rounded p-0.5 text-slate-400 hover:text-slate-700 dark:text-serika-sub dark:hover:text-serika-text"
                 aria-label="Clear search"
               >
                 ×
               </button>
             )}
           </div>
-          <label className="flex shrink-0 items-center gap-2 text-sm text-slate-600">
+          <label className="flex shrink-0 items-center gap-2 text-sm text-slate-600 dark:text-serika-sub">
             <span className="hidden sm:inline">Sort</span>
             <select
               value={sort}
@@ -409,7 +409,7 @@ export function CourseListPage({ courseMode }: { courseMode: CourseMode }) {
                 setSort(next);
                 writeStoredSort(courseMode, 'list', next);
               }}
-              className="rounded-md border px-2 py-2 text-sm"
+              className="rounded-md border px-2 py-2 text-sm dark:border-serika-border dark:bg-serika-surface dark:text-serika-text"
               aria-label="Sort collections and courses"
             >
               {SORT_OPTIONS.map((opt) => (
@@ -476,7 +476,7 @@ export function CourseListPage({ courseMode }: { courseMode: CourseMode }) {
                     <button
                       type="button"
                       onClick={() => openMovePicker(selectedIds, { anchorToBulkBar: true })}
-                      className="rounded border bg-white px-3 py-1 text-sm hover:bg-slate-50"
+                      className="rounded border bg-white px-3 py-1 text-sm hover:bg-slate-50 dark:border-serika-border dark:bg-serika-surface dark:text-serika-text dark:hover:bg-serika-raised"
                     >
                       Move to collection…
                     </button>
@@ -484,7 +484,7 @@ export function CourseListPage({ courseMode }: { courseMode: CourseMode }) {
                       <button
                         type="button"
                         onClick={handleRemoveSelected}
-                        className="rounded border bg-white px-3 py-1 text-sm hover:bg-slate-50"
+                        className="rounded border bg-white px-3 py-1 text-sm hover:bg-slate-50 dark:border-serika-border dark:bg-serika-surface dark:text-serika-text dark:hover:bg-serika-raised"
                       >
                         Remove from collection
                       </button>
@@ -492,7 +492,7 @@ export function CourseListPage({ courseMode }: { courseMode: CourseMode }) {
                     <button
                       type="button"
                       onClick={handleDeleteSelected}
-                      className="rounded border border-red-200 bg-white px-3 py-1 text-sm text-red-700 hover:bg-red-50"
+                      className="rounded border border-red-200 bg-white px-3 py-1 text-sm text-red-700 hover:bg-red-50 dark:border-red-800 dark:bg-serika-surface dark:text-red-300 dark:hover:bg-red-950/40"
                     >
                       Delete selected
                     </button>

@@ -12,6 +12,7 @@
     "test:layout": "node --import tsx --test src/components/annotated-text/*.test.ts",
     "test:typing": "node --import tsx --test src/lib/typingAlign.test.ts src/lib/nightMode.test.ts",
     "probe:night-mode": "node scripts/night-mode-probe.mjs",
+    "probe:site-dark": "node scripts/site-dark-probe.mjs",
     "probe:auth": "node scripts/auth-phase4-probe.mjs",
     "probe:auth5": "node scripts/auth-phase5-probe.mjs",
     "probe:auth6": "node scripts/auth-phase6-probe.mjs",

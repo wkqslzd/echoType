@@ -48,7 +48,7 @@ export function CardOverflowMenu({ items, ariaLabel, onOpenChange }: CardOverflo
         aria-haspopup="menu"
         aria-controls={menuId}
         onClick={() => setOpen((v) => !v)}
-        className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+        className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:text-serika-sub dark:hover:bg-serika-raised dark:hover:text-serika-text"
       >
         ⋯
       </button>
@@ -56,7 +56,7 @@ export function CardOverflowMenu({ items, ariaLabel, onOpenChange }: CardOverflo
         <div
           id={menuId}
           role="menu"
-          className="absolute top-full right-0 z-20 mt-1 min-w-44 rounded-md border bg-white py-1 shadow-lg"
+          className="absolute top-full right-0 z-20 mt-1 min-w-44 rounded-md border bg-white py-1 shadow-lg dark:border-serika-border dark:bg-serika-surface"
         >
           {items.map((item) => (
             <button
@@ -71,8 +71,8 @@ export function CardOverflowMenu({ items, ariaLabel, onOpenChange }: CardOverflo
               }}
               className={`block w-full px-3 py-2 text-left text-sm disabled:cursor-not-allowed disabled:opacity-50 ${
                 item.variant === 'danger'
-                  ? 'text-red-700 hover:bg-red-50'
-                  : 'text-slate-700 hover:bg-slate-50'
+                  ? 'text-red-700 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/40'
+                  : 'text-slate-700 hover:bg-slate-50 dark:text-serika-text dark:hover:bg-serika-raised'
               }`}
             >
               {item.label}

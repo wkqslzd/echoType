@@ -256,20 +256,20 @@ export function CourseEditorModal({
       onMouseDown={handleDismiss}
     >
       <div
-        className="flex max-h-[96vh] w-[min(98vw,1280px)] flex-col overflow-hidden rounded-lg bg-white shadow-xl"
+        className="flex max-h-[96vh] w-[min(98vw,1280px)] flex-col overflow-hidden rounded-lg bg-white shadow-xl dark:border dark:border-serika-border dark:bg-serika-surface"
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <header className="flex items-center justify-between border-b px-5 py-3">
-          <h2 className="text-lg font-semibold">
+        <header className="flex items-center justify-between border-b px-5 py-3 dark:border-serika-border">
+          <h2 className="text-lg font-semibold dark:text-serika-text">
             {mode === 'create' ? 'New course' : 'Edit course'}
           </h2>
           <div className="flex items-center gap-3">
-            <span className="text-xs text-slate-400">Step {ed.step} / 4</span>
+            <span className="text-xs text-slate-400 dark:text-serika-sub">Step {ed.step} / 4</span>
             <button
               type="button"
               aria-label="Close editor"
               onClick={handleDismiss}
-              className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+              className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-serika-sub dark:hover:bg-serika-raised dark:hover:text-serika-text"
               data-testid="editor-close"
             >
               <span className="block text-xl leading-none" aria-hidden>
@@ -280,7 +280,7 @@ export function CourseEditorModal({
         </header>
 
         {toast && (
-          <div className="border-b border-amber-200 bg-amber-50 px-5 py-2 text-sm text-amber-800">
+          <div className="border-b border-amber-200 bg-amber-50 px-5 py-2 text-sm text-amber-800 dark:border-serika-main/50 dark:bg-serika-main/15 dark:text-serika-main">
             {toast}
             <button type="button" className="ml-2 underline" onClick={() => setToast(null)}>
               Dismiss
@@ -295,15 +295,15 @@ export function CourseEditorModal({
           {ed.step === 4 && <Step4Review ed={ed} />}
         </div>
 
-        <footer className="border-t px-5 py-3">
+        <footer className="border-t px-5 py-3 dark:border-serika-border">
           {footerHint && (
-            <p className="mb-2 text-sm text-amber-700" data-testid="editor-footer-hint">
+            <p className="mb-2 text-sm text-amber-700 dark:text-serika-main" data-testid="editor-footer-hint">
               {footerHint}
             </p>
           )}
           {ed.step === 4 && submitError && (
             <p
-              className="mb-2 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800"
+              className="mb-2 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-300"
               data-testid="editor-submit-error"
             >
               {submitError}
@@ -313,7 +313,7 @@ export function CourseEditorModal({
             {ed.step > 1 ? (
               <button
                 onClick={handleBack}
-                className="rounded-md border bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                className="rounded-md border bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:border-serika-border dark:bg-serika-surface dark:text-serika-text dark:hover:bg-serika-raised"
               >
                 Back
               </button>
@@ -327,8 +327,8 @@ export function CourseEditorModal({
                 disabled={!nextPrimaryEnabled}
                 className={`rounded-md px-4 py-2 text-sm font-medium text-white ${
                   nextPrimaryEnabled
-                    ? 'bg-slate-900 hover:bg-slate-800'
-                    : 'cursor-not-allowed bg-slate-400 opacity-80'
+                    ? 'bg-slate-900 hover:bg-slate-800 dark:border dark:border-serika-sub dark:bg-serika-raised dark:text-serika-text dark:hover:bg-[#4a4d50]'
+                    : 'cursor-not-allowed bg-slate-400 opacity-80 dark:border-serika-border dark:bg-transparent dark:text-serika-sub dark:opacity-100'
                 }`}
               >
                 {save.isPending ? 'Saving…' : 'Save course'}
@@ -339,8 +339,8 @@ export function CourseEditorModal({
                 disabled={!nextPrimaryEnabled}
                 className={`rounded-md px-4 py-2 text-sm font-medium text-white ${
                   nextPrimaryEnabled
-                    ? 'bg-slate-900 hover:bg-slate-800'
-                    : 'cursor-not-allowed bg-slate-400 opacity-80'
+                    ? 'bg-slate-900 hover:bg-slate-800 dark:border dark:border-serika-sub dark:bg-serika-raised dark:text-serika-text dark:hover:bg-[#4a4d50]'
+                    : 'cursor-not-allowed bg-slate-400 opacity-80 dark:border-serika-border dark:bg-transparent dark:text-serika-sub dark:opacity-100'
                 }`}
               >
                 {titleChecking ? 'Checking…' : 'Next'}
@@ -407,9 +407,9 @@ function Step1({
   return (
     <div className="space-y-4">
       <label className="block">
-        <span className="text-sm text-slate-600">Course title</span>
+        <span className="text-sm text-slate-600 dark:text-serika-sub">Course title</span>
         <input
-          className="mt-1 w-full rounded border px-3 py-2"
+          className="mt-1 w-full rounded border px-3 py-2 dark:border-serika-border dark:bg-serika-surface dark:text-serika-text"
           value={ed.title}
           onChange={(e) => ed.setTitle(e.target.value)}
           placeholder="e.g. Stray Birds - 49"
@@ -418,26 +418,26 @@ function Step1({
 
       <OptionalDescriptionField value={ed.description} onChange={ed.setDescription} />
 
-      <div className="rounded-md border bg-slate-50 px-3 py-2">
-        <p className="text-sm font-medium text-slate-800">{modeLabel}</p>
-        <p className="mt-1 text-xs text-slate-500">
+      <div className="rounded-md border bg-slate-50 px-3 py-2 dark:border-serika-border dark:bg-serika-raised">
+        <p className="text-sm font-medium text-slate-800 dark:text-serika-text">{modeLabel}</p>
+        <p className="mt-1 text-xs text-slate-500 dark:text-serika-sub">
           {modeHint} ({modeRange})
         </p>
-        <p className="mt-2 text-xs text-slate-400">
+        <p className="mt-2 text-xs text-slate-400 dark:text-serika-sub">
           Mode is set by the list you opened this course from and cannot be changed here.
         </p>
       </div>
 
       <div>
         <div className="flex items-end justify-between gap-2">
-          <label htmlFor="step1-content" className="text-sm text-slate-600">
+          <label htmlFor="step1-content" className="text-sm text-slate-600 dark:text-serika-sub">
             Text content ({len} characters, incl. spaces and line breaks)
           </label>
           <span className="flex items-center gap-1.5">
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="rounded border bg-white px-2 py-1 text-xs text-slate-700 hover:bg-slate-50"
+              className="rounded border bg-white px-2 py-1 text-xs text-slate-700 hover:bg-slate-50 dark:border-serika-border dark:bg-serika-surface dark:text-serika-text dark:hover:bg-serika-raised"
               data-testid="txt-import-button"
             >
               Import from .txt
@@ -479,7 +479,7 @@ function Step1({
         </div>
         <textarea
           id="step1-content"
-          className="mt-1 h-44 w-full rounded border px-3 py-2 font-mono text-sm"
+          className="mt-1 h-44 w-full rounded border px-3 py-2 font-mono text-sm dark:border-serika-border dark:bg-serika-surface dark:text-serika-text"
           value={ed.content}
           onChange={(e) => {
             setImportError(null);
@@ -491,20 +491,20 @@ function Step1({
 
       {importError && (
         <p
-          className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800"
+          className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-serika-main/50 dark:bg-serika-main/15 dark:text-serika-main"
           data-testid="txt-import-error"
         >
           Import failed — {importError}
         </p>
       )}
       {ed.showContentWarning && (
-        <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+        <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-serika-main/50 dark:bg-serika-main/15 dark:text-serika-main">
           {MSG_CONTENT_REVIEW_WARNING}
         </p>
       )}
-      {ed.step1Error && <p className="text-sm text-amber-600">{ed.step1Error}</p>}
+      {ed.step1Error && <p className="text-sm text-amber-600 dark:text-serika-main">{ed.step1Error}</p>}
       {titleAvailabilityError && (
-        <p className="text-sm text-amber-600">{titleAvailabilityError}</p>
+        <p className="text-sm text-amber-600 dark:text-serika-main">{titleAvailabilityError}</p>
       )}
     </div>
   );
@@ -514,7 +514,7 @@ function Step2({ ed }: { ed: ReturnType<typeof useCourseEditor> }) {
   return (
     <div className="space-y-4">
       <div>
-        <p className="mb-2 text-sm text-slate-600">Text preview (how the typing page will show it):</p>
+        <p className="mb-2 text-sm text-slate-600 dark:text-serika-sub">Text preview (how the typing page will show it):</p>
         <AnnotatedText content={ed.content} annotations={[]} />
       </div>
 
@@ -522,14 +522,14 @@ function Step2({ ed }: { ed: ReturnType<typeof useCourseEditor> }) {
           import with valid markers already answered it (needAnnotation = true). */}
       {!ed.skipAnnotationChoice && ed.annotations.length === 0 && (
         <fieldset className="space-y-2">
-          <legend className="text-sm text-slate-600">Do you want to add annotations?</legend>
+          <legend className="text-sm text-slate-600 dark:text-serika-sub">Do you want to add annotations?</legend>
           <div className="flex gap-3">
             <button
               onClick={() => ed.setNeedAnnotation(true)}
               className={`rounded-md border px-4 py-2 text-sm ${
                 ed.needAnnotation === true
-                  ? 'border-slate-900 bg-slate-900 text-white'
-                  : 'bg-white text-slate-700 hover:bg-slate-50'
+                  ? 'border-slate-900 bg-slate-900 text-white dark:border-serika-sub dark:bg-serika-raised dark:text-serika-text'
+                  : 'bg-white text-slate-700 hover:bg-slate-50 dark:border-serika-border dark:bg-serika-surface dark:text-serika-text dark:hover:bg-serika-raised'
               }`}
             >
               Yes
@@ -538,8 +538,8 @@ function Step2({ ed }: { ed: ReturnType<typeof useCourseEditor> }) {
               onClick={() => ed.setNeedAnnotation(false)}
               className={`rounded-md border px-4 py-2 text-sm ${
                 ed.needAnnotation === false
-                  ? 'border-slate-900 bg-slate-900 text-white'
-                  : 'bg-white text-slate-700 hover:bg-slate-50'
+                  ? 'border-slate-900 bg-slate-900 text-white dark:border-serika-sub dark:bg-serika-raised dark:text-serika-text'
+                  : 'bg-white text-slate-700 hover:bg-slate-50 dark:border-serika-border dark:bg-serika-surface dark:text-serika-text dark:hover:bg-serika-raised'
               }`}
             >
               No
@@ -587,7 +587,7 @@ function Step3({
       )}
       {ed.reviewActive && ed.pendingReviewCount === 0 && ed.annotations.length > 0 && (
         <p
-          className="mb-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800"
+          className="mb-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300"
           data-testid="review-complete-banner"
         >
           {MSG_REVIEW_COMPLETE}
@@ -622,14 +622,14 @@ function Step4Review({ ed }: { ed: ReturnType<typeof useCourseEditor> }) {
   return (
     <div className="space-y-4" data-testid="step4-review">
       <div>
-        <h3 className="text-lg font-semibold text-slate-900">{ed.title.trim()}</h3>
-        <p className="mt-1 text-sm text-slate-500">
+        <h3 className="text-lg font-semibold text-slate-900 dark:text-serika-text">{ed.title.trim()}</h3>
+        <p className="mt-1 text-sm text-slate-500 dark:text-serika-sub">
           {ed.courseMode} · {ed.content.length} characters · {ed.annotations.length} annotation
           {ed.annotations.length === 1 ? '' : 's'}
         </p>
       </div>
 
-      <p className="text-sm text-slate-600">
+      <p className="text-sm text-slate-600 dark:text-serika-sub">
         Check annotation placement before saving. This preview matches the typing page layout.
       </p>
 

@@ -58,6 +58,7 @@ export function AppLayout() {
   }
 
   const isTypingPage = /\/type$/.test(location.pathname);
+  // Light shell stays bg-white (there is no serika-shell token). Dark uses serika-bg #2c2e31.
 
   const showNicknameSetup = status === 'authed' && account?.needsNicknameSetup;
 
@@ -106,7 +107,7 @@ export function AppLayout() {
           className={
             isTypingPage
               ? 'mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col overflow-y-auto px-4 py-4 text-slate-900 dark:text-slate-400'
-              : 'mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-6'
+              : 'mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-6 dark:text-serika-text'
           }
         >
           <Outlet />

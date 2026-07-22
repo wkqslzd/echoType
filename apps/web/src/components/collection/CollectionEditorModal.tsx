@@ -63,15 +63,15 @@ export function CollectionEditorModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-        <h2 className="text-lg font-semibold">
+      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl dark:border dark:border-serika-border dark:bg-serika-surface">
+        <h2 className="text-lg font-semibold dark:text-serika-text">
           {mode === 'create' ? 'New collection' : 'Edit collection'}
         </h2>
         <div className="mt-4 space-y-4">
           <label className="block">
-            <span className="text-sm text-slate-600">Name</span>
+            <span className="text-sm text-slate-600 dark:text-serika-sub">Name</span>
             <input
-              className="mt-1 w-full rounded border px-3 py-2 text-sm"
+              className="mt-1 w-full rounded border px-3 py-2 text-sm dark:border-serika-border dark:bg-serika-surface dark:text-serika-text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               maxLength={200}
@@ -85,7 +85,7 @@ export function CollectionEditorModal({
             hint="Plain text; URLs become clickable links on the collection page."
           />
           {error && (
-            <p className="text-sm text-red-600" role="alert">
+            <p className="text-sm text-red-600 dark:text-red-300" role="alert">
               {error}
             </p>
           )}
@@ -94,7 +94,7 @@ export function CollectionEditorModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded border px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+            className="rounded border px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:border-serika-border dark:bg-serika-surface dark:text-serika-text dark:hover:bg-serika-raised"
           >
             Cancel
           </button>
@@ -105,7 +105,7 @@ export function CollectionEditorModal({
               setError(null);
               save.mutate();
             }}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50 dark:border dark:border-serika-sub dark:bg-serika-raised dark:text-serika-text dark:hover:bg-[#4a4d50] dark:disabled:border-serika-border dark:disabled:bg-transparent dark:disabled:text-serika-sub dark:disabled:opacity-100"
           >
             {save.isPending ? 'Saving…' : 'Save'}
           </button>

@@ -91,7 +91,7 @@ const EditorBandLayer = memo(function EditorBandLayer({
 const CommittedNoteBox = memo(function CommittedNoteBox({ note }: { note: Note }) {
   return (
     <span
-      className="absolute top-0 block cursor-pointer overflow-hidden text-amber-700 hover:underline"
+      className="absolute top-0 block cursor-pointer overflow-hidden text-amber-700 hover:underline dark:text-serika-main"
       style={{
         left: note.left,
         width: note.width,
@@ -132,14 +132,14 @@ function NoteComposeDock({
   const len = noteText.length;
   return (
     <div
-      className="rounded-md border border-indigo-200 bg-white p-3 shadow-sm"
+      className="rounded-md border border-indigo-200 bg-white p-3 shadow-sm dark:border-serika-border dark:bg-serika-surface"
       data-testid="annotation-compose-dock"
       onMouseDown={(e) => e.stopPropagation()}
     >
-      <p className="mb-2 text-sm text-slate-600">{hint}</p>
+      <p className="mb-2 text-sm text-slate-600 dark:text-serika-sub">{hint}</p>
       <textarea
         rows={3}
-        className="w-full resize-none rounded border px-3 py-2 font-sans text-sm leading-snug"
+        className="w-full resize-none rounded border px-3 py-2 font-sans text-sm leading-snug dark:border-serika-border dark:bg-serika-surface dark:text-serika-text"
         value={noteText}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={onKeyDown}
@@ -148,7 +148,7 @@ function NoteComposeDock({
         autoFocus
       />
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-        <span className={`text-xs ${len >= NOTE_TEXT_MAX ? 'text-amber-600' : 'text-slate-400'}`}>
+        <span className={`text-xs ${len >= NOTE_TEXT_MAX ? 'text-amber-600 dark:text-serika-main' : 'text-slate-400 dark:text-serika-sub'}`}>
           {len}/{NOTE_TEXT_MAX}
         </span>
         <div className="flex flex-wrap gap-2">
@@ -156,7 +156,7 @@ function NoteComposeDock({
             <button
               type="button"
               onClick={onReselect}
-              className="rounded-md border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+              className="rounded-md border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 dark:border-serika-border dark:bg-serika-surface dark:text-serika-text dark:hover:bg-serika-raised"
             >
               Reselect anchors
             </button>
@@ -165,7 +165,7 @@ function NoteComposeDock({
             <button
               type="button"
               onClick={onDelete}
-              className="rounded-md border border-red-200 px-3 py-1.5 text-sm text-red-700 hover:bg-red-50"
+              className="rounded-md border border-red-200 px-3 py-1.5 text-sm text-red-700 hover:bg-red-50 dark:border-red-800 dark:bg-serika-surface dark:text-red-300 dark:hover:bg-red-950/40"
             >
               Delete
             </button>
@@ -173,14 +173,14 @@ function NoteComposeDock({
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-md border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+            className="rounded-md border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 dark:border-serika-border dark:bg-serika-surface dark:text-serika-text dark:hover:bg-serika-raised"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={onConfirm}
-            className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-800"
+            className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-800 dark:border dark:border-serika-sub dark:bg-serika-raised dark:text-serika-text dark:hover:bg-[#4a4d50]"
           >
             Confirm
           </button>
@@ -250,7 +250,7 @@ const EditorLineRow = memo(function EditorLineRow({
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') onCharClick(i);
               }}
-              className="cursor-pointer text-slate-700 hover:bg-slate-100"
+              className="cursor-pointer text-slate-700 hover:bg-slate-100 dark:text-serika-sub dark:hover:bg-serika-raised"
             >
               {chars[i] === '\n' ? '' : chars[i]}
             </span>
@@ -424,7 +424,7 @@ export function AnnotatedTextEditor({
     <div className={className} data-testid="annotation-editor">
       {submitIssueMessages.length > 0 && (
         <div
-          className="mb-3 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800"
+          className="mb-3 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-300"
           data-testid="annotation-submit-issues"
         >
           <p className="font-medium">Fix these issues before saving:</p>
@@ -438,19 +438,19 @@ export function AnnotatedTextEditor({
 
       {pick.error && (
         <p
-          className="mb-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800"
+          className="mb-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-serika-main/50 dark:bg-serika-main/15 dark:text-serika-main"
           data-testid="annotation-editor-error"
         >
           {pick.error}
         </p>
       )}
 
-      <p className="mb-2 text-xs text-slate-500" data-testid="step3-editor-helper">
+      <p className="mb-2 text-xs text-slate-500 dark:text-serika-sub" data-testid="step3-editor-helper">
         {reviewPickGate ? STEP3_HELPER_REVIEW : STEP3_HELPER_DEFAULT}
       </p>
 
       {(pick.isReanchorPicking || pick.state.kind === 'reanchorReview') && (
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm text-indigo-900">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm text-indigo-900 dark:border-serika-border dark:bg-serika-raised dark:text-serika-text">
           <span>
             {pick.state.kind === 'reanchorReview'
               ? 'Confirm the new anchor range or cancel to keep the original position.'
@@ -459,7 +459,7 @@ export function AnnotatedTextEditor({
           <button
             type="button"
             onClick={pick.cancelReanchor}
-            className="shrink-0 rounded border border-indigo-300 bg-white px-3 py-1 text-xs text-indigo-800 hover:bg-indigo-100"
+            className="shrink-0 rounded border border-indigo-300 bg-white px-3 py-1 text-xs text-indigo-800 hover:bg-indigo-100 dark:border-serika-border dark:bg-serika-surface dark:text-serika-text dark:hover:bg-serika-raised"
           >
             Cancel reselect
           </button>
@@ -473,7 +473,7 @@ export function AnnotatedTextEditor({
       )}
 
       <div
-        className="rounded-md border bg-white p-4 font-mono text-base leading-relaxed"
+        className="rounded-md border bg-white p-4 font-mono text-base leading-relaxed dark:border-serika-border dark:bg-serika-surface dark:text-serika-sub"
         data-testid="annotated-text"
       >
         <div ref={refs.boxRef as Ref<HTMLDivElement>} style={{ position: 'relative' }}>

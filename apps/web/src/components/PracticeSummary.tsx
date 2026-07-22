@@ -4,7 +4,7 @@ import { useAuth } from '../auth/AuthProvider';
 import { InfoTooltip } from './InfoTooltip';
 import { api } from '../lib/api';
 
-const SUMMARY_TEXT_CLASS = 'text-center text-lg font-semibold text-slate-900';
+const SUMMARY_TEXT_CLASS = 'text-center text-lg font-semibold text-slate-900 dark:text-serika-text';
 
 export function PracticeSummary() {
   const { status } = useAuth();

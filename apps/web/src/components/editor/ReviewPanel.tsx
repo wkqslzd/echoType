@@ -39,10 +39,10 @@ export function ReviewPanel({ items, onFocus, onReselect, onDelete }: ReviewPane
 
   return (
     <div
-      className="mb-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+      className="mb-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-serika-main/50 dark:bg-serika-main/15 dark:text-serika-main"
       data-testid="review-banner"
     >
-      <p className="font-medium text-amber-800">{formatReviewBanner(count)}</p>
+      <p className="font-medium text-amber-800 dark:text-serika-main">{formatReviewBanner(count)}</p>
 
       <ul
         className={`mt-2 space-y-2${listScrollable ? ' max-h-60 overflow-y-auto pr-1' : ''}`}
@@ -51,7 +51,7 @@ export function ReviewPanel({ items, onFocus, onReselect, onDelete }: ReviewPane
         {visibleItems.map((item) => (
           <li
             key={item.localId}
-            className="rounded border border-amber-200 bg-white px-2.5 py-2"
+            className="rounded border border-amber-200 bg-white px-2.5 py-2 dark:border-serika-main/50 dark:bg-serika-surface"
             data-testid={`review-item-${item.localId}`}
           >
             <button
@@ -59,12 +59,12 @@ export function ReviewPanel({ items, onFocus, onReselect, onDelete }: ReviewPane
               className="w-full text-left"
               onClick={() => onFocus(item.localId)}
             >
-              <p className="text-slate-800" title={item.noteText}>
-                <span className="text-slate-500">Note: </span>
+              <p className="text-slate-800 dark:text-serika-text" title={item.noteText}>
+                <span className="text-slate-500 dark:text-serika-sub">Note: </span>
                 {truncateForDisplay(item.noteText, NOTE_PREVIEW_MAX) || '—'}
               </p>
-              <p className="mt-0.5 text-slate-600" title={item.anchoredText}>
-                <span className="text-slate-500">Was: </span>
+              <p className="mt-0.5 text-slate-600 dark:text-serika-sub" title={item.anchoredText}>
+                <span className="text-slate-500 dark:text-serika-sub">Was: </span>
                 &ldquo;{truncateForDisplay(item.anchoredText, WAS_PREVIEW_MAX)}&rdquo;
               </p>
             </button>
@@ -72,7 +72,7 @@ export function ReviewPanel({ items, onFocus, onReselect, onDelete }: ReviewPane
             <div className="mt-2 flex gap-2">
               <button
                 type="button"
-                className="rounded border border-amber-400 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-900 hover:bg-amber-100"
+                className="rounded border border-amber-400 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-900 hover:bg-amber-100 dark:border-serika-main/50 dark:bg-serika-main/15 dark:text-serika-main dark:hover:bg-serika-main/25"
                 onClick={() => onReselect(item.localId)}
                 data-testid={`review-reselect-${item.localId}`}
               >
@@ -80,7 +80,7 @@ export function ReviewPanel({ items, onFocus, onReselect, onDelete }: ReviewPane
               </button>
               <button
                 type="button"
-                className="rounded border border-slate-300 bg-white px-2 py-0.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                className="rounded border border-slate-300 bg-white px-2 py-0.5 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-serika-border dark:bg-serika-surface dark:text-serika-text dark:hover:bg-serika-raised"
                 onClick={() => onDelete(item.localId)}
                 data-testid={`review-delete-${item.localId}`}
               >
@@ -94,7 +94,7 @@ export function ReviewPanel({ items, onFocus, onReselect, onDelete }: ReviewPane
       {count > 1 && (
         <button
           type="button"
-          className="mt-2 text-xs font-medium text-amber-800 underline hover:text-amber-950"
+          className="mt-2 text-xs font-medium text-amber-800 underline hover:text-amber-950 dark:text-serika-main dark:hover:text-serika-main"
           onClick={() => setExpanded((v) => !v)}
           data-testid="review-expand-toggle"
         >

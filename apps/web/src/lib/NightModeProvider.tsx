@@ -3,7 +3,6 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -12,6 +11,7 @@ import {
   getSystemDark,
   readNightModePreference,
   resolveNightMode,
+  subscribeNightModePreference,
   writeNightModePreference,
   type NightModePreference,
 } from './nightMode';
@@ -32,14 +32,23 @@ type NightModeContextValue = {
 const NightModeContext = createContext<NightModeContextValue | null>(null);
 
 type NightModeProviderProps = {
-  /** When false (non-typing routes), never apply `dark` on the document. */
+  /** When false, effectiveNight is forced off for consumers (non-typing routes). */
   active: boolean;
   children: ReactNode;
 };
 
+/**
+ * Typing Night preference + switch UI only (C1-memory: module state via nightMode.ts).
+ * Does NOT write `html.dark` — DocumentDarkProvider is the sole writer.
+ * Does NOT write localStorage / sessionStorage for the override.
+ */
 export function NightModeProvider({ active, children }: NightModeProviderProps) {
   const [preference, setPreference] = useState<NightModePreference>(readNightModePreference);
   const [systemDark, setSystemDark] = useState(getSystemDark);
+
+  useEffect(() => {
+    return subscribeNightModePreference(setPreference);
+  }, []);
 
   useEffect(() => {
     if (typeof window.matchMedia !== 'function') return;
@@ -50,40 +59,25 @@ export function NightModeProvider({ active, children }: NightModeProviderProps) 
     return () => mq.removeEventListener('change', onChange);
   }, []);
 
-  const effectiveNight = resolveNightMode(preference, systemDark);
-
-  useLayoutEffect(() => {
-    const root = document.documentElement;
-    if (active && effectiveNight) {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
-    return () => {
-      root.classList.remove('dark');
-    };
-  }, [active, effectiveNight]);
+  const resolved = resolveNightMode(preference, systemDark);
 
   const setNightEnabled = useCallback((enabled: boolean) => {
-    const next: NightModePreference = enabled ? '1' : '0';
-    writeNightModePreference(next);
-    setPreference(next);
+    writeNightModePreference(enabled ? '1' : '0');
   }, []);
 
   const clearToSystem = useCallback(() => {
     writeNightModePreference(null);
-    setPreference(null);
   }, []);
 
   const value = useMemo<NightModeContextValue>(
     () => ({
-      effectiveNight: active && effectiveNight,
+      effectiveNight: active && resolved,
       preference,
       hasOverride: preference !== null,
       setNightEnabled,
       clearToSystem,
     }),
-    [active, effectiveNight, preference, setNightEnabled, clearToSystem],
+    [active, resolved, preference, setNightEnabled, clearToSystem],
   );
 
   return <NightModeContext.Provider value={value}>{children}</NightModeContext.Provider>;

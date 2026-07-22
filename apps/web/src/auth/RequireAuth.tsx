@@ -8,7 +8,9 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
 
   if (status === 'loading') {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center text-slate-500">Loading…</div>
+      <div className="flex min-h-[40vh] items-center justify-center text-slate-500 dark:text-serika-sub">
+        Loading…
+      </div>
     );
   }
 

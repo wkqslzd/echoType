@@ -261,7 +261,7 @@ export function CollectionDetailPage({ courseMode }: CollectionDetailPageProps) 
             title="Collection not found"
             description="This collection was deleted or is no longer available."
             action={
-              <Link to={modeListPath(courseMode)} className="text-sm text-slate-700 underline hover:text-slate-900">
+              <Link to={modeListPath(courseMode)} className="text-sm text-slate-700 underline hover:text-slate-900 dark:text-serika-sub dark:hover:text-serika-text">
                 ← Back to {courseMode === 'SHORT' ? 'short' : 'article'} courses
               </Link>
             }
@@ -285,7 +285,7 @@ export function CollectionDetailPage({ courseMode }: CollectionDetailPageProps) 
           title="Collection not found"
           description="This collection was deleted or is no longer available."
           action={
-            <Link to={modeListPath(courseMode)} className="text-sm text-slate-700 underline hover:text-slate-900">
+            <Link to={modeListPath(courseMode)} className="text-sm text-slate-700 underline hover:text-slate-900 dark:text-serika-sub dark:hover:text-serika-text">
               ← Back to {courseMode === 'SHORT' ? 'short' : 'article'} courses
             </Link>
           }
@@ -297,7 +297,7 @@ export function CollectionDetailPage({ courseMode }: CollectionDetailPageProps) 
   return (
     <div className="space-y-6">
       <div>
-        <Link to={modeListPath(courseMode)} className="text-sm text-slate-500 hover:text-slate-800">
+        <Link to={modeListPath(courseMode)} className="text-sm text-slate-500 hover:text-slate-800 dark:text-serika-sub dark:hover:text-serika-text">
           ← Back
         </Link>
         <div className="mt-1 flex flex-wrap items-start justify-between gap-2">
@@ -320,14 +320,14 @@ export function CollectionDetailPage({ courseMode }: CollectionDetailPageProps) 
               <button
                 type="button"
                 onClick={() => setCollectionEditor(true)}
-                className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 dark:border-serika-border dark:bg-serika-surface dark:text-serika-text dark:hover:bg-serika-raised"
               >
                 Edit collection
               </button>
               <button
                 type="button"
                 onClick={() => handleDeleteCollection(category)}
-                className="rounded border border-red-200 px-3 py-1.5 text-sm text-red-700 hover:bg-red-50"
+                className="rounded border border-red-200 px-3 py-1.5 text-sm text-red-700 hover:bg-red-50 dark:border-red-800 dark:bg-serika-surface dark:text-red-300 dark:hover:bg-red-950/40"
               >
                 Delete collection
               </button>
@@ -342,7 +342,7 @@ export function CollectionDetailPage({ courseMode }: CollectionDetailPageProps) 
       </div>
 
       {actionError && (
-        <p className="text-sm text-red-600" role="alert">
+        <p className="text-sm text-red-600 dark:text-red-300" role="alert">
           {actionError}
         </p>
       )}
@@ -353,14 +353,14 @@ export function CollectionDetailPage({ courseMode }: CollectionDetailPageProps) 
             <button
               type="button"
               onClick={() => setEditor({ mode: 'create' })}
-              className="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800"
+              className="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800 dark:border dark:border-serika-sub dark:bg-serika-raised dark:text-serika-text dark:hover:bg-[#4a4d50]"
             >
               New course
             </button>
             <button
               type="button"
               onClick={() => setShowAddCourses(true)}
-              className="rounded border px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+              className="rounded border px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:border-serika-border dark:bg-serika-surface dark:text-serika-text dark:hover:bg-serika-raised"
             >
               Add courses…
             </button>
@@ -368,14 +368,14 @@ export function CollectionDetailPage({ courseMode }: CollectionDetailPageProps) 
               <button
                 type="button"
                 onClick={() => setBulkMode(true)}
-                className="rounded border px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                className="rounded border px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:border-serika-border dark:bg-serika-surface dark:text-serika-text dark:hover:bg-serika-raised"
               >
                 Bulk actions
               </button>
             )}
           </div>
         )}
-        <label className="flex shrink-0 items-center gap-2 text-sm text-slate-600">
+        <label className="flex shrink-0 items-center gap-2 text-sm text-slate-600 dark:text-serika-sub">
           <span className="hidden sm:inline">Sort</span>
           <select
             value={sort}
@@ -384,7 +384,7 @@ export function CollectionDetailPage({ courseMode }: CollectionDetailPageProps) 
               setSort(next);
               writeStoredSort(courseMode, 'detail', next);
             }}
-            className="rounded-md border px-2 py-2 text-sm"
+            className="rounded-md border px-2 py-2 text-sm dark:border-serika-border dark:bg-serika-surface dark:text-serika-text"
             aria-label="Sort courses"
           >
             {SORT_OPTIONS.map((opt) => (
@@ -407,21 +407,21 @@ export function CollectionDetailPage({ courseMode }: CollectionDetailPageProps) 
           <button
             type="button"
             onClick={() => setBatchMoveOpen(true)}
-            className="rounded border bg-white px-3 py-1 text-sm hover:bg-slate-50"
+            className="rounded border bg-white px-3 py-1 text-sm hover:bg-slate-50 dark:border-serika-border dark:bg-serika-surface dark:text-serika-text dark:hover:bg-serika-raised"
           >
             Move to collection…
           </button>
           <button
             type="button"
             onClick={handleRemoveSelected}
-            className="rounded border bg-white px-3 py-1 text-sm hover:bg-slate-50"
+            className="rounded border bg-white px-3 py-1 text-sm hover:bg-slate-50 dark:border-serika-border dark:bg-serika-surface dark:text-serika-text dark:hover:bg-serika-raised"
           >
             Remove from collection
           </button>
           <button
             type="button"
             onClick={handleDeleteSelected}
-            className="rounded border border-red-200 bg-white px-3 py-1 text-sm text-red-700 hover:bg-red-50"
+            className="rounded border border-red-200 bg-white px-3 py-1 text-sm text-red-700 hover:bg-red-50 dark:border-red-800 dark:bg-serika-surface dark:text-red-300 dark:hover:bg-red-950/40"
           >
             Delete selected
           </button>

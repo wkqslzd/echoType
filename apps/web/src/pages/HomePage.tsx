@@ -54,13 +54,13 @@ export function HomePage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Welcome to echoType</h1>
-        <p className="mt-2 text-slate-600">
+        <p className="mt-2 text-slate-600 dark:text-serika-sub">
           Type, repeat, and remember meaningful texts with your own annotations.
         </p>
         {flashError && (
-          <p className="mt-3 text-sm text-red-600" data-testid="home-auth-flash-error">
+          <p className="mt-3 text-sm text-red-600 dark:text-red-300" data-testid="home-auth-flash-error">
             {flashError}{' '}
-            <Link to="/login" className="underline">
+            <Link to="/login" className="underline dark:text-serika-text">
               Back to sign in
             </Link>
           </p>
@@ -71,8 +71,8 @@ export function HomePage() {
           </p>
         )}
         {flash === ACCOUNT_DELETED_FLASH && (
-          <p className="mt-2 text-sm text-slate-600">
-            <Link to="/register" className="text-slate-900 underline">
+          <p className="mt-2 text-sm text-slate-600 dark:text-serika-sub">
+            <Link to="/register" className="text-slate-900 underline dark:text-serika-text">
               Create a new account
             </Link>
           </p>
@@ -84,19 +84,19 @@ export function HomePage() {
       <div className="grid gap-4 sm:grid-cols-2">
         <Link
           to="/courses/short"
-          className="rounded-lg border bg-white p-6 shadow-sm transition-shadow hover:border-slate-300 hover:shadow-md"
+          className="rounded-lg border bg-white p-6 shadow-sm transition-shadow hover:border-slate-300 hover:shadow-md dark:border-serika-border dark:bg-serika-surface dark:hover:border-serika-sub"
         >
-          <h2 className="text-lg font-semibold text-slate-900">Short mode</h2>
-          <p className="mt-2 text-sm text-slate-600">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-serika-text">Short mode</h2>
+          <p className="mt-2 text-sm text-slate-600 dark:text-serika-sub">
             Quotes, short poems, and self-contained passages you want to repeat quickly.
           </p>
         </Link>
         <Link
           to="/courses/article"
-          className="rounded-lg border bg-white p-6 shadow-sm transition-shadow hover:border-slate-300 hover:shadow-md"
+          className="rounded-lg border bg-white p-6 shadow-sm transition-shadow hover:border-slate-300 hover:shadow-md dark:border-serika-border dark:bg-serika-surface dark:hover:border-serika-sub"
         >
-          <h2 className="text-lg font-semibold text-slate-900">Article mode</h2>
-          <p className="mt-2 text-sm text-slate-600">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-serika-text">Article mode</h2>
+          <p className="mt-2 text-sm text-slate-600 dark:text-serika-sub">
             Full speeches, essays, and longer passages for sustained practice.
           </p>
         </Link>

@@ -81,11 +81,11 @@ export function AuthCallbackPage() {
     return (
       <AuthLayout>
         <h1 className="text-xl font-semibold">Sign-in failed</h1>
-        <p className="mt-3 text-sm text-red-600" data-testid="auth-callback-error">
+        <p className="mt-3 text-sm text-red-600 dark:text-red-300" data-testid="auth-callback-error">
           {error}
         </p>
         <p className="mt-4 text-sm">
-          <Link to="/login" className="text-slate-900 underline">
+          <Link to="/login" className="text-slate-900 underline dark:text-serika-text">
             Back to sign in
           </Link>
         </p>

@@ -56,41 +56,41 @@ export function RegisterPage() {
   return (
     <AuthLayout>
       <h1 className="text-xl font-semibold">Create account</h1>
-      <p className="mt-1 text-sm text-slate-600">
+      <p className="mt-1 text-sm text-slate-600 dark:text-serika-sub">
         Email, password, and nickname are all required.
       </p>
       <form className="mt-4 space-y-4" onSubmit={onSubmit}>
         <label className="block text-sm">
-          <span className="text-slate-700">Email</span>
+          <span className="text-slate-700 dark:text-serika-sub">Email</span>
           <input
             type="email"
             required
             autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-md border px-3 py-2 text-sm dark:border-serika-border dark:bg-serika-surface dark:text-serika-text"
           />
         </label>
         <label className="block text-sm">
-          <span className="text-slate-700">Nickname</span>
+          <span className="text-slate-700 dark:text-serika-sub">Nickname</span>
           <input
             type="text"
             required
             autoComplete="nickname"
             value={nickname}
             onChange={(e) => setNickname(e.target.value)}
-            className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-md border px-3 py-2 text-sm dark:border-serika-border dark:bg-serika-surface dark:text-serika-text"
           />
         </label>
         <label className="block text-sm">
-          <span className="text-slate-700">Password</span>
+          <span className="text-slate-700 dark:text-serika-sub">Password</span>
           <PasswordInput value={password} onChange={setPassword} autoComplete="new-password" />
-          <span className="mt-1 block text-xs text-slate-500">
+          <span className="mt-1 block text-xs text-slate-500 dark:text-serika-sub">
             At least 8 characters with uppercase, lowercase, and a number.
           </span>
         </label>
         <label className="block text-sm">
-          <span className="text-slate-700">Confirm password</span>
+          <span className="text-slate-700 dark:text-serika-sub">Confirm password</span>
           <PasswordInput
             value={confirmPassword}
             onChange={setConfirmPassword}
@@ -98,13 +98,13 @@ export function RegisterPage() {
           />
         </label>
           {error && (
-          <p className="text-sm text-red-600" role="alert">
+          <p className="text-sm text-red-600 dark:text-red-300" role="alert">
             {error}
           </p>
         )}
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-slate-500 dark:text-serika-sub">
           By creating an account, you agree to our{' '}
-          <Link to="/privacy" className="text-slate-700 underline hover:text-slate-900">
+          <Link to="/privacy" className="text-slate-700 underline hover:text-slate-900 dark:text-serika-sub dark:hover:text-serika-text">
             Privacy Policy
           </Link>
           .
@@ -112,14 +112,14 @@ export function RegisterPage() {
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60"
+          className="w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60 dark:border dark:border-serika-sub dark:bg-serika-raised dark:text-serika-text dark:hover:bg-[#4a4d50] dark:disabled:border-serika-border dark:disabled:bg-transparent dark:disabled:text-serika-sub dark:disabled:opacity-100"
         >
           {submitting ? 'Creating…' : 'Register'}
         </button>
       </form>
-      <p className="mt-4 text-center text-sm text-slate-600">
+      <p className="mt-4 text-center text-sm text-slate-600 dark:text-serika-sub">
         Already have an account?{' '}
-        <Link to="/login" className="text-slate-900 underline">
+        <Link to="/login" className="text-slate-900 underline dark:text-serika-text">
           Sign in
         </Link>
       </p>

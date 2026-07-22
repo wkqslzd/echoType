@@ -62,14 +62,14 @@ export function PasswordInput({
         autoComplete={autoComplete}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-md border px-3 py-2 pr-10 text-sm"
+        className="w-full rounded-md border px-3 py-2 pr-10 text-sm dark:border-serika-border dark:bg-serika-surface dark:text-serika-text"
       />
       <button
         type="button"
         aria-label={visible ? 'Hide password' : 'Show password'}
         aria-pressed={visible}
         onClick={() => setVisible((v) => !v)}
-        className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-slate-400 hover:text-slate-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+        className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-slate-400 hover:text-slate-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:text-serika-sub dark:hover:text-serika-text dark:focus-visible:ring-serika-border"
       >
         {visible ? <EyeOffIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
       </button>

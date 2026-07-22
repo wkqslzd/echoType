@@ -101,19 +101,19 @@ export function CollectionPickerModal({
       ref={panelRef}
       role="dialog"
       aria-modal="true"
-      className={`w-full max-w-md rounded-lg bg-white p-6 shadow-xl${
+      className={`w-full max-w-md rounded-lg bg-white p-6 shadow-xl dark:border dark:border-serika-border dark:bg-serika-surface${
         useAnchor ? ' fixed' : ''
       }${useAnchor && !anchoredReady ? ' invisible' : ''}`}
       style={useAnchor && anchoredStyle ? { top: anchoredStyle.top, left: anchoredStyle.left } : undefined}
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
     >
-      <h2 className="text-lg font-semibold">{title}</h2>
+      <h2 className="text-lg font-semibold dark:text-serika-text">{title}</h2>
       <div className="mt-4 max-h-64 overflow-y-auto">
         {isLoading ? (
-          <p className="text-sm text-slate-500">Loading…</p>
+          <p className="text-sm text-slate-500 dark:text-serika-sub">Loading…</p>
         ) : options.length === 0 ? (
-          <p className="text-sm text-slate-500">No collections yet.</p>
+          <p className="text-sm text-slate-500 dark:text-serika-sub">No collections yet.</p>
         ) : (
           <ul className="space-y-1">
             {options.map((c) => (
@@ -121,10 +121,10 @@ export function CollectionPickerModal({
                 <button
                   type="button"
                   onClick={() => onPick(c)}
-                  className="w-full rounded px-3 py-2 text-left text-sm hover:bg-slate-50"
+                  className="w-full rounded px-3 py-2 text-left text-sm hover:bg-slate-50 dark:text-serika-text dark:hover:bg-serika-raised"
                 >
                   {c.name}
-                  <span className="ml-2 text-xs text-slate-400">
+                  <span className="ml-2 text-xs text-slate-400 dark:text-serika-sub">
                     {c.courseCount} course{c.courseCount === 1 ? '' : 's'}
                   </span>
                 </button>
@@ -138,7 +138,7 @@ export function CollectionPickerModal({
           <button
             type="button"
             onClick={onNewCollection}
-            className="mr-auto rounded border px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+            className="mr-auto rounded border px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:border-serika-border dark:bg-serika-surface dark:text-serika-text dark:hover:bg-serika-raised"
           >
             New collection…
           </button>
@@ -146,7 +146,7 @@ export function CollectionPickerModal({
         <button
           type="button"
           onClick={onClose}
-          className="rounded border px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+          className="rounded border px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:border-serika-border dark:bg-serika-surface dark:text-serika-text dark:hover:bg-serika-raised"
         >
           Cancel
         </button>

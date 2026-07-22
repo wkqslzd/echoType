@@ -20,7 +20,7 @@ export function CollectionCard({ category, courseMode, menuItems }: CollectionCa
   );
 
   return (
-    <li className="rounded-md border bg-white transition-shadow hover:shadow-sm">
+    <li className="rounded-md border bg-white transition-shadow hover:shadow-sm dark:border-serika-border dark:bg-serika-surface">
       <div className="flex items-start gap-3 p-4">
         <Link to={detailPath} className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -29,12 +29,12 @@ export function CollectionCard({ category, courseMode, menuItems }: CollectionCa
           </div>
           <p
             className={`mt-1 line-clamp-1 overflow-hidden text-sm leading-5 ${
-              category.description?.trim() ? 'text-slate-500' : 'text-slate-300'
+              category.description?.trim() ? 'text-slate-500 dark:text-serika-sub' : 'text-slate-300 dark:text-serika-sub'
             }`}
           >
             {category.description?.trim() ? toCardPreviewLine(category.description) : '—'}
           </p>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-slate-500 dark:text-serika-sub">
             {category.courseCount} course{category.courseCount === 1 ? '' : 's'} · {statsLine}
           </p>
         </Link>

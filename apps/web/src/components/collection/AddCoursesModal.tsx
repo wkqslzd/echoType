@@ -28,25 +28,25 @@ export function AddCoursesModal({ courseMode, onClose, onConfirm }: AddCoursesMo
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl">
-        <h2 className="text-lg font-semibold">Add courses</h2>
-        <p className="mt-1 text-sm text-slate-500">Select uncategorized courses from the main list.</p>
+      <div className="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl dark:border dark:border-serika-border dark:bg-serika-surface">
+        <h2 className="text-lg font-semibold dark:text-serika-text">Add courses</h2>
+        <p className="mt-1 text-sm text-slate-500 dark:text-serika-sub">Select uncategorized courses from the main list.</p>
         <div className="mt-4 max-h-72 overflow-y-auto">
           {isLoading ? (
-            <p className="text-sm text-slate-500">Loading…</p>
+            <p className="text-sm text-slate-500 dark:text-serika-sub">Loading…</p>
           ) : !courses?.length ? (
-            <p className="text-sm text-slate-500">No uncategorized courses available.</p>
+            <p className="text-sm text-slate-500 dark:text-serika-sub">No uncategorized courses available.</p>
           ) : (
             <ul className="space-y-1">
               {courses.map((c) => (
                 <li key={c.id}>
-                  <label className="flex cursor-pointer items-center gap-2 rounded px-2 py-2 hover:bg-slate-50">
+                  <label className="flex cursor-pointer items-center gap-2 rounded px-2 py-2 hover:bg-slate-50 dark:hover:bg-serika-raised">
                     <input
                       type="checkbox"
                       checked={selected.has(c.id)}
                       onChange={() => toggle(c.id)}
                     />
-                    <span className="text-sm">{c.title}</span>
+                    <span className="text-sm dark:text-serika-text">{c.title}</span>
                   </label>
                 </li>
               ))}
@@ -57,7 +57,7 @@ export function AddCoursesModal({ courseMode, onClose, onConfirm }: AddCoursesMo
           <button
             type="button"
             onClick={onClose}
-            className="rounded border px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+            className="rounded border px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:border-serika-border dark:bg-serika-surface dark:text-serika-text dark:hover:bg-serika-raised"
           >
             Cancel
           </button>
@@ -65,7 +65,7 @@ export function AddCoursesModal({ courseMode, onClose, onConfirm }: AddCoursesMo
             type="button"
             disabled={selected.size === 0}
             onClick={() => onConfirm([...selected])}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50 dark:border dark:border-serika-sub dark:bg-serika-raised dark:text-serika-text dark:hover:bg-[#4a4d50] dark:disabled:border-serika-border dark:disabled:bg-transparent dark:disabled:text-serika-sub dark:disabled:opacity-100"
           >
             Add {selected.size > 0 ? `(${selected.size})` : ''}
           </button>
