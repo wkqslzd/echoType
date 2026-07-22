@@ -4,13 +4,13 @@
 
 **Live:** [echotype.ink](https://echotype.ink)
 
-echoType is a typing tool where you load up any text (poems, speeches, quotes, essays) and just type through it on loop. Good for moments when your brain needs something to do without actual thinking.
+echoType is a low-pressure typing tool where you load up any text (poems, speeches, quotes, essays) and just type through it on loop. Good for moments when your brain needs something to do without actual thinking.
 
 You can add custom annotations to phrases beforehand; the notes stay visible as you type, so glosses stay in context instead of a separate glossary. Sign in to keep your texts and practice history; or browse and type the sample courses as a guest.
 
 The name comes from echo — a voice returning. I built it because I wanted to revisit texts I actually care about through repetitive typing, until the words and rhythm sink in.
 
-![echoType in action](docs/product-screenshot.png)
+![echoType typing interface in light and night modes](docs/product-screenshot.png)
 
 You can pin native-language glosses above unfamiliar words — so the meaning stays in sight while you type. But the heart is the loop: choose a text you want to remember, type it, return to it.
 

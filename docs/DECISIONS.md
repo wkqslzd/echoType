@@ -121,6 +121,8 @@
   - New saves are LF-only; `\t` and other control chars blocked with plain-language errors.
   - Legacy courses with CRLF get silent index remap on first edit open (console log for debug).
   - Direct API callers must send indices relative to normalized content or get 422 bounds errors.
+- Amendment (2026-07-22, `bfc9d98`): The edit-load remap console.log is DEV-gated
+  (`import.meta.env.DEV`); production stays silent. Remap behavior is unchanged.
 - Supersedes / superseded-by: none
 
 ---
